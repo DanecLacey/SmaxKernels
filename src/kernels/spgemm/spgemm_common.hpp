@@ -1,0 +1,6 @@
+#ifndef SPGEMM_COMMON_HPP
+#define SPGEMM_COMMON_HPP
+
+// TODO
+
+#endif // SPGEMM_COMMON_HPP

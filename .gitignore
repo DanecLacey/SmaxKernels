@@ -1,0 +1,4 @@
+build/
+tests/test1
+tests/test2
+tests/error.txt

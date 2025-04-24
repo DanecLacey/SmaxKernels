@@ -1,0 +1,6 @@
+#ifndef KERNELS_COMMON_HPP
+#define KERNELS_COMMON_HPP
+
+// TODO
+
+#endif // KERNELS_COMMON_HPP

@@ -1,0 +1,6 @@
+#ifndef SPMV_COMMON_HPP
+#define SPMV_COMMON_HPP
+
+// TODO
+
+#endif // SPMV_COMMON_HPP
