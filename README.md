@@ -5,10 +5,8 @@
 ### Features ###
 * Clean, minimalist library interface 
 * Efficient implementations of Sparse:
-    * Matrix-(Multiple)Vector Multiplication (SpMV)
-    * Matrix Power Kernel (MPK)
+    * Matrix-(Multiple) Vector Multiplication (SpMV)
     * Matrix-Matrix Multiplication (SpGEMM)
-    * Triangular Solve (SpTSV)
 * Stacked timers around key regions
 * Supports multiple integer and floating-point types
 * Designed for integration into larger numerical frameworks
@@ -32,7 +30,8 @@ make INSTALL_PATH=<install path>
 
 ### Notice ###
 This project is very much still in development, and many features may be unfinished or broken.
-* As of 2025.04.24 Only OpenMP implementations of SpGEMM and SpMV are publicly available 
+* As of 2025.04.24 Only CPU-OpenMP implementations of SpGEMM and SpMV are publicly available
+* MPK, SpTSV, SpADD, SpTR kernels are in progress, as well as MPI functionality
 
 ### Contributing ###
 Pull requests and issues are welcome. Please open an issue first to propose changes or feature additions.

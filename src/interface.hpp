@@ -33,8 +33,8 @@ namespace SMAX
         SparseMatrix *A;
         SparseMatrix *B;
         SparseMatrix *C;
-        DenseVector *x;
-        DenseVector *y;
+        DenseMatrix *X;
+        DenseMatrix *Y;
 
         Timers *timers;
 

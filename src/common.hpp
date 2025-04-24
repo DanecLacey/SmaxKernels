@@ -56,12 +56,28 @@ namespace SMAX
         void **val;
     } SparseMatrix;
 
-    // For simplicity, assume all vectors are dense
+    // TODO
+    // // Available sparse matrix storage formats
+    // enum SparseMatrixStorageFormat
+    // {
+    //     CRS,
+    //     SCS
+    // };
+
     typedef struct
     {
         void *n_rows;
+        void *n_cols;
         void **val;
-    } DenseVector;
+    } DenseMatrix;
+
+    // TODO
+    // // Available dense matrix storage formats
+    // enum DenseMatrixStorageFormat
+    // {
+    //     COLWISE,
+    //     ROWWISE
+    // };
 
 } // namespace SMAX
 

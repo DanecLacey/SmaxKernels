@@ -26,21 +26,23 @@ namespace SMAX
     }
 
     int spmv_register_B(
-        DenseVector *x,
+        DenseMatrix *X,
         va_list args)
     {
-        x->n_rows = va_arg(args, void *);
-        x->val = va_arg(args, void **);
+        X->n_rows = va_arg(args, void *);
+        X->n_cols = va_arg(args, void *);
+        X->val = va_arg(args, void **);
 
         return 0;
     }
 
     int spmv_register_C(
-        DenseVector *y,
+        DenseMatrix *Y,
         va_list args)
     {
-        y->n_rows = va_arg(args, void *);
-        y->val = va_arg(args, void **);
+        Y->n_rows = va_arg(args, void *);
+        Y->n_cols = va_arg(args, void *);
+        Y->val = va_arg(args, void **);
 
         return 0;
     }
@@ -48,15 +50,15 @@ namespace SMAX
     int spmv_dispatch(
         SMAX::KernelContext context,
         SparseMatrix *A,
-        DenseVector *x,
-        DenseVector *y,
-        std::function<int(SMAX::KernelContext, SparseMatrix *, DenseVector *, DenseVector *)> cpu_func,
+        DenseMatrix *X,
+        DenseMatrix *Y,
+        std::function<int(SMAX::KernelContext, SparseMatrix *, DenseMatrix *, DenseMatrix *)> cpu_func,
         const char *label)
     {
         switch (context.platform_type)
         {
         case SMAX::CPU:
-            CHECK_ERROR(cpu_func(context, A, x, y), label);
+            CHECK_ERROR(cpu_func(context, A, X, Y), label);
             break;
         default:
             std::cerr << "Error: Platform not supported\n";
@@ -68,39 +70,39 @@ namespace SMAX
     int spmv_initialize(
         SMAX::KernelContext context,
         SparseMatrix *A,
-        DenseVector *x,
-        DenseVector *y)
+        DenseMatrix *X,
+        DenseMatrix *Y)
     {
         return spmv_dispatch(
-            context, A, x, y,
-            [](auto context, SparseMatrix *A, DenseVector *x, DenseVector *y)
-            { return spmv_initialize_cpu(context, A, x, y); },
+            context, A, X, Y,
+            [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y)
+            { return spmv_initialize_cpu(context, A, X, Y); },
             "spmv_initialize");
     }
 
     int spmv_apply(
         SMAX::KernelContext context,
         SparseMatrix *A,
-        DenseVector *x,
-        DenseVector *y)
+        DenseMatrix *X,
+        DenseMatrix *Y)
     {
         return spmv_dispatch(
-            context, A, x, y,
-            [](auto context, SparseMatrix *A, DenseVector *x, DenseVector *y)
-            { return spmv_apply_cpu(context, A, x, y); },
+            context, A, X, Y,
+            [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y)
+            { return spmv_apply_cpu(context, A, X, Y); },
             "spmv_apply");
     }
 
     int spmv_finalize(
         SMAX::KernelContext context,
         SparseMatrix *A,
-        DenseVector *x,
-        DenseVector *y)
+        DenseMatrix *X,
+        DenseMatrix *Y)
     {
         return spmv_dispatch(
-            context, A, x, y,
-            [](auto context, SparseMatrix *A, DenseVector *x, DenseVector *y)
-            { return spmv_finalize_cpu(context, A, x, y); },
+            context, A, X, Y,
+            [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y)
+            { return spmv_finalize_cpu(context, A, X, Y); },
             "spmv_finalize");
     }
 

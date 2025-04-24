@@ -19,7 +19,7 @@ test2:
 	${CXX} ${CXXFLAGS} test2.cpp -o $@ ${LIBS} -I${HEADERS} -L${INSTALLED_LIB} ${LINKS} ${PATH_EMBEDDINGS}
 
 clean:
-	rm -f test1 test2
+	rm -f test1 test2 test3
 	rm -f *.o
 
 .PHONY : clean

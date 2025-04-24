@@ -13,7 +13,7 @@ namespace SMAX
     template <typename IT, typename VT>
     struct SpmvInit
     {
-        int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseVector *x, DenseVector *y)
+        int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x, DenseMatrix *y)
         {
             return spmv_initialize_cpu_core<IT, VT>(context, A, x, y);
         }
@@ -22,7 +22,7 @@ namespace SMAX
     template <typename IT, typename VT>
     struct SpmvApply
     {
-        int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseVector *x, DenseVector *y)
+        int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x, DenseMatrix *y)
         {
             return spmv_apply_cpu_core<IT, VT>(context, A, x, y);
         }
@@ -31,7 +31,7 @@ namespace SMAX
     template <typename IT, typename VT>
     struct SpmvFinalize
     {
-        int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseVector *x, DenseVector *y)
+        int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x, DenseMatrix *y)
         {
             return spmv_finalize_cpu_core<IT, VT>(context, A, x, y);
         }
@@ -43,8 +43,8 @@ namespace SMAX
     int spmv_dispatch_cpu(
         SMAX::KernelContext context,
         SparseMatrix *A,
-        DenseVector *x,
-        DenseVector *y)
+        DenseMatrix *x,
+        DenseMatrix *y)
     {
         switch (context.float_type)
         {
@@ -83,15 +83,15 @@ namespace SMAX
     }
 
     // These invoke the dispatcher function with the correct template parameters
-    int spmv_initialize_cpu(SMAX::KernelContext context, SparseMatrix *A, DenseVector *x, DenseVector *y)
+    int spmv_initialize_cpu(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x, DenseMatrix *y)
     {
         return spmv_dispatch_cpu<SpmvInit>(context, A, x, y);
     }
-    int spmv_apply_cpu(SMAX::KernelContext context, SparseMatrix *A, DenseVector *x, DenseVector *y)
+    int spmv_apply_cpu(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x, DenseMatrix *y)
     {
         return spmv_dispatch_cpu<SpmvApply>(context, A, x, y);
     }
-    int spmv_finalize_cpu(SMAX::KernelContext context, SparseMatrix *A, DenseVector *x, DenseVector *y)
+    int spmv_finalize_cpu(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x, DenseMatrix *y)
     {
         return spmv_dispatch_cpu<SpmvFinalize>(context, A, x, y);
     }

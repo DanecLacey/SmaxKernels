@@ -27,8 +27,8 @@ namespace SMAX
         this->A = new SparseMatrix{};
         this->B = new SparseMatrix{};
         this->C = new SparseMatrix{};
-        this->x = new DenseVector{};
-        this->y = new DenseVector{};
+        this->X = new DenseMatrix{};
+        this->Y = new DenseMatrix{};
     }
 
     Interface::~Interface()
@@ -37,10 +37,12 @@ namespace SMAX
         delete A;
         delete B;
         delete C;
-        delete x;
-        delete y;
+        delete X;
+        delete Y;
     }
 
+    // Register A, B, C matrices and x, y vectors
+    // These functions are variadic and take a variable number of arguments
     int Interface::register_A(...)
     {
         this->timers->register_A_time->start();
@@ -83,7 +85,7 @@ namespace SMAX
         {
         case SPMV:
         {
-            int ret = spmv_register_B(this->x, user_args);
+            int ret = spmv_register_B(this->X, user_args);
             va_end(user_args);
             this->timers->register_B_time->stop();
             return ret;
@@ -114,7 +116,7 @@ namespace SMAX
         {
         case SPMV:
         {
-            int ret = spmv_register_C(this->y, user_args);
+            int ret = spmv_register_C(this->Y, user_args);
             va_end(user_args);
             this->timers->register_C_time->stop();
             return ret;
@@ -159,7 +161,7 @@ namespace SMAX
         this->timers->initialize_time->start();
         int ret = dispatch(
             [this](auto context)
-            { return spmv_initialize(context, this->A, this->x, this->y); }, "spmv_initialize",
+            { return spmv_initialize(context, this->A, this->X, this->Y); }, "spmv_initialize",
             [this](auto context)
             { return spgemm_initialize(context, this->A, this->B, this->C); }, "spgemm_initialize");
         this->timers->initialize_time->stop();
@@ -171,7 +173,7 @@ namespace SMAX
         this->timers->apply_time->start();
         int ret = dispatch(
             [this](auto context)
-            { return spmv_apply(context, this->A, this->x, this->y); }, "spmv_apply",
+            { return spmv_apply(context, this->A, this->X, this->Y); }, "spmv_apply",
             [this](auto context)
             { return spgemm_apply(context, this->A, this->B, this->C); }, "spgemm_apply");
         this->timers->apply_time->stop();
@@ -183,7 +185,7 @@ namespace SMAX
         this->timers->finalize_time->start();
         int ret = dispatch(
             [this](auto context)
-            { return spmv_finalize(context, this->A, this->x, this->y); }, "spmv_finalize",
+            { return spmv_finalize(context, this->A, this->X, this->Y); }, "spmv_finalize",
             [this](auto context)
             { return spgemm_finalize(context, this->A, this->B, this->C); }, "spgemm_finalize");
         this->timers->finalize_time->stop();
