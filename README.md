@@ -1,12 +1,14 @@
 # SmaxKernels
 
-**S**parse **MA**trix mpi+**X** **Kernels** is a lightweight C++ library providing high-performance kernel implementations across multiple platforms.
+**S**parse **MA**trix mpi+**X** **Kernels** is a lightweight C++ library providing high-performance implementations of sparse matrix kernels.
 
 ### Features ###
 * Clean, minimalist library interface 
-* Efficient implementations of:
-    * Sparse Matrix-(Multiple)Vector Multiplication (SpMV)
-    * Sparse Matrix-Matrix Multiplication (SpGEMM)
+* Efficient implementations of Sparse:
+    * Matrix-(Multiple)Vector Multiplication (SpMV)
+    * Matrix Power Kernel (MPK)
+    * Matrix-Matrix Multiplication (SpGEMM)
+    * Triangular Solve (SpTSV)
 * Stacked timers around key regions
 * Supports multiple integer and floating-point types
 * Designed for integration into larger numerical frameworks
@@ -27,6 +29,10 @@ To build the tests:
 cd SmaxKernels/tests
 make INSTALL_PATH=<install path>
 ```
+
+### Notice ###
+This project is very much still in development, and many features may be unfinished or broken.
+* As of 2025.04.24 Only OpenMP implementations of SpGEMM and SpMV are publicly available 
 
 ### Contributing ###
 Pull requests and issues are welcome. Please open an issue first to propose changes or feature additions.
