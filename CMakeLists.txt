@@ -215,3 +215,39 @@ INSTALL (
 )
 
 ################################################################################
+### Build tests
+add_subdirectory(tests)
+
+# Create a top-level "tests" target
+add_custom_target(tests
+    COMMENT "Build all test executables"
+)
+foreach(tgt ${TEST_TARGETS})
+    add_dependencies(tests ${tgt})
+endforeach()
+
+################################################################################
+### Build benchmarks
+add_subdirectory(benchmarks)
+
+add_custom_target(benchmarks
+    COMMENT "Build all benchmark targets"
+)
+
+foreach(benchmark_target IN LISTS BENCHMARK_TARGETS)
+    add_dependencies(benchmarks ${benchmark_target})
+endforeach()
+
+################################################################################
+### Build applications
+add_subdirectory(applications)
+
+add_custom_target(applications
+    COMMENT "Build all application targets"
+)
+
+foreach(application_target IN LISTS APPLICATION_TARGETS)
+    add_dependencies(applications ${application_target})
+endforeach()
+
+################################################################################
