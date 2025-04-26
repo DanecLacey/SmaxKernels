@@ -1,7 +1,7 @@
 # List of subdirectories to include
 # TODO: Make selection optional
 set(APPLICATION_DIRS
-    test_app
+    gauss_seidel
 )
 
 # Iterate over each application directory

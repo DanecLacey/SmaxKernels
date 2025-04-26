@@ -204,9 +204,11 @@ endif()
 ### Library installation directives
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
+SET(INCLUDE_DIR include/${PROJECT_NAME} CACHE PATH "Path to include dir")
+
 # Install the header files
-install(FILES ${HEADERS} DESTINATION include/${PROJECT_NAME})
-install(DIRECTORY ${HEADER_DIRS} DESTINATION include/${PROJECT_NAME})
+install(FILES ${HEADERS} DESTINATION ${INCLUDE_DIR})
+install(DIRECTORY ${HEADER_DIRS} DESTINATION ${INCLUDE_DIR})
 
 INSTALL (
 	TARGETS ${LIBRARY_NAME}
