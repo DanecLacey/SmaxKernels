@@ -22,13 +22,14 @@ make && make install
 ```
 
 ## Usage Examples ##
+A few basic usage examples are provided in the `/examples` directory.
 ```bash
-cd examples
+cd ../examples
 mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH=$INSTALL_PATH
 make
 ```
-A few basic usage examples are provided in the `/tests` directory. There are pre-made benchmarks of `Smax` kernels, as well as optional third party kernels, which all in `/benchmarks`. More realistic examples can be found in `/applications`.
+There are pre-made benchmarks of `Smax` kernels, as well as optional third party kernels, which all in `/benchmarks`. Very basic tests are provided in the `/tests` subdirectory. More realistic examples can be found in `/applications`.
 
 ## Notice ##
 This project is very much still in development, and many features may be unfinished or broken.
