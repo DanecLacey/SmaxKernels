@@ -1,10 +1,10 @@
 # Set header and library paths
 set(INSTALLED_LIB "${CMAKE_INSTALL_PREFIX}/lib")
-set(HEADERS "${CMAKE_INSTALL_PREFIX}/include")
+# set(HEADERS "${CMAKE_INSTALL_PREFIX}/include/${}")
 
 # Include and link directories
 link_directories(${INSTALLED_LIB})
-include_directories(${HEADERS})
+include_directories(${CMAKE_INSTALL_PREFIX}/${INCLUDE_DIR})
 
 # Find all test .cpp files
 file(GLOB TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/test*.cpp")

@@ -1,0 +1,4 @@
+@PACKAGE_INIT@
+
+# Locate the target library in the install prefix
+include("${CMAKE_CURRENT_LIST_DIR}/SmaxKernelsTargets.cmake")
