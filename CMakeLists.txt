@@ -16,6 +16,7 @@ SET(LIBRARY_VERSION_STRING 0.1)
 
 SET(SOURCES
 	"src/interface.cpp"
+    "src/error_handler.cpp"
 )
 
 SET(HEADERS
@@ -24,6 +25,8 @@ SET(HEADERS
     "src/macros.hpp"
     "src/memory_utils.hpp"
     "src/stopwatch.hpp"
+    "src/kernel.hpp"
+    "src/error_handler.hpp"
 )
 
 SET(HEADER_DIRS
@@ -38,6 +41,11 @@ ADD_LIBRARY (${LIBRARY_NAME} SHARED ${SOURCES})
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the build type (e.g., Debug, Release)" FORCE)
 endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(DEBUG_LEVEL 1 CACHE STRING "Set the debug level (1=low, 2=medium, 3=high)")
+endif()
+
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
@@ -64,7 +72,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STRE
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstrict-aliasing -O3")
         endif()
         if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-            set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
+            set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  -DDEBUG_LEVEL=${DEBUG_LEVEL} ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
         endif()
         if ("${CMAKE_BUILD_TYPE}" STREQUAL "Profile")
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -75,7 +83,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STRE
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-alias -O3")
         endif()
         if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-            set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
+            set(CMAKE_CXX_FLAGS "-DDEBUG_MODE -DDEBUG_LEVEL=${DEBUG_LEVEL} ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
         endif()
         if ("${CMAKE_BUILD_TYPE}" STREQUAL "Profile")
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -228,7 +236,7 @@ foreach(tgt ${TEST_TARGETS})
     add_dependencies(tests ${tgt})
 endforeach()
 
-################################################################################
+# ################################################################################
 ### Build benchmarks
 add_subdirectory(benchmarks)
 
@@ -240,7 +248,7 @@ foreach(benchmark_target IN LISTS BENCHMARK_TARGETS)
     add_dependencies(benchmarks ${benchmark_target})
 endforeach()
 
-################################################################################
+# ################################################################################
 ### Build applications
 add_subdirectory(applications)
 
@@ -252,4 +260,4 @@ foreach(application_target IN LISTS APPLICATION_TARGETS)
     add_dependencies(applications ${application_target})
 endforeach()
 
-################################################################################
+# ################################################################################

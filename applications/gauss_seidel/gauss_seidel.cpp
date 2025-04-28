@@ -1,93 +1,93 @@
-#include "utils.hpp"
 #include "SmaxKernels/interface.hpp"
+#include "utils.hpp"
 
 #include <iostream>
 
-#define TOL 1e-6
+#define TOL 1e-8
 #define MAX_ITERS 1000
 #define CHECK_LENGTH 5
+#define DOMAIN_SIZE 10
 
-int main(void){
-    int n = 6; // Total points including boundaries
-    CRSMatrix A = create1DPoissonMatrixCRS(n);
+#ifndef DEBUG
+#define DEBUG 1
+#endif
+
+double check_residual(double *b, double *tmp, double *residual, int n_rows,
+                      SMAX::Interface *smax) {
+    smax->kernels["tmp <- Ax"]->run();
+
+    // residual <- (b - Ax)
+    subtract_vectors(residual, b, tmp, n_rows);
+
+    // residual_norm = || b - Ax ||
+    return infty_vec_norm(residual, n_rows);
+}
+
+void gauss_seidel_iter(double *b, double *tmp, int n_rows,
+                       SMAX::Interface *smax) {
+    smax->kernels["tmp <- Ux"]->run();
+
+    // tmp <- (b - Ux)
+    subtract_vectors(tmp, b, tmp, n_rows);
+
+    smax->kernels["solve x <- (D+L)^{-1}(b-Ux)"]->run();
+}
+
+void solve(double *b, double *tmp, double *residual, int n_rows, int &n_iters,
+           double &residual_norm, SMAX::Interface *smax) {
+    do {
+        gauss_seidel_iter(b, tmp, n_rows, smax);
+
+        // Compute residual every CHECK_LENGTH iterations
+        if (n_iters % CHECK_LENGTH == 0) {
+            residual_norm = check_residual(b, tmp, residual, n_rows, smax);
+            if (DEBUG) {
+                printf("iter: %d, residual_norm = %f\n", n_iters,
+                       residual_norm);
+            }
+        }
+        ++n_iters;
+
+    } while (residual_norm > TOL && n_iters < MAX_ITERS);
+}
+
+int main(void) {
+    // Set up problem
+    CRSMatrix A = create1DPoissonMatrixCRS(DOMAIN_SIZE);
     DenseMatrix x = createDenseMatrix(A.n_cols, 0.0);
     DenseMatrix b = createDenseMatrix(A.n_cols, 1.0);
     DenseMatrix tmp = createDenseMatrix(A.n_cols, 0.0);
     DenseMatrix residual = createDenseMatrix(A.n_cols, 0.0);
-
-	CRSMatrix D_plus_L{};
-	CRSMatrix U{};
+    CRSMatrix D_plus_L;
+    CRSMatrix U;
     extract_D_L_U(A, D_plus_L, U);
 
-    // printCRSMatrix(D_plus_L);
-    // printCRSMatrix(U);
-    // exit(0);
+    // Initialize interface object
+    SMAX::Interface *smax = new SMAX::Interface();
 
-    // tmp <- Ax
-    // SMAX::Interface *Ax_spmv = new SMAX::Interface(SMAX::SPMV, SMAX::CPU);
-    // Ax_spmv->register_A(&A.n_rows, &A.n_cols, &A.nnz, A.col.data(), A.row_ptr.data(), A.values.data()); // A
-    // Ax_spmv->register_B(&A.n_cols, &x.n_cols, x.values.data()); // X
-    // Ax_spmv->register_C(&A.n_cols, &tmp.n_cols, tmp.values.data()); // tmp
+    // Register necessary sparse kernels to SMAX
+    REGISTER_SPMV_KERNEL("tmp <- Ax", A, x, tmp);
+    REGISTER_SPMV_KERNEL("tmp <- Ux", U, x, tmp);
+    REGISTER_SPTSV_KERNEL("solve x <- (D+L)^{-1}(b-Ux)", D_plus_L, x, tmp);
 
-    // // tmp <- Ux
-    // SMAX::Interface *Ux_spmv = new SMAX::Interface(SMAX::SPMV, SMAX::CPU);
-    // Ux_spmv->register_A(&U.n_rows, &U.n_cols, &U.nnz, U.col.data(), U.row_ptr.data(), U.values.data()); // U
-    // Ux_spmv->register_B(&U.n_cols, &x.n_cols, x.values.data()); // X
-    // Ux_spmv->register_C(&U.n_cols, &tmp.n_cols, tmp.values.data()); // tmp
-
-    // (D+L)x <- b - Ux
-    // TODO
-    // SMAX::Interface *sptsv = new SMAX::Interface(SMAX::SPTSV, SMAX::CPU);
-    // sptsv->register_A(&D_plus_L.n_rows, &D_plus_L.n_cols, &D_plus_L.nnz, D_plus_L.col.data(), D_plus_L.row_ptr.data(), D_plus_L.values.data());
-    // sptsv->register_B(&A.n_cols, &x.n_cols, x.values.data());
-    // sptsv->register_C(&tmp.n_cols, &tmp.n_cols, tmp.values.data());
-
-    
-    double residual_norm = 0.0;
     // Compute initial residual norm
-    // Ax_spmv->run();
-    spmv(A, x.values, tmp.values);
-    subtract_vectors(residual.values.data(), b.values.data(), tmp.values.data(), b.n_rows);
-    residual_norm = infty_vec_norm(residual);
+    double residual_norm =
+        check_residual(b.values, tmp.values, residual.values, b.n_rows, smax);
     std::cout << "Initial residual norm: " << residual_norm << std::endl;
 
+    // Iterate until convergence is reached
     int n_iters = 0;
-    do {
-        // tmp <- Ux
-        // Ux_spmv->run();
-        spmv(U, x.values, tmp.values);
+    solve(b.values, tmp.values, residual.values, b.n_rows, n_iters,
+          residual_norm, smax);
 
-        // tmp <- b - Ux
-        subtract_vectors(tmp.values.data(), b.values.data(), tmp.values.data(), tmp.n_rows);
-
-        // x <- (D+L)^{-1}(b - Ux)
-        // sptsv->run(); TODO
-        spltsv(D_plus_L, b.values, x.values);
-
-        if(n_iters % CHECK_LENGTH == 0){
-            // Compute residual
-
-            // tmp <- Ax
-            // Ax_spmv->run();
-            spmv(A, x.values, tmp.values);
-            // residual <- b - Ax
-            subtract_vectors(residual.values.data(), b.values.data(), tmp.values.data(), tmp.n_rows);
-            // residual_norm = || b - Ax ||
-            residual_norm = infty_vec_norm(residual);
-        }
-        ++n_iters;
-
-    } while (residual_norm > TOL || n_iters < MAX_ITERS);
-
-    if(infty_vec_norm(residual) < TOL){
-        std::cout << "Gauss-Seidel solver converged after " << n_iters << " iterations." << std::endl;
-    }
-    else{
+    if (residual_norm < TOL) {
+        std::cout << "Gauss-Seidel solver converged after " << n_iters
+                  << " iterations." << std::endl;
+    } else {
         std::cout << "Gauss-Seidel solver did not converge." << std::endl;
     }
+    std::cout << "Final residual norm: " << residual_norm << std::endl;
 
-    // delete Ax_spmv;
-    // delete Ux_spmv;
-     
+    delete smax;
     return 0;
 }

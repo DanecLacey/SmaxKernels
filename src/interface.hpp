@@ -1,61 +1,43 @@
 #ifndef INTERFACE_HPP
 #define INTERFACE_HPP
 
-#include <string>
-#include <iostream>
 #include <functional>
+#include <iostream>
+#include <string>
+#include <unordered_map>
 
 #include "common.hpp"
+#include "kernel.hpp"
 #include "macros.hpp"
-#include "kernels/spmv.hpp"
-#include "kernels/spgemm.hpp"
 
-namespace SMAX
-{
-    class Interface;
+namespace SMAX {
 
-    class Interface
-    {
-    private:
-        // One function pointer and const char* for each kernel
-        int dispatch(
-            std::function<int(KernelContext)>, const char *,
-            std::function<int(KernelContext)>, const char *);
+// class Interface;
 
-    public:
-        // Structs which are passed to the interface object
-        KernelType kernel_type;
-        PlatformType platform_type;
-        IntType int_type;
-        FloatType float_type;
-        KernelContext context;
+class Interface {
+  private:
+    // One function pointer and const char* for each kernel
+    int dispatch(std::function<int(KernelContext)>, const char *,
+                 std::function<int(KernelContext)>, const char *);
 
-        SparseMatrix *A;
-        SparseMatrix *B;
-        SparseMatrix *C;
-        DenseMatrix *X;
-        DenseMatrix *Y;
+  public:
+    std::unordered_map<std::string, Kernel *> kernels;
 
-        Timers *timers;
+    int register_kernel(const std::string &, KernelType, PlatformType,
+                        IntType = UINT32, FloatType = FLOAT64);
 
-        // These are the only *methods* users should interact with
-        Interface(KernelType, PlatformType, IntType = UINT32, FloatType = FLOAT64);
-        ~Interface();
+    Timers *timers;
 
-        // C-style variadic function arg list
-        int register_A(...);
-        int register_B(...);
-        int register_C(...);
+    Interface();
+    ~Interface();
 
-        int initialize();
-        int apply();
-        int finalize();
+    // C-style variadic function arg list
+    int register_A(...);
+    int register_B(...);
+    int register_C(...);
 
-        // Combination of initialize, apply, and finalize
-        int run();
-
-        void print_timers();
-    };
+    void print_timers();
+};
 
 } // namespace SMAX
 

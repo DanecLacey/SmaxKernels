@@ -1,83 +1,63 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
-#include <iostream>
-#include <iomanip>
-
+#include "error_handler.hpp"
+#include "macros.hpp"
 #include "memory_utils.hpp"
 #include "stopwatch.hpp"
 
-namespace SMAX
-{
-    // Available kernels
-    enum KernelType
-    {
-        SPMV,
-        SPGEMM
-    };
+namespace SMAX {
 
-    // Available platforms
-    enum PlatformType
-    {
-        CPU
-    };
+// Available kernels
+enum KernelType { SPMV, SPGEMM, SPTSV };
 
-    // Available integer types
-    enum IntType
-    {
-        UINT16,
-        UINT32,
-        UINT64
-    };
+// Available platforms
+enum PlatformType { CPU };
 
-    // Available floating point types
-    enum FloatType
-    {
-        FLOAT32,
-        FLOAT64
-    };
+// Available integer types
+enum IntType { UINT16, UINT32, UINT64 };
 
-    typedef struct
-    {
-        KernelType kernel_type;
-        PlatformType platform_type;
-        IntType int_type;
-        FloatType float_type;
-    } KernelContext;
+// Available floating point types
+enum FloatType { FLOAT32, FLOAT64 };
 
-    // For simplicity, assume all matrices are in CSR format
-    typedef struct
-    {
-        void *n_rows;
-        void *n_cols;
-        void *nnz;
-        void **col;
-        void **row_ptr;
-        void **val;
-    } SparseMatrix;
+typedef struct {
+    KernelType kernel_type;
+    PlatformType platform_type;
+    IntType int_type;
+    FloatType float_type;
+} KernelContext;
 
-    // TODO
-    // // Available sparse matrix storage formats
-    // enum SparseMatrixStorageFormat
-    // {
-    //     CRS,
-    //     SCS
-    // };
+// For simplicity, assume all matrices are in CSR format
+typedef struct {
+    void *n_rows;
+    void *n_cols;
+    void *nnz;
+    void **col;
+    void **row_ptr;
+    void **val;
+} SparseMatrix;
 
-    typedef struct
-    {
-        void *n_rows;
-        void *n_cols;
-        void **val;
-    } DenseMatrix;
+// TODO
+// // Available sparse matrix storage formats
+// enum SparseMatrixStorageFormat
+// {
+//     CRS,
+//     SCS
+// };
 
-    // TODO
-    // // Available dense matrix storage formats
-    // enum DenseMatrixStorageFormat
-    // {
-    //     COLWISE,
-    //     ROWWISE
-    // };
+typedef struct {
+    void *n_rows;
+    void *n_cols;
+    void **val;
+} DenseMatrix;
+
+// TODO
+// // Available dense matrix storage formats
+// enum DenseMatrixStorageFormat
+// {
+//     COLWISE,
+//     ROWWISE
+// };
 
 } // namespace SMAX
 

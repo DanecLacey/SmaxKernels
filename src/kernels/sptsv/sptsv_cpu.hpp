@@ -1,42 +1,42 @@
-#ifndef SPMV_CPU_HPP
-#define SPMV_CPU_HPP
+#ifndef SPTSV_CPU_HPP
+#define SPTSV_CPU_HPP
 
 #include "../../common.hpp"
-#include "spmv_cpu/spmv_cpu_core.hpp"
+#include "sptsv_cpu/sptsv_cpu_core.hpp"
 
 namespace SMAX {
 namespace KERNELS {
-namespace SPMV {
+namespace SPTSV {
 
 // These templated structs are just little helpers to wrap the core functions.
-// The operator() function is called in the dispatch_spmv function to execute
+// The operator() function is called in the dispatch_sptsv function to execute
 // the correct function for the given types.
 template <typename IT, typename VT> struct SpmvInit {
     int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x,
                    DenseMatrix *y) {
-        return SPMV_CPU::spmv_initialize_cpu_core<IT, VT>(context, A, x, y);
+        return SPTSV_CPU::sptsv_initialize_cpu_core<IT, VT>(context, A, x, y);
     }
 };
 
 template <typename IT, typename VT> struct SpmvApply {
     int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x,
                    DenseMatrix *y) {
-        return SPMV_CPU::spmv_apply_cpu_core<IT, VT>(context, A, x, y);
+        return SPTSV_CPU::sptsv_apply_cpu_core<IT, VT>(context, A, x, y);
     }
 };
 
 template <typename IT, typename VT> struct SpmvFinalize {
     int operator()(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x,
                    DenseMatrix *y) {
-        return SPMV_CPU::spmv_finalize_cpu_core<IT, VT>(context, A, x, y);
+        return SPTSV_CPU::sptsv_finalize_cpu_core<IT, VT>(context, A, x, y);
     }
 };
 
 // The dispatcher function uses the above () operator with the correct
 // integer and floating point types.
 template <template <typename IT, typename VT> class Func>
-int spmv_dispatch_cpu(SMAX::KernelContext context, SparseMatrix *A,
-                      DenseMatrix *x, DenseMatrix *y) {
+int sptsv_dispatch_cpu(SMAX::KernelContext context, SparseMatrix *A,
+                       DenseMatrix *x, DenseMatrix *y) {
     switch (context.float_type) {
     case FLOAT32:
         switch (context.int_type) {
@@ -71,21 +71,21 @@ int spmv_dispatch_cpu(SMAX::KernelContext context, SparseMatrix *A,
 }
 
 // These invoke the dispatcher function with the correct template parameters
-int spmv_initialize_cpu(SMAX::KernelContext context, SparseMatrix *A,
-                        DenseMatrix *x, DenseMatrix *y) {
-    return spmv_dispatch_cpu<SpmvInit>(context, A, x, y);
+int sptsv_initialize_cpu(SMAX::KernelContext context, SparseMatrix *A,
+                         DenseMatrix *x, DenseMatrix *y) {
+    return sptsv_dispatch_cpu<SpmvInit>(context, A, x, y);
 }
-int spmv_apply_cpu(SMAX::KernelContext context, SparseMatrix *A, DenseMatrix *x,
-                   DenseMatrix *y) {
-    return spmv_dispatch_cpu<SpmvApply>(context, A, x, y);
+int sptsv_apply_cpu(SMAX::KernelContext context, SparseMatrix *A,
+                    DenseMatrix *x, DenseMatrix *y) {
+    return sptsv_dispatch_cpu<SpmvApply>(context, A, x, y);
 }
-int spmv_finalize_cpu(SMAX::KernelContext context, SparseMatrix *A,
-                      DenseMatrix *x, DenseMatrix *y) {
-    return spmv_dispatch_cpu<SpmvFinalize>(context, A, x, y);
+int sptsv_finalize_cpu(SMAX::KernelContext context, SparseMatrix *A,
+                       DenseMatrix *x, DenseMatrix *y) {
+    return sptsv_dispatch_cpu<SpmvFinalize>(context, A, x, y);
 }
 
-} // namespace SPMV
+} // namespace SPTSV
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SPMV_CPU_HPP
+#endif // SPTSV_CPU_HPP

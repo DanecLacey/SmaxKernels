@@ -24,14 +24,20 @@ int main(void)
     u_int16_t *C_row_ptr = nullptr;
     float *C_val = nullptr;
 
-    SMAX::Interface *spgemm_kernel = new SMAX::Interface(SMAX::SPGEMM, SMAX::CPU, SMAX::UINT16, SMAX::FLOAT32);
-    spgemm_kernel->register_A(&A_n_rows, &A_n_cols, &A_nnz, &A_col, &A_row_ptr, &A_val);
-    spgemm_kernel->register_B(&B_n_rows, &B_n_cols, &B_nnz, &B_col, &B_row_ptr, &B_val);
-    spgemm_kernel->register_C(&C_n_rows, &C_n_cols, &C_nnz, &C_col, &C_row_ptr, &C_val);
+    SMAX::Interface *smax = new SMAX::Interface();
 
-    spgemm_kernel->run();
+    smax->register_kernel("my_spgemm", SMAX::SPGEMM, SMAX::CPU, SMAX::UINT16, SMAX::FLOAT32);
 
-    spgemm_kernel->print_timers();
+    smax->kernels["my_spgemm"]->register_A(
+        &A_n_rows, &A_n_cols, &A_nnz, &A_col, &A_row_ptr, &A_val);
+    smax->kernels["my_spgemm"]->register_B(
+        &B_n_rows, &B_n_cols, &B_nnz, &B_col, &B_row_ptr, &B_val);
+    smax->kernels["my_spgemm"]->register_C(
+        &C_n_rows, &C_n_cols, &C_nnz, &C_col, &C_row_ptr, &C_val);
+
+    smax->kernels["my_spgemm"]->run();
+
+    smax->print_timers();
 
     print_matrix<u_int16_t, float>(C_n_rows, C_n_cols, C_nnz, C_col, C_row_ptr, C_val);
 
@@ -44,7 +50,7 @@ int main(void)
     delete[] C_col;
     delete[] C_row_ptr;
     delete[] C_val;
-    delete spgemm_kernel;
+    delete smax;
 
     return 0;
 }
