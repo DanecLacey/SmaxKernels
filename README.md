@@ -29,7 +29,7 @@ mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH=$INSTALL_PATH
 make
 ```
-There are pre-made benchmarks of `Smax` kernels, as well as optional third party kernels, which all in `/benchmarks`. Very basic tests are provided in the `/tests` subdirectory. More realistic examples can be found in `/applications`.
+There are pre-made benchmarks of the kernels provided by `SmaxKernels`, as well as optional third party kernels to compare against, which are all found in `/benchmarks`. Very basic tests are provided in the `/tests` subdirectory. More realistic examples can be found in `/applications`.
 
 ## Notice ##
 This project is very much still in development, and many features may be unfinished or broken.

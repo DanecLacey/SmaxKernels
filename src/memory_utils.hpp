@@ -5,6 +5,11 @@
 #define ALIGNMENT 64
 #endif
 
+#include <cstddef>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 // Overwrite heap allocators to use posix_memalign
 // NOTE: Cannot be used in a namespace
 

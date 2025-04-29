@@ -1,12 +1,21 @@
 # List of subdirectories to include
-# TODO: Make selection optional
 set(BENCHMARK_DIRS
-    eigen_benchmarks
-    mkl_benchmarks
-    petsc_benchmarks
-    trilinos_benchmarks
     smax_benchmarks
 )
+
+if(USE_EIGEN)
+    list(APPEND BENCHMARK_DIRS eigen_benchmarks)
+endif()
+if(USE_MKL)
+    list(APPEND BENCHMARK_DIRS mkl_benchmarks)
+endif()
+if(USE_PETSC)
+    list(APPEND BENCHMARK_DIRS petsc_benchmarks)
+endif()
+if(USE_TRILINOS)
+    list(APPEND BENCHMARK_DIRS trilinos_benchmarks)
+endif()
+
 
 add_library(timing STATIC timing.cpp)
 target_include_directories(timing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

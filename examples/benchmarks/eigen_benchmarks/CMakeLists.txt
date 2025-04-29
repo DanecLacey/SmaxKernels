@@ -1,6 +1,14 @@
 add_executable(eigen_spmv eigen_spmv.cpp)
 
-set(eigen_benchmarks_TARGETS eigen_spmv)
+# Link against time stamping
+target_link_libraries(eigen_spmv PRIVATE SMAX::smaxkernels timing)
 
-# Propagate back to the parent scope
-set(eigen_benchmarks_TARGETS ${eigen_benchmarks_TARGETS} PARENT_SCOPE)
+# Link against matrix market reader
+target_link_libraries(eigen_spmv PRIVATE SMAX::smaxkernels mmio)
+
+# Link against the exported SMAX target
+# target_link_libraries(eigen_spmv PRIVATE SMAX::smaxkernels)
+
+target_link_libraries(eigen_spmv PRIVATE Eigen3::Eigen)
+
+set(eigen_benchmarks_TARGETS eigen_spmv PARENT_SCOPE)

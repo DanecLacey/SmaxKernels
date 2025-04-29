@@ -9,6 +9,8 @@
 #ifndef MM_IO_HPP
 #define MM_IO_HPP
 
+// #include "aligned_malloc.hpp"
+
 #include <algorithm>
 #include <map>
 #include <stdio.h>
@@ -17,6 +19,7 @@
 #define MM_MAX_LINE_LENGTH 1025
 #define MatrixMarketBanner "%%MatrixMarket"
 #define MM_MAX_TOKEN_LENGTH 64
+#define ALIGNMENT 64
 
 typedef char MM_typecode[4];
 
@@ -111,6 +114,8 @@ int mm_is_valid(MM_typecode matcode); /* too complex for a macro */
 #define MM_SKEW_STR "skew-symmetric"
 #define MM_PATTERN_STR "pattern"
 
+void *mmio_aligned_malloc(size_t bytesize);
+
 /*  high level routines */
 
 int mm_write_mtx_crd(char fname[], int M, int N, int nz, int _I[], int J[],
@@ -167,9 +172,12 @@ int mm_read_unsymmetric_sparse(const char *fname, int *M_, int *N_, int *nz_,
 
     /* reseve memory for matrices */
 
-    II = (int *)malloc(nz * sizeof(int));
-    J = (int *)malloc(nz * sizeof(int));
-    val = (double *)malloc(nz * sizeof(double));
+    // II = (int *)aligned_malloc(nz * sizeof(int));
+    // J = (int *)aligned_malloc(nz * sizeof(int));
+    // val = (double *)aligned_malloc(nz * sizeof(double));
+    II = (int *)mmio_aligned_malloc(nz * sizeof(int));
+    J = (int *)mmio_aligned_malloc(nz * sizeof(int));
+    val = (double *)mmio_aligned_malloc(nz * sizeof(double));
 
     *val_ = val;
     *I_ = II;

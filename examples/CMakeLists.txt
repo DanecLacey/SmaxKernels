@@ -40,7 +40,8 @@ message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 
 # Set architecture flags for all builds
-add_compile_options(-march=native)
+add_compile_options(-march=native -std=c++17)
+add_compile_options(-mavx2 -mno-avx512f) # TODO: Needed for Eigen... Why?
 
 # Compiler-specific flags for GNU and Intel compilers
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -63,6 +64,10 @@ endif()
 option(USE_OPENMP "Enable OpenMP support" ON)
 option(USE_MPI "Enable MPI support" OFF)
 option(USE_LIKWID "Enable LIKWID support" OFF)
+option(USE_EIGEN "Enable Eigen support" OFF)
+option(USE_MKL "Enable MKL support" OFF)
+option(USE_PETSC "Enable PETSC support" OFF)
+option(USE_TRILINOS "Enable Trilinos support" OFF)
 
 # === OpenMP Support ===
 if(USE_OPENMP)
@@ -117,6 +122,60 @@ if(USE_LIKWID)
     endif()
 else()
     message(STATUS "LIKWID support is disabled.")
+endif()
+
+# Enable Eigen support
+if(USE_EIGEN)
+    find_package(Eigen3 REQUIRED)
+    if(Eigen3_FOUND)
+        message(STATUS "Eigen found, Eigen3::Eigen is now available for linking.")
+    else()
+        message(FATAL_ERROR "Eigen requested but not found.")
+    endif()
+else()
+    message(STATUS "Eigen support is disabled.")
+endif()
+
+# Enable MKL support
+if(USE_MKL)
+    message(STATUS "MKL not supported at this time.") # TODO
+#     find_package(MKL REQUIRED)
+#     if(MKL_FOUND)
+#         message(STATUS "MKL found, enabling MKL support.")
+#         target_link_libraries(${LIBRARY_NAME} PUBLIC MKL::MKL)
+#     else()
+#         message(FATAL_ERROR "MKL requested but not found.")
+#     endif()
+# else()
+#     message(STATUS "MKL support is disabled.")
+endif()
+
+# Enable PETSC support
+if(USE_PETSC)
+    message(STATUS "PETSc not supported at this time.") # TODO
+#     find_package(PETSc REQUIRED)
+#     if(PETSc_FOUND)
+#         message(STATUS "PETSC found, enabling PETSC support.")
+#         target_link_libraries(${LIBRARY_NAME} PUBLIC PETSc::PETSc)
+#     else()
+#         message(FATAL_ERROR "PETSC requested but not found.")
+#     endif()
+# else()
+#     message(STATUS "PETSC support is disabled.")
+endif()
+
+# Enable Trilinos support
+if(USE_TRILINOS)
+    message(STATUS "Trilinos not supported at this time.") # TODO
+#     find_package(Trilinos REQUIRED)
+#     if(Trilinos_FOUND)
+#         message(STATUS "Trilinos found, enabling Trilinos support.")
+#         target_link_libraries(${LIBRARY_NAME} PUBLIC Trilinos::Trilinos)
+#     else()
+#         message(FATAL_ERROR "Trilinos requested but not found.")
+#     endif()
+# else()
+#     message(STATUS "Trilinos support is disabled.")
 endif()
 
 add_subdirectory(tests)

@@ -2,3 +2,5 @@ build/
 tests/test1
 tests/test2
 tests/error.txt
+third_party/
+examples/build/

@@ -60,7 +60,7 @@ message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 
 # Set architecture flags for all builds
-add_compile_options(-march=native)
+add_compile_options(-march=native -std=c++17)
 
 # Compiler-specific flags for GNU and Intel compilers
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

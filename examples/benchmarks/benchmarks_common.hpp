@@ -79,66 +79,73 @@ class BenchHarness {
     };
 };
 
+#define RUN_BENCH                                                              \
+    BenchHarness *bench_harness =                                              \
+        new BenchHarness(bench_name, lambda, n_iter, runtime, MIN_BENCH_TIME); \
+    std::cout << "Running bench: " << bench_name << std::endl;                 \
+    bench_harness->warmup();                                                   \
+    printf("Warmup complete\n");                                               \
+    bench_harness->bench();                                                    \
+    printf("Bench complete\n");
+
+#define INIT_MTX                                                               \
+    CliArgs *cli_args = new CliArgs;                                           \
+    parse_cli_args(cli_args, argc, argv);                                      \
+                                                                               \
+    COOMatrix *coo_mat = new COOMatrix;                                        \
+    coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
+                                                                               \
+    CRSMatrix *crs_mat = new CRSMatrix;                                        \
+    crs_mat->convert_coo_to_crs(coo_mat);
+
 #define PRINT_SPMV_BENCH                                                       \
-    {                                                                          \
-        std::cout << "----------------" << std::endl;                          \
-        std::cout << "--" << bench_name << " Bench--" << std::endl;            \
-        std::cout << cli_args->matrix_file_name << " with " << n_threads       \
-                  << " thread(s)" << std::endl;                                \
-        std::cout << "Runtime: " << runtime << std::endl;                      \
-        std::cout << "Iterations: " << n_iter << std::endl;                    \
+    std::cout << "----------------" << std::endl;                              \
+    std::cout << "--" << bench_name << " Bench--" << std::endl;                \
+    std::cout << cli_args->matrix_file_name << " with " << n_threads           \
+              << " thread(s)" << std::endl;                                    \
+    std::cout << "Runtime: " << runtime << std::endl;                          \
+    std::cout << "Iterations: " << n_iter << std::endl;                        \
                                                                                \
-        long flops_per_iter = crs_mat->nnz * SPMV_FLOPS_PER_NZ;                \
-        long iter_per_second = static_cast<long>(n_iter / runtime);            \
+    long flops_per_iter = crs_mat->nnz * SPMV_FLOPS_PER_NZ;                    \
+    long iter_per_second = static_cast<long>(n_iter / runtime);                \
                                                                                \
-        std::cout << "Performance: "                                           \
-                  << flops_per_iter * iter_per_second * F_TO_GF << " [GF/s]"   \
-                  << std::endl;                                                \
-        std::cout << "----------------" << std::endl;                          \
-    }
+    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
+              << " [GF/s]" << std::endl;                                       \
+    std::cout << "----------------" << std::endl;
 
 #define SPMV_CLEANUP                                                           \
-    {                                                                          \
-        delete cli_args;                                                       \
-        delete coo_mat;                                                        \
-        delete crs_mat;                                                        \
-        delete bench_harness;                                                  \
-        delete x;                                                              \
-        delete y;                                                              \
-    }
+    delete cli_args;                                                           \
+    delete coo_mat;                                                            \
+    delete crs_mat;                                                            \
+    delete bench_harness;
 
 #define PRINT_SPTSV_BENCH(bench_name, cli_args, n_threads, runtime, n_iter,    \
                           crs_mat_L)                                           \
-    {                                                                          \
-        std::cout << "----------------" << std::endl;                          \
-        std::cout << "--" << bench_name << " Bench--" << std::endl;            \
-        std::cout << (cli_args)->matrix_file_name << " with " << (n_threads)   \
-                  << " thread(s)" << std::endl;                                \
-        std::cout << "Runtime: " << (runtime) << std::endl;                    \
-        std::cout << "Iterations: " << (n_iter) << std::endl;                  \
+    std::cout << "----------------" << std::endl;                              \
+    std::cout << "--" << bench_name << " Bench--" << std::endl;                \
+    std::cout << (cli_args)->matrix_file_name << " with " << (n_threads)       \
+              << " thread(s)" << std::endl;                                    \
+    std::cout << "Runtime: " << (runtime) << std::endl;                        \
+    std::cout << "Iterations: " << (n_iter) << std::endl;                      \
                                                                                \
-        long flops_per_iter = ((crs_mat_L)->nnz * SPLTSV_FLOPS_PER_NZ +        \
-                               (crs_mat_L)->n_rows * SPLTSV_FLOPS_PER_ROW);    \
-        long iter_per_second = static_cast<long>((n_iter) / (runtime));        \
+    long flops_per_iter = ((crs_mat_L)->nnz * SPLTSV_FLOPS_PER_NZ +            \
+                           (crs_mat_L)->n_rows * SPLTSV_FLOPS_PER_ROW);        \
+    long iter_per_second = static_cast<long>((n_iter) / (runtime));            \
                                                                                \
-        std::cout << "Performance: "                                           \
-                  << flops_per_iter * iter_per_second * F_TO_GF << " [GF/s]"   \
-                  << std::endl;                                                \
-        std::cout << "----------------" << std::endl;                          \
-    }
+    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
+              << " [GF/s]" << std::endl;                                       \
+    std::cout << "----------------" << std::endl;
 
-#define SPTSV_CLEANUP(bench_harness)                                           \
-    {                                                                          \
-        delete cli_args;                                                       \
-        delete coo_mat;                                                        \
-        delete crs_mat;                                                        \
-        delete coo_mat_L;                                                      \
-        delete coo_mat_U;                                                      \
-        delete crs_mat_L;                                                      \
-        delete (bench_harness);                                                \
-        delete[] D;                                                            \
-        delete[] x;                                                            \
-        delete[] b;                                                            \
-    }
+#define SPTSV_CLEANUP                                                          \
+    delete cli_args;                                                           \
+    delete coo_mat;                                                            \
+    delete crs_mat;                                                            \
+    delete coo_mat_L;                                                          \
+    delete coo_mat_U;                                                          \
+    delete crs_mat_L;                                                          \
+    delete bench_harness;                                                      \
+    delete[] D;                                                                \
+    delete[] x;                                                                \
+    delete[] b;
 
 #endif // BENCHMARKS_COMMON_HPP

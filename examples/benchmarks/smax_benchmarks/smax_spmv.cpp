@@ -3,19 +3,8 @@
 #include "smax_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    // Read .mtx file and optional parameters for benchmark
-    CliArgs *cli_args = new CliArgs;
-    parse_cli_args(cli_args, argc, argv);
+    INIT_MTX;
 
-    // Read matrix with mmio
-    COOMatrix *coo_mat = new COOMatrix;
-    coo_mat->read_from_mtx(cli_args->matrix_file_name);
-
-    // Convert COO to CRS to pass void pointers to SMAX
-    CRSMatrix *crs_mat = new CRSMatrix;
-    crs_mat->convert_coo_to_crs(coo_mat);
-
-    // Initialize dense vectors
     DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
     DenseMatrix *y = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
 
@@ -47,17 +36,10 @@ int main(int argc, char *argv[]) {
     };
     std::string bench_name = "smax_spmv";
 
-    BenchHarness *bench_harness =
-        new BenchHarness(bench_name, lambda, n_iter, runtime, MIN_BENCH_TIME);
-
-    std::cout << "Running bench: " << bench_name << std::endl;
-
-    bench_harness->warmup();
-    printf("Warmup complete\n");
-
-    bench_harness->bench();
-    printf("Bench complete\n");
-
+    RUN_BENCH;
     PRINT_SPMV_BENCH;
     SPMV_CLEANUP;
+
+    delete x;
+    delete y;
 }
