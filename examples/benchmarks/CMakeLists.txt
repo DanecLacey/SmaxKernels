@@ -8,14 +8,26 @@ set(BENCHMARK_DIRS
     smax_benchmarks
 )
 
-# Iterate over each benchmark directory
+add_library(timing STATIC timing.cpp)
+target_include_directories(timing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Clear a global list to collect all app targets
+set(BENCHMARK_TARGETS)
+
 foreach(benchmark_dir IN LISTS BENCHMARK_DIRS)
-    # Add the subdirectory (it must have its own CMakeLists.txt)
+    # Add the benchmark subdirectory
     add_subdirectory(${benchmark_dir})
 
-    # Append the target list for this specific benchmark module
-    list(APPEND BENCHMARK_TARGETS ${${benchmark_dir}_TARGETS})
+    # Check if the subdirectory has set its _TARGETS variable
+    if(DEFINED ${benchmark_dir}_TARGETS)
+        # Append the targets
+        list(APPEND BENCHMARK_TARGETS ${${benchmark_dir}_TARGETS})
+    else()
+        message(WARNING "Benchmark directory '${benchmark_dir}' did not define ${benchmark_dir}_TARGETS")
+    endif()
 endforeach()
 
-# Propagate the list of benchmark targets to the parent scope
+# Export the list of benchmark targets to the parent scope
 set(BENCHMARK_TARGETS ${BENCHMARK_TARGETS} PARENT_SCOPE)
+
+

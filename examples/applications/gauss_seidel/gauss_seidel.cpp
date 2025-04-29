@@ -1,3 +1,4 @@
+#include "../../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
 #include "utils.hpp"
 
@@ -54,10 +55,10 @@ void solve(double *b, double *tmp, double *residual, int n_rows, int &n_iters,
 int main(void) {
     // Set up problem
     CRSMatrix A = create1DPoissonMatrixCRS(DOMAIN_SIZE);
-    DenseMatrix x = createDenseMatrix(A.n_cols, 0.0);
-    DenseMatrix b = createDenseMatrix(A.n_cols, 1.0);
-    DenseMatrix tmp = createDenseMatrix(A.n_cols, 0.0);
-    DenseMatrix residual = createDenseMatrix(A.n_cols, 0.0);
+    DenseMatrix *x = new DenseMatrix(A.n_cols, 1, 0.0);
+    DenseMatrix *b = new DenseMatrix(A.n_cols, 1, 1.0);
+    DenseMatrix *tmp = new DenseMatrix(A.n_cols, 1, 0.0);
+    DenseMatrix *residual = new DenseMatrix(A.n_cols, 1, 0.0);
     CRSMatrix D_plus_L;
     CRSMatrix U;
     extract_D_L_U(A, D_plus_L, U);
@@ -71,13 +72,13 @@ int main(void) {
     REGISTER_SPTSV_KERNEL("solve x <- (D+L)^{-1}(b-Ux)", D_plus_L, x, tmp);
 
     // Compute initial residual norm
-    double residual_norm =
-        check_residual(b.values, tmp.values, residual.values, b.n_rows, smax);
+    double residual_norm = check_residual(b->values, tmp->values,
+                                          residual->values, b->n_rows, smax);
     std::cout << "Initial residual norm: " << residual_norm << std::endl;
 
     // Iterate until convergence is reached
     int n_iters = 0;
-    solve(b.values, tmp.values, residual.values, b.n_rows, n_iters,
+    solve(b->values, tmp->values, residual->values, b->n_rows, n_iters,
           residual_norm, smax);
 
     if (residual_norm < TOL) {
@@ -88,6 +89,10 @@ int main(void) {
     }
     std::cout << "Final residual norm: " << residual_norm << std::endl;
 
+    delete x;
+    delete b;
+    delete tmp;
+    delete residual;
     delete smax;
     return 0;
 }

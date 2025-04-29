@@ -1,6 +1,6 @@
 add_executable(gauss_seidel gauss_seidel.cpp)
 
-# Correct way: link against the exported target
+# Link against the exported SMAX target
 target_link_libraries(gauss_seidel PRIVATE SMAX::smaxkernels)
 
 # Register the target for parent CMakeLists
