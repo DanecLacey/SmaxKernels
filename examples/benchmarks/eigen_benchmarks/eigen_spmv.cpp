@@ -2,9 +2,6 @@
 #include "../benchmarks_common.hpp"
 #include "eigen_benchmarks_common.hpp"
 
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-
 int main(int argc, char *argv[]) {
     INIT_MTX;
 
@@ -27,6 +24,7 @@ int main(int argc, char *argv[]) {
     eigen_mat.setFromTriplets(triplets.begin(), triplets.end());
 
     // Make lambda, and pass to the benchmarking harness
+    std::string bench_name = "eigen_spmv";
     double runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -36,15 +34,29 @@ int main(int argc, char *argv[]) {
         n_threads = omp_get_num_threads();
     }
 #endif
+#ifdef USE_LIKWID
+    LIKWID_MARKER_INIT;
+#pragma omp parallel
+    {
+        LIKWID_MARKER_REGISTER(bench_name.c_str());
+    }
+#endif
 
-    std::function<void(bool)> lambda = [eigen_mat, eigen_x,
+    // Just to take overhead of pinning away from timers
+    init_pin();
+
+    std::function<void(bool)> lambda = [bench_name, eigen_mat, eigen_x,
                                         &eigen_y](bool warmup) {
+        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
         eigen_y = eigen_mat * eigen_x;
+        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
     };
-
-    std::string bench_name = "eigen_spmv";
 
     RUN_BENCH;
     PRINT_SPMV_BENCH;
     SPMV_CLEANUP;
+
+#ifdef USE_LIKWID
+    LIKWID_MARKER_CLOSE;
+#endif
 }

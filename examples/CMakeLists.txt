@@ -6,9 +6,6 @@ project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
 find_package(SmaxKernels REQUIRED)
 
-add_library(mmio STATIC mmio.cpp)
-target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
 # Set default build type if not defined
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
@@ -42,6 +39,9 @@ message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 # Set architecture flags for all builds
 add_compile_options(-march=native -std=c++17)
 add_compile_options(-mavx2 -mno-avx512f) # TODO: Needed for Eigen... Why?
+# Sort of an ugly workaround
+add_library(mmio STATIC mmio.cpp)
+target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Compiler-specific flags for GNU and Intel compilers
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -67,7 +67,6 @@ option(USE_LIKWID "Enable LIKWID support" OFF)
 option(USE_EIGEN "Enable Eigen support" OFF)
 option(USE_MKL "Enable MKL support" OFF)
 option(USE_PETSC "Enable PETSC support" OFF)
-option(USE_TRILINOS "Enable Trilinos support" OFF)
 
 # === OpenMP Support ===
 if(USE_OPENMP)
@@ -116,7 +115,7 @@ if(USE_LIKWID)
         message(STATUS "LIKWID found, enabling LIKWID support.")
         add_compile_definitions(USE_LIKWID LIKWID_PERFMON)
         include_directories(${LIKWID_INCLUDES})
-        set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES})
+        set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES} CACHE INTERNAL "Libraries for LIKWID")
     else()
         message(FATAL_ERROR "LIKWID requested but not found.")
     endif()
@@ -138,44 +137,30 @@ endif()
 
 # Enable MKL support
 if(USE_MKL)
-    message(STATUS "MKL not supported at this time.") # TODO
-#     find_package(MKL REQUIRED)
-#     if(MKL_FOUND)
-#         message(STATUS "MKL found, enabling MKL support.")
-#         target_link_libraries(${LIBRARY_NAME} PUBLIC MKL::MKL)
-#     else()
-#         message(FATAL_ERROR "MKL requested but not found.")
-#     endif()
-# else()
-#     message(STATUS "MKL support is disabled.")
+    # Ensure we're using LP64 interface (32-bit integers) for MKL
+    # TODO: This isn't explicitly necessary. Make more flexible.
+    set(MKL_INTERFACE lp64)
+    find_package(MKL REQUIRED)
+    if(MKL_FOUND)
+        message(STATUS "MKL found, enabling MKL support.")
+    else()
+        message(FATAL_ERROR "MKL requested but not found.")
+    endif()
+else()
+    message(STATUS "MKL support is disabled.")
 endif()
 
 # Enable PETSC support
 if(USE_PETSC)
-    message(STATUS "PETSc not supported at this time.") # TODO
-#     find_package(PETSc REQUIRED)
-#     if(PETSc_FOUND)
-#         message(STATUS "PETSC found, enabling PETSC support.")
-#         target_link_libraries(${LIBRARY_NAME} PUBLIC PETSc::PETSc)
-#     else()
-#         message(FATAL_ERROR "PETSC requested but not found.")
-#     endif()
-# else()
-#     message(STATUS "PETSC support is disabled.")
-endif()
-
-# Enable Trilinos support
-if(USE_TRILINOS)
-    message(STATUS "Trilinos not supported at this time.") # TODO
-#     find_package(Trilinos REQUIRED)
-#     if(Trilinos_FOUND)
-#         message(STATUS "Trilinos found, enabling Trilinos support.")
-#         target_link_libraries(${LIBRARY_NAME} PUBLIC Trilinos::Trilinos)
-#     else()
-#         message(FATAL_ERROR "Trilinos requested but not found.")
-#     endif()
-# else()
-#     message(STATUS "Trilinos support is disabled.")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(PETSC REQUIRED IMPORTED_TARGET petsc)
+    if(PETSC_FOUND)
+        message(STATUS "PETSc found, enabling PETSC support.")
+    else()
+        message(FATAL_ERROR "PETSc requested but not found.")
+    endif()
+else()
+    message(STATUS "PETSc support is disabled.")
 endif()
 
 add_subdirectory(tests)

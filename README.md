@@ -29,12 +29,14 @@ mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH=$INSTALL_PATH
 make
 ```
-There are pre-made benchmarks of the kernels provided by `SmaxKernels`, as well as optional third party kernels to compare against, which are all found in `/benchmarks`. Very basic tests are provided in the `/tests` subdirectory. More realistic examples can be found in `/applications`.
+There are pre-made benchmarks of the kernels provided by `SmaxKernels`, as well as optional third party [[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html), [PETSc](https://petsc.org/release/)] kernels to compare against, which are all found in `/examples/benchmarks`. Very basic tests are provided in the `/examples/tests` subdirectory. More realistic examples can be found in `/examples/applications`.
 
 ## Notice ##
-This project is very much still in development, and many features may be unfinished or broken.
+This project is very much still in development, and many features may be unfinished, broken, or subject to change.
 * As of 2025.04.28 Only CPU-OpenMP implementations of SpMV, SpGEMM, and SpTSV are publicly available
 * MPK, SpADD, SpTR kernels are in progress, as well as MPI functionality
+* It is assumed that all optional third party libraries are installed in `$INSTALL_PATH`
+* The PETSc library is found via. the PkgConfig module. So if benchmarking PETSc kernels, you should configure PETSc with `--with-pkg-config=1` when building.
 
 ## Contributing ##
 Pull requests and issues are welcome. Please open an issue first to propose changes or feature additions.

@@ -1,4 +1,6 @@
 #ifndef MKL_BENCHMARKS_COMMON_HPP
 #define MKL_BENCHMARKS_COMMON_HPP
 
+#include <mkl.h>
+
 #endif // MKL_BENCHMARKS_COMMON_HPP

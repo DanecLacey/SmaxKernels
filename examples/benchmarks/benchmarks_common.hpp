@@ -5,6 +5,15 @@
 
 #include <functional>
 #include <iostream>
+#include <string>
+
+#ifdef USE_LIKWID
+#include <likwid-marker.h>
+#endif
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #define MIN_BENCH_TIME 1.0
 #define MIN_NUM_ITERS 1000
@@ -78,6 +87,32 @@ class BenchHarness {
         n_iters /= 2;
     };
 };
+
+void init_pin() {
+    int num_threads = 1;
+    double bogus = 0.0;
+
+#ifdef _OPENMP
+#pragma omp parallel
+    {
+        num_threads = omp_get_num_threads();
+    }
+#endif
+#pragma omp parallel for
+    for (int i = 0; i < num_threads; ++i) {
+        bogus += 1;
+    }
+
+    if (bogus < 100) {
+        printf(" ");
+    }
+}
+
+#ifdef USE_LIKWID
+#define IF_USE_LIKWID(cmd) cmd
+#else
+#define IF_USE_LIKWID(cmd)
+#endif
 
 #define RUN_BENCH                                                              \
     BenchHarness *bench_harness =                                              \

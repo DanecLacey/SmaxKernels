@@ -1,4 +1,6 @@
 #ifndef PETSC_BENCHMARKS_COMMON_HPP
 #define PETSC_BENCHMARKS_COMMON_HPP
 
+#include <petscksp.h>
+
 #endif // PETSC_BENCHMARKS_COMMON_HPP
