@@ -1,17 +1,30 @@
-add_executable(eigen_spmv eigen_spmv.cpp)
+# Get all .cpp files in the current directory
+file(GLOB CPP_FILES *.cpp)
 
-# Link against time stamping
-target_link_libraries(eigen_spmv PRIVATE SMAX::smaxkernels timing)
+# Create a list to store target names
+set(eigen_benchmarks_TARGETS)
 
-# Link against matrix market reader
-target_link_libraries(eigen_spmv PRIVATE SMAX::smaxkernels mmio)
+foreach(src ${CPP_FILES})
+    # Get the filename without the directory and extension
+    get_filename_component(exec_name ${src} NAME_WE)
 
-# Link against public Eigen CMake package 
-target_link_libraries(eigen_spmv PRIVATE Eigen3::Eigen)
+    # Add an executable for this source file
+    add_executable(${exec_name} ${src})
 
-# Optionally link against LIKWID
-if(USE_LIKWID)
-    target_link_libraries(eigen_spmv PRIVATE ${LIKWID_LIBRARIES_TO_LINK})
-endif()
+    # Link against common libraries
+    target_link_libraries(${exec_name} PRIVATE SMAX::smaxkernels timing mmio)
 
-set(eigen_benchmarks_TARGETS eigen_spmv PARENT_SCOPE)
+    # Link against Eigen CMake export package
+    target_link_libraries(${exec_name} PRIVATE Eigen3::Eigen)
+
+    # Optionally link against LIKWID
+    if(USE_LIKWID)
+        target_link_libraries(${exec_name} PRIVATE ${LIKWID_LIBRARIES_TO_LINK})
+    endif()
+
+    # Add to the list of targets
+    list(APPEND eigen_benchmarks_TARGETS ${exec_name})
+endforeach()
+
+# Export the list to parent scope
+set(eigen_benchmarks_TARGETS ${eigen_benchmarks_TARGETS} PARENT_SCOPE)

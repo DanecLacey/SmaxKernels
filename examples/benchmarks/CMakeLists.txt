@@ -1,8 +1,9 @@
 # List of subdirectories to include
-set(BENCHMARK_DIRS
-    smax_benchmarks
-)
+set(BENCHMARK_DIRS)
 
+if(USE_SMAX)
+    list(APPEND BENCHMARK_DIRS smax_benchmarks)
+endif()
 if(USE_EIGEN)
     list(APPEND BENCHMARK_DIRS eigen_benchmarks)
 endif()

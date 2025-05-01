@@ -1,17 +1,27 @@
-add_executable(smax_spmv smax_spmv.cpp)
+# Get all .cpp files in the current directory
+file(GLOB CPP_FILES *.cpp)
 
-# Link against time stamping
-target_link_libraries(smax_spmv PRIVATE SMAX::smaxkernels timing)
+# Create a list to store target names
+set(smax_benchmarks_TARGETS)
 
-# Link against matrix market reader
-target_link_libraries(smax_spmv PRIVATE SMAX::smaxkernels mmio)
+foreach(src ${CPP_FILES})
+    # Get the filename without the directory and extension
+    get_filename_component(exec_name ${src} NAME_WE)
 
-# Link against the exported SMAX target
-target_link_libraries(smax_spmv PRIVATE SMAX::smaxkernels)
+    # Add an executable for this source file
+    add_executable(${exec_name} ${src})
 
-# Optionally link against LIKWID
-if(USE_LIKWID)
-    target_link_libraries(smax_spmv PRIVATE ${LIKWID_LIBRARIES_TO_LINK})
-endif()
+    # Link against common libraries
+    target_link_libraries(${exec_name} PRIVATE SMAX::smaxkernels timing mmio)
 
-set(smax_benchmarks_TARGETS smax_spmv PARENT_SCOPE)
+    # Optionally link against LIKWID
+    if(USE_LIKWID)
+        target_link_libraries(${exec_name} PRIVATE ${LIKWID_LIBRARIES_TO_LINK})
+    endif()
+
+    # Add to the list of targets
+    list(APPEND smax_benchmarks_TARGETS ${exec_name})
+endforeach()
+
+# Export the list to parent scope
+set(smax_benchmarks_TARGETS ${smax_benchmarks_TARGETS} PARENT_SCOPE)
