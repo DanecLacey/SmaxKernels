@@ -1,17 +1,22 @@
-# Find all the .cpp files in the current directory and subdirectories
-file(GLOB_RECURSE TEST_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp")
+# Get all .cpp files in the current directory
+file(GLOB CPP_FILES *.cpp)
 
-# Loop through each source file and create an executable for each
-foreach(test_file ${TEST_SOURCES})
-    # Get the base name of the test file (without the extension)
-    get_filename_component(test_name ${test_file} NAME_WE)
+# Create a list to store target names
+set(test_TARGETS)
 
-    # Define an executable for each test file
-    add_executable(${test_name} ${test_file})
+foreach(src ${CPP_FILES})
+    # Get the filename without the directory and extension
+    get_filename_component(exec_name ${src} NAME_WE)
 
-    # Link the executable with the SmaxKernels library
-    target_link_libraries(${test_name} PRIVATE SMAX::smaxkernels)
+    # Add an executable for this source file
+    add_executable(${exec_name} ${src})
 
-    # Optionally, set any specific compile options or include directories for testing
-    target_include_directories(${test_name} PRIVATE ${SmaxKernels_INCLUDE_DIRS})
+    # Link against common libraries
+    target_link_libraries(${exec_name} PRIVATE SMAX::smaxkernels)
+
+    # Add to the list of targets
+    list(APPEND test_TARGETS ${exec_name})
 endforeach()
+
+# Export the list to parent scope
+set(test_TARGETS ${test_TARGETS} PARENT_SCOPE)

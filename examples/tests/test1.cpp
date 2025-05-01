@@ -1,11 +1,16 @@
+/**
+ * @file
+ * @brief Basic example demonstrating how to use the SMAX library to perform
+ * sparse matrix-vector multiplication (SpMV). Since SMAX performs "A op B = C",
+ * the use will always register something for A, B, and C.
+ */
 #include "SmaxKernels/interface.hpp"
 #include "utils.hpp"
 
 // Does not work! SMAX needs locations in memory, not literals
 // #define N_DENSE_COLS 64
 
-int main(void)
-{
+int main(void) {
     // Initialize operands
     int A_n_rows = 3;
     int A_n_cols = 3;
@@ -16,8 +21,7 @@ int main(void)
 
     int n_dense_cols = 2;
     double *X = new double[A_n_cols * n_dense_cols];
-    for (int i = 0; i < A_n_cols * n_dense_cols; ++i)
-    {
+    for (int i = 0; i < A_n_cols * n_dense_cols; ++i) {
         X[i] = 1.0;
     }
 
@@ -32,8 +36,8 @@ int main(void)
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format
-    smax->kernels["my_spmv"]->register_A(
-        &A_n_rows, &A_n_cols, &A_nnz, &A_col, &A_row_ptr, &A_val);
+    smax->kernels["my_spmv"]->register_A(&A_n_rows, &A_n_cols, &A_nnz, &A_col,
+                                         &A_row_ptr, &A_val);
     // X and Y are dense matrices
     smax->kernels["my_spmv"]->register_B(&A_n_cols, &n_dense_cols, &X);
     smax->kernels["my_spmv"]->register_C(&A_n_cols, &n_dense_cols, &Y);

@@ -1,0 +1,26 @@
+# Minimal Doxygen configuration
+
+# Project settings
+PROJECT_NAME           = "SmaxKernels"
+OUTPUT_DIRECTORY       = docs
+INPUT                  = .
+RECURSIVE              = YES
+EXCLUDE                = build third_party examples/build
+
+# Build options
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+
+# Comment styles
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+
+# File types
+FILE_PATTERNS          = *.cpp *.hpp
+
+# Strip path from files in output
+STRIP_FROM_PATH        = .
+
+# Optional: quiet output
+QUIET                  = YES
