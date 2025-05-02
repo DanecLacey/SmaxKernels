@@ -23,8 +23,11 @@ template <typename IT, typename VT>
 int spgemm_apply_cpu_core(SMAX::KernelContext context, SparseMatrix *A,
                           SparseMatrix *B, SparseMatrix *C) {
     IF_DEBUG(ErrorHandler::log("Entering spgemm_apply_cpu_core"));
+
+    // DL 02.05.25 NOTE: Enforcing two-phase approach Gustavson's algorithm
     symbolic_phase_cpu<IT, VT>(context, A, B, C);
     numerical_phase_cpu<IT, VT>(context, A, B, C);
+
     IF_DEBUG(ErrorHandler::log("Exiting spgemm_apply_cpu_core"));
     return 0;
 };

@@ -164,5 +164,10 @@ else()
 endif()
 
 add_subdirectory(tests)
+add_custom_target(tests DEPENDS ${test_targets})
+
 add_subdirectory(applications)
+add_custom_target(applications DEPENDS ${application_targets})
+
 add_subdirectory(benchmarks)
+add_custom_target(benchmarks DEPENDS ${benchmarks_targets})

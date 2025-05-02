@@ -1,5 +1,5 @@
-#ifndef COMMON_HPP
-#define COMMON_HPP
+#ifndef SMAX_COMMON_HPP
+#define SMAX_COMMON_HPP
 
 #include "error_handler.hpp"
 #include "macros.hpp"
@@ -61,4 +61,4 @@ typedef struct {
 
 } // namespace SMAX
 
-#endif // COMMON_HPP
+#endif // SMAX_COMMON_HPP

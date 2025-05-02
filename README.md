@@ -18,7 +18,7 @@ cd SmaxKernels
 export INSTALL_PATH=<install path>
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
-make && make install
+make install
 ```
 
 ## Usage Examples ##

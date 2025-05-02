@@ -2,7 +2,7 @@
 file(GLOB CPP_FILES *.cpp)
 
 # Create a list to store target names
-set(mkl_benchmarks_TARGETS)
+set(mkl_benchmarks_targets)
 
 foreach(src ${CPP_FILES})
     # Get the filename without the directory and extension
@@ -23,8 +23,8 @@ foreach(src ${CPP_FILES})
     endif()
 
     # Add to the list of targets
-    list(APPEND mkl_benchmarks_TARGETS ${exec_name})
+    list(APPEND mkl_benchmarks_targets ${exec_name})
 endforeach()
 
 # Export the list to parent scope
-set(mkl_benchmarks_TARGETS ${mkl_benchmarks_TARGETS} PARENT_SCOPE)
+set(mkl_benchmarks_targets ${mkl_benchmarks_targets} PARENT_SCOPE)

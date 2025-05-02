@@ -4,6 +4,7 @@
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
 #include "../sptsv_common.hpp"
+#include "sptsv_cpu_impl.hpp"
 
 namespace SMAX {
 namespace KERNELS {
@@ -35,28 +36,16 @@ int sptsv_apply_cpu_core(SMAX::KernelContext context, SparseMatrix *_A,
     VT *X = as<VT *>(_X->val);
     VT *Y = as<VT *>(_Y->val);
 
-    for (IT i = 0; i < A_n_rows; ++i) {
-        VT sum = 0.0;
-        VT diag = 0.0;
-
-        for (IT idx = A_row_ptr[i]; idx < A_row_ptr[i + 1]; ++idx) {
-            IT j = A_col[idx];
-            VT val = A_val[idx];
-
-            if (j < i) {
-                sum += val * X[j];
-            } else if (j == i) {
-                diag = val;
-            } else {
-                IF_DEBUG(SPTSVKernelErrorHandler::super_diag());
-            }
-        }
-
-        IF_DEBUG(
-            if (abs(diag) < 1e-16) { SPTSVKernelErrorHandler::zero_diag(); });
-
-        X[i] = (Y[i] - sum) / diag;
-    }
+#if 1
+    basic_sptsv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val, X,
+                        Y);
+#elif 0
+    // spltsv_lvl();
+#elif 0
+    // spltsv_2stage();
+#elif 0
+    // spltsv_mc();
+#endif
 
     IF_DEBUG(ErrorHandler::log("Exiting sptsv_apply_cpu_core"));
     return 0;

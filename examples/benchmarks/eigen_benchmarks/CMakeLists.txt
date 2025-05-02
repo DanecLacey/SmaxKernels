@@ -2,7 +2,7 @@
 file(GLOB CPP_FILES *.cpp)
 
 # Create a list to store target names
-set(eigen_benchmarks_TARGETS)
+set(eigen_benchmarks_targets)
 
 foreach(src ${CPP_FILES})
     # Get the filename without the directory and extension
@@ -23,8 +23,8 @@ foreach(src ${CPP_FILES})
     endif()
 
     # Add to the list of targets
-    list(APPEND eigen_benchmarks_TARGETS ${exec_name})
+    list(APPEND eigen_benchmarks_targets ${exec_name})
 endforeach()
 
 # Export the list to parent scope
-set(eigen_benchmarks_TARGETS ${eigen_benchmarks_TARGETS} PARENT_SCOPE)
+set(eigen_benchmarks_targets ${eigen_benchmarks_targets} PARENT_SCOPE)

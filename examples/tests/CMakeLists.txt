@@ -2,7 +2,7 @@
 file(GLOB CPP_FILES *.cpp)
 
 # Create a list to store target names
-set(test_TARGETS)
+set(test_targets)
 
 foreach(src ${CPP_FILES})
     # Get the filename without the directory and extension
@@ -15,8 +15,8 @@ foreach(src ${CPP_FILES})
     target_link_libraries(${exec_name} PRIVATE SMAX::smaxkernels)
 
     # Add to the list of targets
-    list(APPEND test_TARGETS ${exec_name})
+    list(APPEND test_targets ${exec_name})
 endforeach()
 
 # Export the list to parent scope
-set(test_TARGETS ${test_TARGETS} PARENT_SCOPE)
+set(test_targets ${test_targets} PARENT_SCOPE)

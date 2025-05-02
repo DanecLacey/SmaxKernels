@@ -17,22 +17,22 @@ add_library(timing STATIC timing.cpp)
 target_include_directories(timing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Clear a global list to collect all app targets
-set(BENCHMARK_TARGETS)
+set(benchmark_targets)
 
 foreach(benchmark_dir IN LISTS BENCHMARK_DIRS)
     # Add the benchmark subdirectory
     add_subdirectory(${benchmark_dir})
 
-    # Check if the subdirectory has set its _TARGETS variable
-    if(DEFINED ${benchmark_dir}_TARGETS)
+    # Check if the subdirectory has set its _targets variable
+    if(DEFINED ${benchmark_dir}_targets)
         # Append the targets
-        list(APPEND BENCHMARK_TARGETS ${${benchmark_dir}_TARGETS})
+        list(APPEND benchmark_targets ${${benchmark_dir}_targets})
     else()
-        message(WARNING "Benchmark directory '${benchmark_dir}' did not define ${benchmark_dir}_TARGETS")
+        message(WARNING "Benchmark directory '${benchmark_dir}' did not define ${benchmark_dir}_targets")
     endif()
 endforeach()
 
 # Export the list of benchmark targets to the parent scope
-set(BENCHMARK_TARGETS ${BENCHMARK_TARGETS} PARENT_SCOPE)
+set(benchmark_targets ${benchmark_targets} PARENT_SCOPE)
 
 

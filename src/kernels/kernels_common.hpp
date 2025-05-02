@@ -6,6 +6,8 @@
 namespace SMAX {
 namespace KERNELS {
 
+#define RESTRICT __restrict__
+
 class KernelErrorHandler : public ErrorHandler {
   public:
     static void kernel_fatal(const std::string &message) {
