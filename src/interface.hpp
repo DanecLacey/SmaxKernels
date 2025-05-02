@@ -12,14 +12,7 @@
 
 namespace SMAX {
 
-// class Interface;
-
 class Interface {
-  private:
-    // One function pointer and const char* for each kernel
-    int dispatch(std::function<int(KernelContext)>, const char *,
-                 std::function<int(KernelContext)>, const char *);
-
   public:
     std::unordered_map<std::string, Kernel *> kernels;
 

@@ -12,7 +12,7 @@ namespace SPTSV {
 namespace SPTSV_CPU {
 
 template <typename IT, typename VT>
-int sptsv_initialize_cpu_core(SMAX::KernelContext context, SparseMatrix *A,
+int sptsv_initialize_cpu_core(KernelContext context, SparseMatrix *A,
                               DenseMatrix *x, DenseMatrix *y) {
     IF_DEBUG(ErrorHandler::log("Entering sptsv_initialize_cpu_core"));
     // TODO
@@ -21,15 +21,15 @@ int sptsv_initialize_cpu_core(SMAX::KernelContext context, SparseMatrix *A,
 };
 
 template <typename IT, typename VT>
-int sptsv_apply_cpu_core(SMAX::KernelContext context, SparseMatrix *_A,
+int sptsv_apply_cpu_core(KernelContext context, SparseMatrix *_A,
                          DenseMatrix *_X, DenseMatrix *_Y) {
     IF_DEBUG(ErrorHandler::log("Entering sptsv_apply_cpu_core"));
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
-    IT A_n_rows = as<IT>(_A->n_rows);
-    IT A_n_cols = as<IT>(_A->n_cols);
-    IT A_nnz = as<IT>(_A->nnz);
+    int A_n_rows = _A->n_rows;
+    int A_n_cols = _A->n_cols;
+    int A_nnz = _A->nnz;
     IT *A_col = as<IT *>(_A->col);
     IT *A_row_ptr = as<IT *>(_A->row_ptr);
     VT *A_val = as<VT *>(_A->val);
@@ -52,7 +52,7 @@ int sptsv_apply_cpu_core(SMAX::KernelContext context, SparseMatrix *_A,
 }
 
 template <typename IT, typename VT>
-int sptsv_finalize_cpu_core(SMAX::KernelContext context, SparseMatrix *A,
+int sptsv_finalize_cpu_core(KernelContext context, SparseMatrix *A,
                             DenseMatrix *x, DenseMatrix *y) {
     IF_DEBUG(ErrorHandler::log("Entering sptsv_finalize_cpu_core"));
     // TODO

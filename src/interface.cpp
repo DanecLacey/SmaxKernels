@@ -8,7 +8,9 @@
 #include <string>
 
 namespace SMAX {
+
 Interface::Interface() {
+
     // Initialize interface timers
     this->timers = new Timers{};
     init_timers(this->timers);
@@ -19,6 +21,7 @@ Interface::Interface() {
 }
 
 Interface::~Interface() {
+
     // Delete each registered kernel
     for (auto &kv : kernels)
         delete kv.second;
@@ -31,10 +34,12 @@ Interface::~Interface() {
 int Interface::register_kernel(const std::string &name, KernelType type,
                                PlatformType platform, IntType int_type,
                                FloatType float_type) {
+
     this->kernels[name] = new Kernel(type, platform, int_type, float_type);
     this->kernels[name]->A = new SparseMatrix{};
     this->kernels[name]->B = new SparseMatrix{};
     this->kernels[name]->C = new SparseMatrix{};
+    this->kernels[name]->C_ref = new SparseMatrixRef{};
     this->kernels[name]->X = new DenseMatrix{};
     this->kernels[name]->Y = new DenseMatrix{};
 
@@ -42,6 +47,7 @@ int Interface::register_kernel(const std::string &name, KernelType type,
 }
 
 void Interface::print_timers() {
+
     this->timers->total_time->stop();
 
     // TODO: Accumulate time from each registered kernel

@@ -10,7 +10,10 @@ namespace SPMV {
 
 class SPMVKernelErrorHandler : public KernelErrorHandler {
   public:
-    // TODO: Kernel specific sanity checks and errors
+    template <typename IT>
+    static void col_oob(IT col_value, int j, int A_n_cols) {
+        KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SPMV");
+    }
 };
 
 } // namespace SPMV

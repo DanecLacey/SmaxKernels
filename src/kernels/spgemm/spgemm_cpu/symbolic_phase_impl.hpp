@@ -11,12 +11,12 @@ namespace SPGEMM {
 namespace SPGEMM_CPU {
 
 template <typename IT, typename VT>
-inline void padded_symbolic_phase(IT A_n_rows, IT A_n_cols, IT A_nnz,
+inline void padded_symbolic_phase(int A_n_rows, int A_n_cols, int A_nnz,
                                   IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
-                                  VT *RESTRICT A_val, IT B_n_rows, IT B_n_cols,
-                                  IT B_nnz, IT *RESTRICT B_col,
+                                  VT *RESTRICT A_val, int B_n_rows,
+                                  int B_n_cols, int B_nnz, IT *RESTRICT B_col,
                                   IT *RESTRICT B_row_ptr, VT *RESTRICT B_val,
-                                  IT &C_n_rows, IT &C_n_cols, IT &C_nnz,
+                                  int &C_n_rows, int &C_n_cols, int &C_nnz,
                                   IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
 
     // Enforce dimensions of C
@@ -25,15 +25,15 @@ inline void padded_symbolic_phase(IT A_n_rows, IT A_n_cols, IT A_nnz,
     C_nnz = 0;
 
     // Count nnz in each row of B
-    IT *B_nnz_per_row = new IT[B_n_rows];
+    int *B_nnz_per_row = new int[B_n_rows];
 #pragma omp parallel
     {
 #pragma omp for
-        for (IT i = 0; i < B_n_rows; ++i) {
+        for (int i = 0; i < B_n_rows; ++i) {
             B_nnz_per_row[i] = 0;
         }
 #pragma omp for
-        for (IT i = 0; i < B_n_rows; ++i) {
+        for (int i = 0; i < B_n_rows; ++i) {
             for (IT j = B_row_ptr[i]; j < B_row_ptr[i + 1]; ++j) {
                 ++B_nnz_per_row[i];
             }
@@ -41,17 +41,17 @@ inline void padded_symbolic_phase(IT A_n_rows, IT A_n_cols, IT A_nnz,
     }
 
     // Collect upper-bound offsets for each thread
-    GET_THREAD_COUNT(IT, num_threads)
-    IT *tl_ub = new IT[num_threads];
-    IT *tl_offsets = new IT[num_threads];
-    for (IT tid = 0; tid < num_threads; ++tid) {
+    GET_THREAD_COUNT(int, num_threads)
+    int *tl_ub = new int[num_threads];
+    int *tl_offsets = new int[num_threads];
+    for (int tid = 0; tid < num_threads; ++tid) {
         tl_ub[tid] = 0;
         tl_offsets[tid] = 0;
     }
 #pragma omp parallel for
-    for (IT i = 0; i < A_n_rows; ++i) {
-        IT upper_C_row_size = 0;
-        GET_THREAD_ID(IT, tid)
+    for (int i = 0; i < A_n_rows; ++i) {
+        int upper_C_row_size = 0;
+        GET_THREAD_ID(int, tid)
         for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
             IT col = A_col[j];
             upper_C_row_size += B_nnz_per_row[col];
@@ -59,39 +59,39 @@ inline void padded_symbolic_phase(IT A_n_rows, IT A_n_cols, IT A_nnz,
         tl_ub[tid] += upper_C_row_size;
     }
 
-    for (IT tid = 0; tid < num_threads; ++tid) {
+    for (int tid = 0; tid < num_threads; ++tid) {
         tl_offsets[tid + 1] = tl_offsets[tid + 1] + tl_ub[tid];
     }
 
     // Allocate padded CRS arrays for C
-    IT upper_nnz_bound = tl_offsets[num_threads];
+    int upper_nnz_bound = tl_offsets[num_threads];
     IT *padded_C_col = new IT[upper_nnz_bound];
     VT *padded_C_val = new VT[upper_nnz_bound];
     bool **used_cols = new bool *[num_threads];
-    IT *tl_nnz = new IT[num_threads];
+    int *tl_nnz = new int[num_threads];
 #pragma omp parallel for
-    for (IT tid = 0; tid < num_threads; ++tid) {
+    for (int tid = 0; tid < num_threads; ++tid) {
         tl_nnz[tid] = 0;
         used_cols[tid] = new bool[upper_nnz_bound];
-        for (IT i = 0; i < upper_nnz_bound; ++i) {
+        for (int i = 0; i < upper_nnz_bound; ++i) {
             used_cols[tid][i] = false;
         }
     }
     IT *C_nnz_per_row = new IT[C_n_rows];
 #pragma omp parallel for
-    for (IT i = 0; i < C_n_rows; ++i) {
+    for (int i = 0; i < C_n_rows; ++i) {
         C_nnz_per_row[i] = 0;
     }
 
 // Padded Gustavson's algorithm (symbolic)
 #pragma omp parallel
     {
-        GET_THREAD_ID(IT, tid)
-        IT offset = tl_offsets[tid];
-        IT tl_previous_nnz = tl_nnz[tid];
+        GET_THREAD_ID(int, tid)
+        int offset = tl_offsets[tid];
+        int tl_previous_nnz = tl_nnz[tid];
         bool *tl_used_cols = used_cols[tid];
 #pragma omp for schedule(static)
-        for (IT i = 0; i < A_n_rows; ++i) {
+        for (int i = 0; i < A_n_rows; ++i) {
             for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
                 IT left_col = A_col[j];
                 for (IT k = B_row_ptr[left_col]; k < B_row_ptr[left_col + 1];
@@ -107,7 +107,7 @@ inline void padded_symbolic_phase(IT A_n_rows, IT A_n_cols, IT A_nnz,
             }
             // Reset used_cols for next row
             if (tl_nnz[tid] > tl_previous_nnz) {
-                for (IT j = tl_previous_nnz; j < tl_nnz[tid]; ++j) {
+                for (int j = tl_previous_nnz; j < tl_nnz[tid]; ++j) {
                     tl_used_cols[padded_C_col[offset + j]] = false;
                 }
             }
@@ -119,14 +119,14 @@ inline void padded_symbolic_phase(IT A_n_rows, IT A_n_cols, IT A_nnz,
     C_row_ptr = new IT[C_n_rows + 1];
     C_row_ptr[0] = 0;
     // NOTE: Does this need to be parallelized?
-    for (IT i = 0; i < C_n_rows + 1; ++i) {
+    for (int i = 0; i < C_n_rows + 1; ++i) {
         C_row_ptr[i + 1] = C_row_ptr[i] + C_nnz_per_row[i];
     }
 
     // Compute nnz displacement array
-    IT *C_nnz_displacement = new IT[num_threads];
+    int *C_nnz_displacement = new int[num_threads];
     C_nnz_displacement[0] = 0;
-    for (IT tid = 1; tid < num_threads; ++tid) {
+    for (int tid = 1; tid < num_threads; ++tid) {
         C_nnz_displacement[tid + 1] = C_nnz_displacement[tid + 1] + tl_nnz[tid];
     }
 
@@ -138,9 +138,9 @@ inline void padded_symbolic_phase(IT A_n_rows, IT A_n_cols, IT A_nnz,
 // Compress padded_C_col to C_col
 #pragma omp parallel
     {
-        GET_THREAD_ID(IT, tid)
-        IT offset = C_nnz_displacement[tid];
-        for (IT i = 0; i < tl_nnz[tid]; ++i) {
+        GET_THREAD_ID(int, tid)
+        int offset = C_nnz_displacement[tid];
+        for (int i = 0; i < tl_nnz[tid]; ++i) {
             C_col[C_nnz_displacement[tid] + i] = padded_C_col[offset + i];
         }
     }

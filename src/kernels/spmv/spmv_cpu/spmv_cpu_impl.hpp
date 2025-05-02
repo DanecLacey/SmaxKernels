@@ -11,36 +11,37 @@ namespace SPMV {
 namespace SPMV_CPU {
 
 template <typename IT, typename VT>
-inline void basic_spmv(IT A_n_rows, IT A_n_cols, IT A_nnz, IT *RESTRICT A_col,
-                       IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
-                       VT *RESTRICT X, VT *RESTRICT Y, IT block_vector_size) {
+inline void basic_spmv(int A_n_rows, int A_n_cols, int A_nnz,
+                       IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
+                       VT *RESTRICT A_val, VT *RESTRICT X, VT *RESTRICT Y,
+                       int block_vector_size) {
 
     // TODO: Pretty ugly way to do this
     if (block_vector_size > 1) {
 // Assuming colwise layout for now
 #pragma omp for schedule(static)
-        for (IT row = 0; row < A_n_rows; ++row) {
+        for (int row = 0; row < A_n_rows; ++row) {
             VT tmp[block_vector_size];
 
-            for (IT vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
+            for (int vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
                 tmp[vec_idx] = VT{};
             }
 
             for (IT j = A_row_ptr[row]; j < A_row_ptr[row + 1]; ++j) {
 #pragma omp simd
-                for (IT vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
+                for (int vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
                     tmp[vec_idx] +=
                         A_val[j] * X[(A_n_rows * vec_idx) + A_col[j]];
                 }
             }
 
-            for (IT vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
+            for (int vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
                 Y[row + (vec_idx * A_n_rows)] = tmp[vec_idx];
             }
         }
     } else {
 #pragma omp parallel for schedule(static)
-        for (IT row = 0; row < A_n_rows; ++row) {
+        for (int row = 0; row < A_n_rows; ++row) {
             VT sum{};
 
 #pragma omp simd
@@ -52,7 +53,9 @@ inline void basic_spmv(IT A_n_rows, IT A_n_cols, IT A_nnz, IT *RESTRICT A_col,
                     printf("A_col[j] = %d\n", A_col[j]);
                     printf("X[A_col[j]] = %f\n", X[A_col[j]]);
 #endif
-                );
+                    if (A_col[j] < 0 || A_col[j] >= A_n_cols)
+                        SPMVKernelErrorHandler::col_oob<IT>(A_col[j], j,
+                                                            A_n_cols););
 
                 sum += A_val[j] * X[A_col[j]];
             }

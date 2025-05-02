@@ -12,12 +12,17 @@ class SPTSVKernelErrorHandler : public KernelErrorHandler {
   public:
     static void zero_diag() {
         const std::string message = "Zero detected on diagonal.";
-        kernel_fatal("[SPGEMMError] " + message);
+        kernel_fatal("[SPTSV] " + message);
     }
 
     static void super_diag() {
         const std::string message = "Nonzero above diagonal detected.";
-        kernel_fatal("[SPGEMMError] " + message);
+        kernel_fatal("[SPTSV] " + message);
+    }
+
+    template <typename IT>
+    static void col_oob(IT col_value, int j, int A_n_cols) {
+        KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SPTSV");
     }
 };
 

@@ -29,13 +29,23 @@ typedef struct {
 
 // For simplicity, assume all matrices are in CSR format
 typedef struct {
-    void *n_rows;
-    void *n_cols;
-    void *nnz;
+    int n_rows;
+    int n_cols;
+    int nnz;
     void **col;
     void **row_ptr;
     void **val;
 } SparseMatrix;
+
+// Workaround for SPGEMM result matrix
+typedef struct {
+    int *n_rows;
+    int *n_cols;
+    int *nnz;
+    void **col;
+    void **row_ptr;
+    void **val;
+} SparseMatrixRef;
 
 // TODO
 // // Available sparse matrix storage formats
@@ -46,8 +56,8 @@ typedef struct {
 // };
 
 typedef struct {
-    void *n_rows;
-    void *n_cols;
+    int n_rows;
+    int n_cols;
     void **val;
 } DenseMatrix;
 

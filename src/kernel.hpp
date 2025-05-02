@@ -22,6 +22,7 @@ class Kernel {
     SparseMatrix *A;
     SparseMatrix *B;
     SparseMatrix *C;
+    SparseMatrixRef *C_ref;
     DenseMatrix *X;
     DenseMatrix *Y;
     KernelContext context;
@@ -38,6 +39,7 @@ class Kernel {
         delete[] A;
         delete[] B;
         delete[] C;
+        delete[] C_ref;
         delete[] X;
         delete[] Y;
     }
@@ -124,7 +126,7 @@ class Kernel {
             return ret;
         }
         case SPGEMM: {
-            int ret = SMAX::KERNELS::spgemm_register_C(this->C, user_args);
+            int ret = SMAX::KERNELS::spgemm_register_C(this->C_ref, user_args);
             va_end(user_args);
             // this->timers->register_C_time->stop();
             return ret;
@@ -177,7 +179,7 @@ class Kernel {
             "spmv_initialize",
             [this](auto context) {
                 return SMAX::KERNELS::spgemm_initialize(context, this->A,
-                                                        this->B, this->C);
+                                                        this->B, this->C_ref);
             },
             "spgemm_initialize",
             [this](auto context) {
@@ -199,7 +201,7 @@ class Kernel {
             "spmv_apply",
             [this](auto context) {
                 return SMAX::KERNELS::spgemm_apply(context, this->A, this->B,
-                                                   this->C);
+                                                   this->C_ref);
             },
             "spgemm_apply",
             [this](auto context) {
@@ -221,7 +223,7 @@ class Kernel {
             "spmv_finalize",
             [this](auto context) {
                 return SMAX::KERNELS::spgemm_finalize(context, this->A, this->B,
-                                                      this->C);
+                                                      this->C_ref);
             },
             "spgemm_finalize",
             [this](auto context) {

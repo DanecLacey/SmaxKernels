@@ -34,22 +34,26 @@ namespace SPTSV_CPU {
 // }
 
 template <typename IT, typename VT>
-inline void basic_sptsv(IT A_n_rows, IT A_n_cols, IT A_nnz, IT *RESTRICT A_col,
-                        IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
-                        VT *RESTRICT X, VT *RESTRICT Y) {
-    for (IT i = 0; i < A_n_rows; ++i) {
+inline void basic_sptsv(int A_n_rows, int A_n_cols, int A_nnz,
+                        IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
+                        VT *RESTRICT A_val, VT *RESTRICT X, VT *RESTRICT Y) {
+    for (int i = 0; i < A_n_rows; ++i) {
         VT sum = 0.0;
         VT diag = 0.0;
 
-        for (IT idx = A_row_ptr[i]; idx < A_row_ptr[i + 1]; ++idx) {
-            IT j = A_col[idx];
-            VT val = A_val[idx];
+        for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
+            IF_DEBUG(if (A_col[j] < 0 || A_col[j] >= A_n_cols)
+                         SPTSVKernelErrorHandler::col_oob<IT>(A_col[j], j,
+                                                              A_n_cols););
+            VT val = A_val[j];
 
-            if (j < i) {
-                sum += val * X[j];
-            } else if (j == i) {
+            if (A_col[j] < i) {
+                sum += val * X[A_col[j]];
+            } else if (A_col[j] == i) {
                 diag = val;
             } else {
+                IF_DEBUG(
+                    printf("row: %d, col: %d, val: %f\n", i, A_col[j], val));
                 IF_DEBUG(SPTSVKernelErrorHandler::super_diag());
             }
         }
