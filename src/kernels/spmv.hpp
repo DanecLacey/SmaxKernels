@@ -38,15 +38,17 @@ int spmv_register_C(DenseMatrix *Y, va_list args) {
     return 0;
 }
 
-int spmv_dispatch(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                  DenseMatrix *Y,
-                  std::function<int(KernelContext, SparseMatrix *,
-                                    DenseMatrix *, DenseMatrix *)>
-                      cpu_func,
-                  const char *label) {
+int spmv_dispatch(
+    KernelContext context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y,
+    int A_offset, int X_offset, int Y_offset,
+    std::function<int(KernelContext, SparseMatrix *, DenseMatrix *,
+                      DenseMatrix *, int, int, int)>
+        cpu_func,
+    const char *label) {
     switch (context.platform_type) {
     case SMAX::CPU:
-        CHECK_ERROR(cpu_func(context, A, X, Y), label);
+        CHECK_ERROR(cpu_func(context, A, X, Y, A_offset, X_offset, Y_offset),
+                    label);
         break;
     default:
         std::cerr << "Error: Platform not supported\n";
@@ -56,31 +58,40 @@ int spmv_dispatch(KernelContext context, SparseMatrix *A, DenseMatrix *X,
 }
 
 int spmv_initialize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                    DenseMatrix *Y) {
+                    DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+
     return spmv_dispatch(
-        context, A, X, Y,
-        [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y) {
-            return SPMV::spmv_initialize_cpu(context, A, X, Y);
+        context, A, X, Y, A_offset, X_offset, Y_offset,
+        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
+           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+            return SPMV::spmv_initialize_cpu(context, A, X, Y, A_offset,
+                                             X_offset, Y_offset);
         },
         "spmv_initialize");
 }
 
 int spmv_apply(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-               DenseMatrix *Y) {
+               DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+
     return spmv_dispatch(
-        context, A, X, Y,
-        [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y) {
-            return SPMV::spmv_apply_cpu(context, A, X, Y);
+        context, A, X, Y, A_offset, X_offset, Y_offset,
+        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
+           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+            return SPMV::spmv_apply_cpu(context, A, X, Y, A_offset, X_offset,
+                                        Y_offset);
         },
         "spmv_apply");
 }
 
 int spmv_finalize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                  DenseMatrix *Y) {
+                  DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+
     return spmv_dispatch(
-        context, A, X, Y,
-        [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y) {
-            return SPMV::spmv_finalize_cpu(context, A, X, Y);
+        context, A, X, Y, A_offset, X_offset, Y_offset,
+        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
+           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+            return SPMV::spmv_finalize_cpu(context, A, X, Y, A_offset, X_offset,
+                                           Y_offset);
         },
         "spmv_finalize");
 }

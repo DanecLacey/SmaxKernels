@@ -10,8 +10,9 @@ namespace SPMV {
 namespace SPMV_CPU {
 
 template <typename IT, typename VT>
-int spmv_initialize_cpu_core(KernelContext context, SparseMatrix *A,
-                             DenseMatrix *x, DenseMatrix *y) {
+int spmv_initialize_cpu_core(KernelContext context, SparseMatrix *_A,
+                             DenseMatrix *_X, DenseMatrix *_Y, int A_offset,
+                             int X_offset, int Y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_initialize_cpu_core"));
     // TODO
     IF_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cpu_core"));
@@ -20,7 +21,8 @@ int spmv_initialize_cpu_core(KernelContext context, SparseMatrix *A,
 
 template <typename IT, typename VT>
 int spmv_apply_cpu_core(KernelContext context, SparseMatrix *_A,
-                        DenseMatrix *_X, DenseMatrix *_Y) {
+                        DenseMatrix *_X, DenseMatrix *_Y, int A_offset,
+                        int X_offset, int Y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_apply_cpu_core"));
 
     // Cast void pointers to the correct types with "as"
@@ -36,8 +38,8 @@ int spmv_apply_cpu_core(KernelContext context, SparseMatrix *_A,
     int block_vector_size = _X->n_cols;
 
 #if 1
-    basic_spmv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val, X, Y,
-                       block_vector_size);
+    basic_spmv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val,
+                       X + X_offset, Y_offset, block_vector_size);
 #endif
 
     IF_DEBUG(ErrorHandler::log("Exiting spmv_apply_cpu_core"));
@@ -46,7 +48,8 @@ int spmv_apply_cpu_core(KernelContext context, SparseMatrix *_A,
 
 template <typename IT, typename VT>
 int spmv_finalize_cpu_core(KernelContext context, SparseMatrix *A,
-                           DenseMatrix *x, DenseMatrix *y) {
+                           DenseMatrix *X, DenseMatrix *Y, int A_offset,
+                           int X_offset, int Y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_finalize_cpu_core"));
     // TODO
     IF_DEBUG(ErrorHandler::log("Exiting spmv_finalize_cpu_core"));

@@ -16,6 +16,10 @@ class Interface {
   public:
     std::unordered_map<std::string, Kernel *> kernels;
 
+    // #ifdef DEBUG_MODE
+    //     Kernel *&operator[](const std::string &name);
+    // #endif
+
     int register_kernel(const std::string &, KernelType, PlatformType,
                         IntType = UINT32, FloatType = FLOAT64);
 

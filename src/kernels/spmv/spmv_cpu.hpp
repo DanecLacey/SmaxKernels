@@ -12,40 +12,47 @@ namespace SPMV {
 // The operator() function is called in the dispatch_spmv function to execute
 // the correct function for the given types.
 template <typename IT, typename VT> struct SpmvInit {
-    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *x,
-                   DenseMatrix *y) {
-        return SPMV_CPU::spmv_initialize_cpu_core<IT, VT>(context, A, x, y);
+    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+                   DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+        return SPMV_CPU::spmv_initialize_cpu_core<IT, VT>(
+            context, A, X, Y, A_offset, X_offset, Y_offset);
     }
 };
 
 template <typename IT, typename VT> struct SpmvApply {
-    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *x,
-                   DenseMatrix *y) {
-        return SPMV_CPU::spmv_apply_cpu_core<IT, VT>(context, A, x, y);
+    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+                   DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+        return SPMV_CPU::spmv_apply_cpu_core<IT, VT>(context, A, X, Y, A_offset,
+                                                     X_offset, Y_offset);
     }
 };
 
 template <typename IT, typename VT> struct SpmvFinalize {
-    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *x,
-                   DenseMatrix *y) {
-        return SPMV_CPU::spmv_finalize_cpu_core<IT, VT>(context, A, x, y);
+    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+                   DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+        return SPMV_CPU::spmv_finalize_cpu_core<IT, VT>(
+            context, A, X, Y, A_offset, X_offset, Y_offset);
     }
 };
 
 // The dispatcher function uses the above () operator with the correct
 // integer and floating point types.
 template <template <typename IT, typename VT> class Func>
-int spmv_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *x,
-                      DenseMatrix *y) {
+int spmv_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+                      DenseMatrix *Y, int A_offset, int X_offset,
+                      int Y_offset) {
     switch (context.float_type) {
     case FLOAT32:
         switch (context.int_type) {
         case UINT16:
-            return Func<uint16_t, float>()(context, A, x, y);
+            return Func<uint16_t, float>()(context, A, X, Y, A_offset, X_offset,
+                                           Y_offset);
         case UINT32:
-            return Func<uint32_t, float>()(context, A, x, y);
+            return Func<uint32_t, float>()(context, A, X, Y, A_offset, X_offset,
+                                           Y_offset);
         case UINT64:
-            return Func<uint64_t, float>()(context, A, x, y);
+            return Func<uint64_t, float>()(context, A, X, Y, A_offset, X_offset,
+                                           Y_offset);
         default:
             std::cerr << "Error: Int type not supported\n";
             return 1;
@@ -53,11 +60,14 @@ int spmv_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *x,
     case FLOAT64:
         switch (context.int_type) {
         case UINT16:
-            return Func<uint16_t, double>()(context, A, x, y);
+            return Func<uint16_t, double>()(context, A, X, Y, A_offset,
+                                            X_offset, Y_offset);
         case UINT32:
-            return Func<uint32_t, double>()(context, A, x, y);
+            return Func<uint32_t, double>()(context, A, X, Y, A_offset,
+                                            X_offset, Y_offset);
         case UINT64:
-            return Func<uint64_t, double>()(context, A, x, y);
+            return Func<uint64_t, double>()(context, A, X, Y, A_offset,
+                                            X_offset, Y_offset);
         default:
             std::cerr << "Unsupported int type\n";
             return 1;
@@ -71,17 +81,22 @@ int spmv_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *x,
 }
 
 // These invoke the dispatcher function with the correct template parameters
-int spmv_initialize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *x,
-                        DenseMatrix *y) {
-    return spmv_dispatch_cpu<SpmvInit>(context, A, x, y);
+int spmv_initialize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+                        DenseMatrix *Y, int A_offset, int X_offset,
+                        int Y_offset) {
+    return spmv_dispatch_cpu<SpmvInit>(context, A, X, Y, A_offset, X_offset,
+                                       Y_offset);
 }
-int spmv_apply_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *x,
-                   DenseMatrix *y) {
-    return spmv_dispatch_cpu<SpmvApply>(context, A, x, y);
+int spmv_apply_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+                   DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+    return spmv_dispatch_cpu<SpmvApply>(context, A, X, Y, A_offset, X_offset,
+                                        Y_offset);
 }
-int spmv_finalize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *x,
-                      DenseMatrix *y) {
-    return spmv_dispatch_cpu<SpmvFinalize>(context, A, x, y);
+int spmv_finalize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+                      DenseMatrix *Y, int A_offset, int X_offset,
+                      int Y_offset) {
+    return spmv_dispatch_cpu<SpmvFinalize>(context, A, X, Y, A_offset, X_offset,
+                                           Y_offset);
 }
 
 } // namespace SPMV

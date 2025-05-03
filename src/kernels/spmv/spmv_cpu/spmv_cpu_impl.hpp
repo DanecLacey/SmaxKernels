@@ -49,11 +49,11 @@ inline void basic_spmv(int A_n_rows, int A_n_cols, int A_nnz,
 
                 IF_DEBUG(
 #if DEBUG_LEVEL == 3
-                    printf("A_val[j] = %f\n", A_val[j]);
-                    printf("A_col[j] = %d\n", A_col[j]);
-                    printf("X[A_col[j]] = %f\n", X[A_col[j]]);
+                    printf("A_val[%d] = %f\n", j, A_val[j]);
+                    printf("A_col[%d] = %d\n", j, A_col[j]);
+                    printf("X[A_col[%d]] = %f\n", j, X[A_col[j]]);
 #endif
-                    if (A_col[j] < 0 || A_col[j] >= A_n_cols)
+                    if (A_col[j] < 0 || A_col[j] >= (IT)A_n_cols)
                         SPMVKernelErrorHandler::col_oob<IT>(A_col[j], j,
                                                             A_n_cols););
 
