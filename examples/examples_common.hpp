@@ -11,6 +11,21 @@
 #include <omp.h>
 #endif
 
+#define INIT_MTX                                                               \
+    CliArgs *cli_args = new CliArgs;                                           \
+    parse_cli_args(cli_args, argc, argv);                                      \
+                                                                               \
+    COOMatrix *coo_mat = new COOMatrix;                                        \
+    coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
+                                                                               \
+    CRSMatrix *crs_mat = new CRSMatrix;                                        \
+    crs_mat->convert_coo_to_crs(coo_mat);
+
+#define DESTROY_MTX                                                            \
+    delete cli_args;                                                           \
+    delete coo_mat;                                                            \
+    delete crs_mat;
+
 inline void sort_perm(int *arr, int *perm, int len, bool rev = false) {
     if (rev == false) {
         std::stable_sort(perm + 0, perm + len, [&](const int &a, const int &b) {

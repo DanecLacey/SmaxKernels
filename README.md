@@ -22,14 +22,17 @@ make install
 ```
 
 ## Usage Examples ##
-A few basic usage examples are provided in the `/examples` directory.
+Basic usage examples are provided in the `/examples` directory.
 ```bash
 cd ../examples
 mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH=$INSTALL_PATH
 make
 ```
-There are pre-made benchmarks of the kernels provided by `SmaxKernels`, as well as optional third party [[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html), [PETSc](https://petsc.org/release/)] kernels to compare against, which are all found in `/examples/benchmarks`. Very basic tests are provided in the `/examples/tests` subdirectory. More realistic examples can be found in `/examples/applications`.
+* Very basic examples are provided in `/examples/tests`.
+* More realistic examples can be found in `/examples/applications`.
+* There are pre-made benchmarks of the kernels provided by SmaxKernels, as well as optional third party [[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html), [PETSc](https://petsc.org/release/)] kernels to compare against, which are all found in `/examples/benchmarks`.
+* Validation of Smax kernels against MKL kernels are found in `/examples/validation` (requires MKL).
 
 ## Notice ##
 This project is very much still in development, and many features may be unfinished, broken, or subject to change.

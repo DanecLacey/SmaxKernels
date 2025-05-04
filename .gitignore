@@ -6,3 +6,5 @@ third_party/
 examples/build/
 docs/
 scripts/
+CMakeCache.txt
+CMakeFiles/

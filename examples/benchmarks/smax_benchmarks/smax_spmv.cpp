@@ -12,11 +12,11 @@ int main(int argc, char *argv[]) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     smax->register_kernel("spmv", SMAX::SPMV, SMAX::CPU);
-    smax->kernels["spmv"]->register_A(&crs_mat->n_rows, &crs_mat->n_cols,
-                                      &crs_mat->nnz, &crs_mat->col,
+    smax->kernels["spmv"]->register_A(crs_mat->n_rows, crs_mat->n_cols,
+                                      crs_mat->nnz, &crs_mat->col,
                                       &crs_mat->row_ptr, &crs_mat->values);
-    smax->kernels["spmv"]->register_B(&crs_mat->n_cols, &x->n_cols, &x->values);
-    smax->kernels["spmv"]->register_C(&crs_mat->n_cols, &y->n_cols, &y->values);
+    smax->kernels["spmv"]->register_B(crs_mat->n_cols, x->n_cols, &x->values);
+    smax->kernels["spmv"]->register_C(crs_mat->n_cols, y->n_cols, &y->values);
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "smax_spmv";

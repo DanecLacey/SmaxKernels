@@ -16,7 +16,7 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # Handle Debug build-specific settings
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(DEBUG_LEVEL 1 CACHE STRING "Set the debug verbosity level (1, 2, or 3)")
+    set(DEBUG_LEVEL 1 CACHE STRING "Set the debug level (1, 2, or 3)")
     # Validate debug level input
     if(NOT DEBUG_LEVEL MATCHES "^[123]$")
         message(FATAL_ERROR "DEBUG_LEVEL must be 1, 2, or 3 (got: ${DEBUG_LEVEL})")
@@ -161,6 +161,25 @@ if(USE_PETSC)
     endif()
 else()
     message(STATUS "PETSc support is disabled.")
+endif()
+
+if(USE_MKL)
+    add_subdirectory(validation)
+    add_custom_target(validation DEPENDS ${validation_targets})
+    
+    # DL 05.04.25 TODO: Would be useful to have other intermediate levels
+    set(VERBOSITY 1 CACHE STRING "Set the validation verbosity level (0 or 1)")
+
+    # Validate debug level input
+    if(NOT VERBOSITY MATCHES "^[01]$")
+        message(FATAL_ERROR "VERBOSITY must be 0 or 1 (got: ${VERBOSITY})")
+    endif()
+
+    # Set the verbosity level as a compile definition
+    set_property(CACHE VERBOSITY PROPERTY STRINGS 0 1)
+    message(STATUS "Verbosity Level: ${VERBOSITY}")
+else()
+    message(WARNING "Validation checks not built. MKL is required.")
 endif()
 
 add_subdirectory(tests)

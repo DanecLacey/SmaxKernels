@@ -123,16 +123,6 @@ void init_pin() {
     bench_harness->bench();                                                    \
     printf("Bench complete\n");
 
-#define INIT_MTX                                                               \
-    CliArgs *cli_args = new CliArgs;                                           \
-    parse_cli_args(cli_args, argc, argv);                                      \
-                                                                               \
-    COOMatrix *coo_mat = new COOMatrix;                                        \
-    coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
-                                                                               \
-    CRSMatrix *crs_mat = new CRSMatrix;                                        \
-    crs_mat->convert_coo_to_crs(coo_mat);
-
 #define PRINT_SPMV_BENCH                                                       \
     std::cout << "----------------" << std::endl;                              \
     std::cout << "--" << bench_name << " Bench--" << std::endl;                \
