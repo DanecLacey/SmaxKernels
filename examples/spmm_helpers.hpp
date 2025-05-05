@@ -3,7 +3,8 @@
 
 #include "examples_common.hpp"
 
-#define OUTPUT_FILENAME "compare_spmm.txt"
+#define SPMM_OUTPUT_FILENAME "compare_spmm.txt"
+#define SPMM_FLOPS_PER_NZ 2
 
 #define INIT_SPMM                                                              \
     SpMMParser *parser = new SpMMParser;                                       \
@@ -18,6 +19,30 @@
     delete parser;                                                             \
     delete coo_mat;                                                            \
     delete crs_mat;
+
+#define REGISTER_SPMM_KERNEL(kernel_name, mat, n_vectors, X, Y)                \
+    smax->register_kernel(kernel_name, SMAX::SPMM, SMAX::CPU);                 \
+    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
+                                           &mat->col, &mat->row_ptr,           \
+                                           &mat->values);                      \
+    smax->kernels[kernel_name]->register_B(mat->n_cols, n_vectors,             \
+                                           &X->values);                        \
+    smax->kernels[kernel_name]->register_C(mat->n_rows, n_vectors, &Y->values);
+
+#define PRINT_SPMM_BENCH                                                       \
+    std::cout << "----------------" << std::endl;                              \
+    std::cout << "--" << bench_name << " Bench--" << std::endl;                \
+    std::cout << cli_args->matrix_file_name << " with " << n_threads           \
+              << " thread(s)" << std::endl;                                    \
+    std::cout << "Runtime: " << runtime << std::endl;                          \
+    std::cout << "Iterations: " << n_iter << std::endl;                        \
+                                                                               \
+    long flops_per_iter = crs_mat->nnz * n_vectors * SPMM_FLOPS_PER_NZ;        \
+    long iter_per_second = static_cast<long>(n_iter / runtime);                \
+                                                                               \
+    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
+              << " [GF/s]" << std::endl;                                       \
+    std::cout << "----------------" << std::endl;
 
 class SpMMParser : public CliParser {
   public:
@@ -47,7 +72,7 @@ void compare_spmm(const int n_rows, const int n_vectors, const double *y_SMAX,
                   const double *y_MKL, const std::string mtx_name) {
 
     std::fstream working_file;
-    working_file.open(OUTPUT_FILENAME,
+    working_file.open(SPMM_OUTPUT_FILENAME,
                       std::fstream::in | std::fstream::out | std::fstream::app);
 
     double relative_diff, max_relative_diff, max_relative_diff_elem_SMAX,
@@ -61,7 +86,7 @@ void compare_spmm(const int n_rows, const int n_vectors, const double *y_SMAX,
 
     // Print header
     GET_THREAD_COUNT;
-    working_file << mtx_name << " with " << num_threads << " thread(s)"
+    working_file << mtx_name << " with " << n_threads << " thread(s)"
                  << std::endl;
 #if VERBOSITY == 0
     working_file << std::left << std::setw(PRINT_WIDTH)

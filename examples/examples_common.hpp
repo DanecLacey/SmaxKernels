@@ -1,5 +1,5 @@
-#ifndef EXAMPLES_COMMON_HPP
-#define EXAMPLES_COMMON_HPP
+#ifndef SMAX_EXAMPLES_COMMON_HPP
+#define SMAX_EXAMPLES_COMMON_HPP
 
 #include "mmio.hpp"
 #include <fstream>
@@ -18,40 +18,15 @@
 
 #ifdef _OPENMP
 
-#define GET_THREAD_COUNT int num_threads = omp_get_max_threads();
+#define GET_THREAD_COUNT int n_threads = omp_get_max_threads();
 #define GET_THREAD_ID int tid = omp_get_thread_num();
 
 #else
 
-#define GET_THREAD_COUNT int num_threads = 1;
+#define GET_THREAD_COUNT int n_threads = 1;
 #define GET_THREAD_ID int tid = 0;
 
 #endif
-
-#define REGISTER_SPMV_KERNEL(kernel_name, mat, X, Y)                           \
-    smax->register_kernel(kernel_name, SMAX::SPMV, SMAX::CPU);                 \
-    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
-                                           &mat->col, &mat->row_ptr,           \
-                                           &mat->values);                      \
-    smax->kernels[kernel_name]->register_B(mat->n_cols, &X->values);           \
-    smax->kernels[kernel_name]->register_C(mat->n_rows, &Y->values);
-
-#define REGISTER_SPMM_KERNEL(kernel_name, mat, n_vectors, X, Y)                \
-    smax->register_kernel(kernel_name, SMAX::SPMM, SMAX::CPU);                 \
-    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
-                                           &mat->col, &mat->row_ptr,           \
-                                           &mat->values);                      \
-    smax->kernels[kernel_name]->register_B(mat->n_cols, n_vectors,             \
-                                           &X->values);                        \
-    smax->kernels[kernel_name]->register_C(mat->n_rows, n_vectors, &Y->values);
-
-#define REGISTER_SPTRSV_KERNEL(kernel_name, mat, X, Y)                         \
-    smax->register_kernel(kernel_name, SMAX::SPTRSV, SMAX::CPU);               \
-    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
-                                           &mat->col, &mat->row_ptr,           \
-                                           &mat->values);                      \
-    smax->kernels[kernel_name]->register_B(mat->n_cols, &X->values);           \
-    smax->kernels[kernel_name]->register_C(mat->n_rows, &Y->values);
 
 #define DIFF_STATUS_MACRO(relative_diff, working_file)                         \
     do {                                                                       \
@@ -480,4 +455,4 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
     }
 }
 
-#endif // EXAMPLES_COMMON_HPP
+#endif // SMAX_EXAMPLES_COMMON_HPP

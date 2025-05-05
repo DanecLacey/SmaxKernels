@@ -1,38 +1,47 @@
 #include "../../examples_common.hpp"
-#include "../../spmv_helpers.hpp"
+#include "../../spmm_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "petsc_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_SPMV;
+    INIT_SPMM;
 
     PetscErrorCode ierr;
     ierr = PetscInitialize(&argc, &argv, NULL, NULL);
     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
-    Vec x, y;
-    ierr = VecCreateSeq(PETSC_COMM_SELF, crs_mat->n_cols, &x);
+    int m = crs_mat->n_rows;
+    int n = crs_mat->n_cols;
+    int k = n_vectors;
+
+    // Create dense matrices X (input) and Y (output)
+    Mat X, Y;
+    ierr = MatCreateDense(PETSC_COMM_SELF, PETSC_DECIDE, PETSC_DECIDE, n, k,
+                          NULL, &X);
     CHKERRABORT(PETSC_COMM_SELF, ierr);
-    ierr = VecSet(x, 1.0);
+    ierr = MatSetOption(X, MAT_ROW_ORIENTED, PETSC_TRUE);
+    CHKERRABORT(PETSC_COMM_SELF, ierr);
+    ierr = MatZeroEntries(X);
+    CHKERRABORT(PETSC_COMM_SELF, ierr);
+    PetscScalar *X_array;
+    ierr = MatDenseGetArray(X, &X_array);
+    CHKERRABORT(PETSC_COMM_SELF, ierr);
+    for (int i = 0; i < n * k; i++)
+        X_array[i] = 1.0;
+    ierr = MatDenseRestoreArray(X, &X_array);
     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
-    ierr = VecCreateSeq(PETSC_COMM_SELF, crs_mat->n_rows, &y);
-    CHKERRABORT(PETSC_COMM_SELF, ierr);
-    ierr = VecSet(y, 0.0);
-    CHKERRABORT(PETSC_COMM_SELF, ierr);
-
-    // Wrap the CRS matrix in PETSc
+    // Wrap CRS matrix in PETSc
     Mat A;
-    ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF, crs_mat->n_rows,
-                                     crs_mat->n_cols, crs_mat->row_ptr,
+    ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF, m, n, crs_mat->row_ptr,
                                      crs_mat->col, crs_mat->values, &A);
     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
-    // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = "petsc_spmv";
+    std::string bench_name = "petsc_spmm";
     double runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
+
 #ifdef _OPENMP
 #pragma omp parallel
     {
@@ -47,30 +56,31 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    // Just to take overhead of pinning away from timers
     init_pin();
 
-    std::function<void(bool)> lambda = [bench_name, A, x, y](bool warmup) {
+    // Perform initial matrix-matrix multiplication to allocate Y
+    ierr = MatMatMult(A, X, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y);
+    CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    std::function<void(bool)> lambda = [bench_name, A, X, &Y](bool warmup) {
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
-        MatMult(A, x, y);
+        MatMatMult(A, X, MAT_REUSE_MATRIX, PETSC_DEFAULT, &Y);
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
     };
 
     RUN_BENCH;
-    PRINT_SPMV_BENCH;
-    FINALIZE_SPMV;
+    PRINT_SPMM_BENCH;
+    FINALIZE_SPMM;
     delete bench_harness;
 
-    ierr = VecDestroy(&x);
-    CHKERRABORT(PETSC_COMM_SELF, ierr);
-    ierr = VecDestroy(&y);
-    CHKERRABORT(PETSC_COMM_SELF, ierr);
     ierr = MatDestroy(&A);
+    CHKERRABORT(PETSC_COMM_SELF, ierr);
+    ierr = MatDestroy(&X);
+    CHKERRABORT(PETSC_COMM_SELF, ierr);
+    ierr = MatDestroy(&Y);
     CHKERRABORT(PETSC_COMM_SELF, ierr);
     ierr = PetscFinalize();
     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
-#ifdef USE_LIKWID
-    LIKWID_MARKER_CLOSE;
-#endif
+    return 0;
 }

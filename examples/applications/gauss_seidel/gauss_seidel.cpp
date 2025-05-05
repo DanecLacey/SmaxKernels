@@ -1,4 +1,5 @@
 #include "../../examples_common.hpp"
+#include "../applications_common.hpp"
 #include "SmaxKernels/interface.hpp"
 #include "utils.hpp"
 

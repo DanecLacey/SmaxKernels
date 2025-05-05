@@ -3,7 +3,7 @@
 
 #include "examples_common.hpp"
 
-#define OUTPUT_FILENAME "compare_spmv.txt"
+#define SPMV_OUTPUT_FILENAME "compare_spmv.txt"
 #define SPMV_FLOPS_PER_NZ 2
 
 #define INIT_SPMV                                                              \
@@ -18,6 +18,14 @@
     delete parser;                                                             \
     delete coo_mat;                                                            \
     delete crs_mat;
+
+#define REGISTER_SPMV_KERNEL(kernel_name, mat, X, Y)                           \
+    smax->register_kernel(kernel_name, SMAX::SPMV, SMAX::CPU);                 \
+    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
+                                           &mat->col, &mat->row_ptr,           \
+                                           &mat->values);                      \
+    smax->kernels[kernel_name]->register_B(mat->n_cols, &X->values);           \
+    smax->kernels[kernel_name]->register_C(mat->n_rows, &Y->values);
 
 #define PRINT_SPMV_BENCH                                                       \
     std::cout << "----------------" << std::endl;                              \
@@ -60,7 +68,7 @@ void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
                   const std::string mtx_name) {
 
     std::fstream working_file;
-    working_file.open(OUTPUT_FILENAME,
+    working_file.open(SPMV_OUTPUT_FILENAME,
                       std::fstream::in | std::fstream::out | std::fstream::app);
 
     GET_THREAD_COUNT;
@@ -75,7 +83,7 @@ void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
         max_absolute_diff_elem_MKL = 0.0;
 
     // Print header
-    working_file << mtx_name << " with " << num_threads << " thread(s)"
+    working_file << mtx_name << " with " << n_threads << " thread(s)"
                  << std::endl;
 #if VERBOSITY == 0
     working_file << std::left << std::setw(PRINT_WIDTH)

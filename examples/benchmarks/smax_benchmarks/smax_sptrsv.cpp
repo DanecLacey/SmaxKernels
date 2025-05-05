@@ -1,19 +1,19 @@
 #include "../../examples_common.hpp"
-#include "../../spmv_helpers.hpp"
+#include "../../sptrsv_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "smax_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_SPMV;
+    INIT_SPTRSV;
     DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *y = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
+    DenseMatrix *b = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    REGISTER_SPMV_KERNEL("my_spmv", crs_mat, x, y);
+    REGISTER_SPTRSV_KERNEL("my_sptrsv", crs_mat_D_plus_L, x, b);
 
     // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = "smax_spmv";
+    std::string bench_name = "smax_sptrsv";
     double runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -37,16 +37,16 @@ int main(int argc, char *argv[]) {
 
     std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
-        smax->kernels["my_spmv"]->run();
+        smax->kernels["my_sptrsv"]->run();
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
     };
 
     RUN_BENCH;
-    PRINT_SPMV_BENCH;
-    FINALIZE_SPMV;
+    PRINT_SPTRSV_BENCH;
+    FINALIZE_SPTRSV;
     delete bench_harness;
     delete x;
-    delete y;
+    delete b;
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;

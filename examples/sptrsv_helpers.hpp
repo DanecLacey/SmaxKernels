@@ -3,9 +3,9 @@
 
 #include "examples_common.hpp"
 
-#define OUTPUT_FILENAME "compare_sptrsv.txt"
-#define SPLTSV_FLOPS_PER_NZ 2
-#define SPLTSV_FLOPS_PER_ROW 2
+#define SPTRSV_OUTPUT_FILENAME "compare_sptrsv.txt"
+#define SPTRSV_FLOPS_PER_NZ 2
+#define SPTRSV_FLOPS_PER_ROW 2
 
 #define INIT_SPTRSV                                                            \
     SpTRSVParser *parser = new SpTRSVParser;                                   \
@@ -24,6 +24,30 @@
     delete crs_mat;                                                            \
     delete crs_mat_U;                                                          \
     delete crs_mat_D_plus_L;
+
+#define REGISTER_SPTRSV_KERNEL(kernel_name, mat, X, B)                         \
+    smax->register_kernel(kernel_name, SMAX::SPTRSV, SMAX::CPU);               \
+    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
+                                           &mat->col, &mat->row_ptr,           \
+                                           &mat->values);                      \
+    smax->kernels[kernel_name]->register_B(mat->n_cols, &X->values);           \
+    smax->kernels[kernel_name]->register_C(mat->n_rows, &B->values);
+
+#define PRINT_SPTRSV_BENCH                                                     \
+    std::cout << "----------------" << std::endl;                              \
+    std::cout << "--" << bench_name << " Bench--" << std::endl;                \
+    std::cout << cli_args->matrix_file_name << " with " << n_threads           \
+              << " thread(s)" << std::endl;                                    \
+    std::cout << "Runtime: " << runtime << std::endl;                          \
+    std::cout << "Iterations: " << n_iter << std::endl;                        \
+                                                                               \
+    long flops_per_iter = (crs_mat_D_plus_L->nnz * SPTRSV_FLOPS_PER_NZ +       \
+                           crs_mat_D_plus_L->n_rows * SPTRSV_FLOPS_PER_ROW);   \
+    long iter_per_second = static_cast<long>(n_iter / runtime);                \
+                                                                               \
+    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
+              << " [GF/s]" << std::endl;                                       \
+    std::cout << "----------------" << std::endl;
 
 class SpTRSVParser : public CliParser {
   public:
@@ -47,28 +71,11 @@ class SpTRSVParser : public CliParser {
     SpTRSVArgs *args() const { return static_cast<SpTRSVArgs *>(args_); }
 };
 
-#define PRINT_SPTRSV_BENCH(bench_name, cli_args, n_threads, runtime, n_iter,   \
-                           crs_mat_L)                                          \
-    std::cout << "----------------" << std::endl;                              \
-    std::cout << "--" << bench_name << " Bench--" << std::endl;                \
-    std::cout << (cli_args)->matrix_file_name << " with " << (n_threads)       \
-              << " thread(s)" << std::endl;                                    \
-    std::cout << "Runtime: " << (runtime) << std::endl;                        \
-    std::cout << "Iterations: " << (n_iter) << std::endl;                      \
-                                                                               \
-    long flops_per_iter = ((crs_mat_L)->nnz * SPLTSV_FLOPS_PER_NZ +            \
-                           (crs_mat_L)->n_rows * SPLTSV_FLOPS_PER_ROW);        \
-    long iter_per_second = static_cast<long>((n_iter) / (runtime));            \
-                                                                               \
-    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
-              << " [GF/s]" << std::endl;                                       \
-    std::cout << "----------------" << std::endl;
-
 void compare_sptrsv(const int n_rows, const double *y_SMAX, const double *y_MKL,
                     const std::string mtx_name) {
 
     std::fstream working_file;
-    working_file.open(OUTPUT_FILENAME,
+    working_file.open(SPTRSV_OUTPUT_FILENAME,
                       std::fstream::in | std::fstream::out | std::fstream::app);
 
     GET_THREAD_COUNT;
@@ -83,7 +90,7 @@ void compare_sptrsv(const int n_rows, const double *y_SMAX, const double *y_MKL,
         max_absolute_diff_elem_MKL = 0.0;
 
     // Print header
-    working_file << mtx_name << " with " << num_threads << " thread(s)"
+    working_file << mtx_name << " with " << n_threads << " thread(s)"
                  << std::endl;
 #if VERBOSITY == 0
     working_file << std::left << std::setw(PRINT_WIDTH)
