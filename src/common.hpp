@@ -9,7 +9,7 @@
 namespace SMAX {
 
 // Available kernels
-enum KernelType { SPMV, SPGEMM, SPTSV };
+enum KernelType { SPMV, SPMM, SPGEMV, SPGEMM, SPTRSV, SPTRSM };
 
 // Available platforms
 enum PlatformType { CPU };
@@ -28,6 +28,7 @@ struct KernelContext {
 };
 
 // For simplicity, assume all matrices are in CSR format
+// DL 5.5.25 TODO: Rename to SparseMatrixCRS
 struct SparseMatrix {
     int n_rows;
     int n_cols;
@@ -40,12 +41,6 @@ struct SparseMatrix {
     SparseMatrix()
         : n_rows(0), n_cols(0), nnz(0), col(nullptr), row_ptr(nullptr),
           val(nullptr) {}
-
-    // Parameterized constructor
-    SparseMatrix(int rows, int cols, int nonzeros, void **col_ptr = nullptr,
-                 void **row_ptr_ptr = nullptr, void **val_ptr = nullptr)
-        : n_rows(rows), n_cols(cols), nnz(nonzeros), col(col_ptr),
-          row_ptr(row_ptr_ptr), val(val_ptr) {}
 };
 
 // Workaround for SPGEMM result matrix
@@ -61,13 +56,29 @@ struct SparseMatrixRef {
     SparseMatrixRef()
         : n_rows(nullptr), n_cols(nullptr), nnz(nullptr), col(nullptr),
           row_ptr(nullptr), val(nullptr) {}
+};
 
-    // Parameterized constructor
-    SparseMatrixRef(int *rows, int *cols, int *nonzeros,
-                    void **col_ptr = nullptr, void **row_ptr_ptr = nullptr,
-                    void **val_ptr = nullptr)
-        : n_rows(rows), n_cols(cols), nnz(nonzeros), col(col_ptr),
-          row_ptr(row_ptr_ptr), val(val_ptr) {}
+// DL 5.5.25 TODO: Wrap up as a special case of SparseMatrixCOO
+struct SparseVector {
+    int n_rows; // total number of entries (implied zero + nonzero)
+    int nnz;    // number of nonzeros
+    void **idx; // [nnz] index of each nonzero
+    void **val; // [nnz] value of each nonzero
+
+    // Default constructor
+    SparseVector() : n_rows(0), nnz(0), idx(nullptr), val(nullptr) {}
+};
+
+// Workaround
+struct SparseVectorRef {
+    int *n_rows;
+    int *nnz;
+    void **idx;
+    void **val;
+
+    // Default constructor
+    SparseVectorRef()
+        : n_rows(nullptr), nnz(nullptr), idx(nullptr), val(nullptr) {}
 };
 
 // TODO

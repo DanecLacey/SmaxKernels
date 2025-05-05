@@ -1,0 +1,29 @@
+#ifndef SMAX_SPGEMV_CPU_CRS_IMPL_HPP
+#define SMAX_SPGEMV_CPU_CRS_IMPL_HPP
+
+#include "../../../common.hpp"
+#include "../../kernels_common.hpp"
+#include "../spgemv_common.hpp"
+
+namespace SMAX {
+namespace KERNELS {
+namespace SPGEMV {
+namespace SPGEMV_CPU {
+
+template <typename IT, typename VT>
+inline void naive_crs_coo_spgemv(int A_n_rows, int A_n_cols, int A_nnz,
+                                 IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
+                                 VT *RESTRICT A_val, int spX_n_rows,
+                                 int spX_nnz, IT *RESTRICT spX_idx,
+                                 VT *RESTRICT spX_val, int &spY_n_rows,
+                                 int &spY_nnz, IT *&spY_idx, VT *&spY_val) {
+
+    SPGEMVKernelErrorHandler::not_implemented();
+}
+
+} // namespace SPGEMV_CPU
+} // namespace SPGEMV
+} // namespace KERNELS
+} // namespace SMAX
+
+#endif // SMAX_SPGEMV_CPU_CRS_IMPL_HPP

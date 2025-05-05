@@ -1,5 +1,5 @@
-#ifndef ERROR_HANDLER_HPP
-#define ERROR_HANDLER_HPP
+#ifndef SMAX_ERROR_HANDLER_HPP
+#define SMAX_ERROR_HANDLER_HPP
 
 #include <chrono>
 #include <fstream>
@@ -26,4 +26,4 @@ class ErrorHandler {
 
 } // namespace SMAX
 
-#endif // ERROR_HANDLER_HPP
+#endif // SMAX_ERROR_HANDLER_HPP

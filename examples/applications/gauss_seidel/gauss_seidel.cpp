@@ -69,7 +69,7 @@ int main(void) {
     // Register necessary sparse kernels to SMAX
     REGISTER_SPMV_KERNEL("tmp <- Ax", A, x, tmp);
     REGISTER_SPMV_KERNEL("tmp <- Ux", U, x, tmp);
-    REGISTER_SPTSV_KERNEL("solve x <- (D+L)^{-1}(b-Ux)", D_plus_L, x, tmp);
+    REGISTER_SPTRSV_KERNEL("solve x <- (D+L)^{-1}(b-Ux)", D_plus_L, x, tmp);
 
     // Compute initial residual norm
     double residual_norm = check_residual(b->values, tmp->values,

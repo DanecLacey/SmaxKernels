@@ -1,5 +1,5 @@
-#ifndef SPGEMM_HPP
-#define SPGEMM_HPP
+#ifndef SMAX_SPGEMM_HPP
+#define SMAX_SPGEMM_HPP
 
 #include "../common.hpp"
 #include "../macros.hpp"
@@ -33,8 +33,6 @@ int spgemm_register_B(SparseMatrix *B, va_list args) {
     return 0;
 }
 
-// This must be treated differently, and we assume that n_rows, n_cols, and nnz
-// are in-fact locations in memory and not literals
 int spgemm_register_C(SparseMatrixRef *C_ref, va_list args) {
     C_ref->n_rows = va_arg(args, int *);
     C_ref->n_cols = va_arg(args, int *);
@@ -99,4 +97,4 @@ int spgemm_finalize(KernelContext context, SparseMatrix *A, SparseMatrix *B,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SPGEMM_HPP
+#endif // SMAX_SPGEMM_HPP

@@ -1,5 +1,5 @@
-#ifndef SYMBOLIC_PHASE_HPP
-#define SYMBOLIC_PHASE_HPP
+#ifndef SMAX_SYMBOLIC_PHASE_HPP
+#define SMAX_SYMBOLIC_PHASE_HPP
 
 #include "../spgemm_common.hpp"
 #include "symbolic_phase_impl.hpp"
@@ -54,4 +54,4 @@ int symbolic_phase_cpu(KernelContext context, SparseMatrix *_A,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SYMBOLIC_PHASE_HPP
+#endif // SMAX_SYMBOLIC_PHASE_HPP

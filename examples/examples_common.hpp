@@ -12,17 +12,15 @@
 #endif
 
 #define INIT_MTX                                                               \
-    CliArgs *cli_args = new CliArgs;                                           \
-    parse_cli_args(cli_args, argc, argv);                                      \
-                                                                               \
+    CliParser *parser = new CliParser;                                         \
+    CliParser::CliArgs *cli_args = parser->parse(argc, argv);                  \
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
-                                                                               \
     CRSMatrix *crs_mat = new CRSMatrix;                                        \
     crs_mat->convert_coo_to_crs(coo_mat);
 
 #define DESTROY_MTX                                                            \
-    delete cli_args;                                                           \
+    delete parser;                                                             \
     delete coo_mat;                                                            \
     delete crs_mat;
 
@@ -37,6 +35,36 @@ inline void sort_perm(int *arr, int *perm, int len, bool rev = false) {
         });
     }
 }
+
+// DL 4.5.25 TODO: Probably a better idea to leave args_ private and add an
+// accessor
+class CliParser {
+  public:
+    struct CliArgs {
+        std::string matrix_file_name;
+        int block_vec_width;
+    };
+
+    CliArgs *args_;
+
+    CliParser() : args_(nullptr) {}
+
+    ~CliParser() { delete args_; }
+
+    CliArgs *parse(int argc, char *argv[]) {
+        if (argc < 2 || argc > 3) {
+            std::cerr << "Usage: " << argv[0]
+                      << " <matrix_file.mtx> <block_vec_width>\n";
+            std::exit(EXIT_FAILURE);
+        }
+
+        delete args_; // Clean up if called multiple times
+        args_ = new CliArgs();
+        args_->matrix_file_name = argv[1];
+        args_->block_vec_width = atoi(argv[2]);
+        return args_;
+    }
+};
 
 struct COOMatrix {
     long n_rows{};
@@ -316,18 +344,4 @@ struct DenseMatrix {
         std::cout << std::endl;
     }
 };
-
-// TODO: Add more
-struct CliArgs {
-    std::string matrix_file_name{};
-};
-
-void parse_cli_args(CliArgs *cli_args, int argc, char *argv[]) {
-    if (argc != 2) {
-        printf("Please provide only an .mtx file.\n");
-        exit(EXIT_FAILURE);
-    }
-    cli_args->matrix_file_name = argv[1];
-};
-
 #endif // EXAMPLES_COMMON_HPP

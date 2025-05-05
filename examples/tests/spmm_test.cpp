@@ -1,8 +1,7 @@
 /**
  * @file
  * @brief Basic example demonstrating how to use the SMAX library to perform
- * sparse matrix-vector multiplication (SpMV). Since SMAX performs "A op B = C",
- * the use will always register something for A, B, and C.
+ * sparse matrix-multiple vector multiplication (SpMM).
  */
 #include "SmaxKernels/interface.hpp"
 #include "utils.hpp"
@@ -30,18 +29,18 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("my_spmv", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("useful_spmm", SMAX::SPMM, SMAX::CPU);
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format
-    smax->kernels["my_spmv"]->register_A(A_n_rows, A_n_cols, A_nnz, &A_col,
-                                         &A_row_ptr, &A_val);
+    smax->kernels["useful_spmm"]->register_A(A_n_rows, A_n_cols, A_nnz, &A_col,
+                                             &A_row_ptr, &A_val);
     // X and Y are dense matrices
-    smax->kernels["my_spmv"]->register_B(A_n_cols, N_VECTORS, &X);
-    smax->kernels["my_spmv"]->register_C(A_n_rows, N_VECTORS, &Y);
+    smax->kernels["useful_spmm"]->register_B(A_n_cols, N_VECTORS, &X);
+    smax->kernels["useful_spmm"]->register_C(A_n_rows, N_VECTORS, &Y);
 
     // Execute all phases of this kernel
-    smax->kernels["my_spmv"]->run();
+    smax->kernels["useful_spmm"]->run();
 
     smax->print_timers();
 

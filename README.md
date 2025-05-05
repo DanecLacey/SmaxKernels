@@ -1,13 +1,16 @@
 # SmaxKernels
 
-**S**parse **MA**trix mpi+**X** **Kernels** is a lightweight, portable C++ library providing high-performance implementations of sparse matrix kernels.
+**S**parse **MA**trix mpi+**X** **Kernels** is a lightweight, portable C++ library providing high-performance implementations of sparse matrix kernels of the form `C = A op B`.
 
 ## Features ##
 * Clean, minimalist library interface 
 * Efficient implementations of Sparse:
-    * Matrix-(Multiple) Vector Multiplication (SpMV)
-    * Matrix-Matrix Multiplication (SpGEMM)
-    * Triangular Solve (SpTSV)
+    * Matrix-Vector Multiplication -- **SpMV**
+    * Matrix-Multiple Vector Multiplication -- **SpMM**
+    * Matrix-Sparse Vector Multiplication -- **SpGEMV**
+    * Matrix-Sparse Matrix Multiplication -- **SpGEMM**
+    * Triangular Solve -- **SpTRSV**
+    * Batched Triangular Solve -- **SpTRSM**
 * Stacked timers around key regions
 * Supports multiple integer and floating-point types
 
@@ -36,8 +39,8 @@ make
 
 ## Notice ##
 This project is very much still in development, and many features may be unfinished, broken, or subject to change.
-* As of 2025.04.28 Only CPU-OpenMP implementations of SpMV, SpGEMM, and SpTSV are publicly available
-* MPK, SpADD, SpTR kernels are in progress, as well as MPI functionality
+* As of 2025.05.05, Only CPU-OpenMP implementations of SpMV/M, SpGEMV/M, and SpTRSV/M are publicly available
+<!-- * MPK, SpADD, SpTRSP kernels are in progress, as well as GPU and MPI functionality -->
 * It is assumed that all optional third party libraries are installed in `$INSTALL_PATH`
 * The PETSc library is found via. the PkgConfig module. So if benchmarking PETSc kernels, you should configure PETSc with `--with-pkg-config=1` when building.
 

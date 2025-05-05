@@ -1,5 +1,5 @@
-#ifndef KERNELS_COMMON_HPP
-#define KERNELS_COMMON_HPP
+#ifndef SMAX_KERNELS_COMMON_HPP
+#define SMAX_KERNELS_COMMON_HPP
 
 #include "../common.hpp"
 #include <sstream>
@@ -27,9 +27,24 @@ class KernelErrorHandler : public ErrorHandler {
             << " is out of bounds (max = " << max_cols - 1 << ").";
         kernel_fatal("[" + kernel_name + "] " + oss.str());
     }
+
+    static void not_implemented(const std::string &kernel_name) {
+        std::ostringstream oss;
+        oss << "This kernel is not yet implemented.";
+        kernel_fatal("[" + kernel_name + "] " + oss.str());
+    }
+
+    static void issue(const std::string &issue_message,
+                      const std::string &kernel_name) {
+        std::ostringstream oss;
+        oss << "This kernel contains known issues.\n";
+        oss << issue_message << "\n";
+        oss << "Results not dependable.";
+        kernel_warning("[" + kernel_name + "] " + oss.str());
+    }
 };
 
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // KERNELS_COMMON_HPP
+#endif // SMAX_KERNELS_COMMON_HPP

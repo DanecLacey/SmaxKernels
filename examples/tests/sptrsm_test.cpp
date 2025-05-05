@@ -1,12 +1,13 @@
 /**
  * @file
  * @brief Basic example demonstrating how to use the SMAX library to perform
- * sparse triangular solve with a lower triangular matrix (SpTSV).
+ * sparse triangular solve with a lower triangular matrix and multiple RHS
+ * vectors (SpTSM).
  */
 #include "SmaxKernels/interface.hpp"
 #include "utils.hpp"
 
-#define N_VECTORS 1
+#define N_VECTORS 4
 
 int main(void) {
     // Initialize operands
@@ -15,15 +16,15 @@ int main(void) {
     int A_nnz = 4;
     int *A_col = new int[A_nnz]{0, 1, 0, 2};
     int *A_row_ptr = new int[A_n_rows + 1]{0, 1, 2, 4};
-    double *A_val = new double[A_nnz]{1.1, 2.2, 3.1, 3.3};
+    float *A_val = new float[A_nnz]{1.1, 2.2, 3.1, 3.3};
 
-    double *X = new double[A_n_cols * N_VECTORS];
+    float *X = new float[A_n_cols * N_VECTORS];
     for (int i = 0; i < A_n_cols * N_VECTORS; ++i) {
         X[i] = 1.0;
     }
 
     // Initialize RHS
-    double *B = new double[A_n_cols * N_VECTORS];
+    float *B = new float[A_n_cols * N_VECTORS];
     for (int i = 0; i < A_n_cols * N_VECTORS; ++i) {
         B[i] = 2.0;
     }
@@ -32,22 +33,23 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("solve_Lx=b", SMAX::SPTSV, SMAX::CPU);
+    smax->register_kernel("solve_LX=B", SMAX::SPTRSM, SMAX::CPU, SMAX::UINT32,
+                          SMAX::FLOAT32);
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format
-    smax->kernels["solve_Lx=b"]->register_A(A_n_rows, A_n_cols, A_nnz, &A_col,
+    smax->kernels["solve_LX=B"]->register_A(A_n_rows, A_n_cols, A_nnz, &A_col,
                                             &A_row_ptr, &A_val);
     // X and B are dense vectors
-    smax->kernels["solve_Lx=b"]->register_B(A_n_rows, N_VECTORS, &X);
-    smax->kernels["solve_Lx=b"]->register_C(A_n_cols, N_VECTORS, &B);
+    smax->kernels["solve_LX=B"]->register_B(A_n_rows, N_VECTORS, &X);
+    smax->kernels["solve_LX=B"]->register_C(A_n_cols, N_VECTORS, &B);
 
     // Execute all phases of this kernel
-    smax->kernels["solve_Lx=b"]->run();
+    smax->kernels["solve_LX=B"]->run();
 
     smax->print_timers();
 
-    print_vector<double>(X, A_n_cols * N_VECTORS);
+    print_vector<float>(X, A_n_cols * N_VECTORS);
 
     delete[] A_col;
     delete[] A_row_ptr;

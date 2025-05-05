@@ -131,15 +131,13 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
     smax->kernels[kernel_name]->register_A(&mat.n_rows, &mat.n_cols, &mat.nnz, \
                                            &mat.col, &mat.row_ptr,             \
                                            &mat.values);                       \
-    smax->kernels[kernel_name]->register_B(&mat.n_cols, &X->n_cols,            \
-                                           &X->values);                        \
-    smax->kernels[kernel_name]->register_C(&mat.n_cols, &Y->n_cols, &Y->values);
+    smax->kernels[kernel_name]->register_B(mat.n_cols, &X->values);            \
+    smax->kernels[kernel_name]->register_C(mat.n_rows, &Y->values);
 
-#define REGISTER_SPTSV_KERNEL(kernel_name, mat, X, Y)                          \
-    smax->register_kernel(kernel_name, SMAX::SPTSV, SMAX::CPU);                \
+#define REGISTER_SPTRSV_KERNEL(kernel_name, mat, X, Y)                         \
+    smax->register_kernel(kernel_name, SMAX::SPTRSV, SMAX::CPU);               \
     smax->kernels[kernel_name]->register_A(&mat.n_rows, &mat.n_cols, &mat.nnz, \
                                            &mat.col, &mat.row_ptr,             \
                                            &mat.values);                       \
-    smax->kernels[kernel_name]->register_B(&mat.n_cols, &X->n_cols,            \
-                                           &X->values);                        \
-    smax->kernels[kernel_name]->register_C(&Y->n_cols, &Y->n_cols, &Y->values);
+    smax->kernels[kernel_name]->register_B(mat.n_cols, &X->values);            \
+    smax->kernels[kernel_name]->register_C(mat.n_rows, &Y->values);

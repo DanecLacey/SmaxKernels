@@ -1,5 +1,5 @@
-#ifndef NUMERICAL_PHASE_HPP
-#define NUMERICAL_PHASE_HPP
+#ifndef SMAX_NUMERICAL_PHASE_HPP
+#define SMAX_NUMERICAL_PHASE_HPP
 
 #include "../spgemm_common.hpp"
 #include "numerical_phase_impl.hpp"
@@ -52,4 +52,4 @@ int numerical_phase_cpu(KernelContext context, SparseMatrix *_A,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // NUMERICAL_PHASE_HPP
+#endif // SMAX_NUMERICAL_PHASE_HPP

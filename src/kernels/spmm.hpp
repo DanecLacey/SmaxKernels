@@ -1,9 +1,9 @@
-#ifndef SMAX_SPMV_HPP
-#define SMAX_SPMV_HPP
+#ifndef SMAX_SPMM_HPP
+#define SMAX_SPMM_HPP
 
 #include "../common.hpp"
 #include "../macros.hpp"
-#include "spmv/spmv_cpu.hpp"
+#include "spmm/spmm_cpu.hpp"
 
 #include <cstdarg>
 #include <functional>
@@ -11,7 +11,7 @@
 namespace SMAX {
 namespace KERNELS {
 
-int spmv_register_A(SparseMatrix *A, va_list args) {
+int spmm_register_A(SparseMatrix *A, va_list args) {
     A->n_rows = va_arg(args, int);
     A->n_cols = va_arg(args, int);
     A->nnz = va_arg(args, int);
@@ -22,21 +22,23 @@ int spmv_register_A(SparseMatrix *A, va_list args) {
     return 0;
 }
 
-int spmv_register_B(DenseMatrix *X, va_list args) {
+int spmm_register_B(DenseMatrix *X, va_list args) {
     X->n_rows = va_arg(args, int);
+    X->n_cols = va_arg(args, int);
     X->val = va_arg(args, void **);
 
     return 0;
 }
 
-int spmv_register_C(DenseMatrix *Y, va_list args) {
+int spmm_register_C(DenseMatrix *Y, va_list args) {
     Y->n_rows = va_arg(args, int);
+    Y->n_cols = va_arg(args, int);
     Y->val = va_arg(args, void **);
 
     return 0;
 }
 
-int spmv_dispatch(
+int spmm_dispatch(
     KernelContext context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y,
     int A_offset, int X_offset, int Y_offset,
     std::function<int(KernelContext, SparseMatrix *, DenseMatrix *,
@@ -55,46 +57,46 @@ int spmv_dispatch(
     return 0;
 }
 
-int spmv_initialize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+int spmm_initialize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                     DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
 
-    return spmv_dispatch(
+    return spmm_dispatch(
         context, A, X, Y, A_offset, X_offset, Y_offset,
         [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
            DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMV::spmv_initialize_cpu(context, A, X, Y, A_offset,
+            return SPMM::spmm_initialize_cpu(context, A, X, Y, A_offset,
                                              X_offset, Y_offset);
         },
-        "spmv_initialize");
+        "spmm_initialize");
 }
 
-int spmv_apply(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+int spmm_apply(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
 
-    return spmv_dispatch(
+    return spmm_dispatch(
         context, A, X, Y, A_offset, X_offset, Y_offset,
         [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
            DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMV::spmv_apply_cpu(context, A, X, Y, A_offset, X_offset,
+            return SPMM::spmm_apply_cpu(context, A, X, Y, A_offset, X_offset,
                                         Y_offset);
         },
-        "spmv_apply");
+        "spmm_apply");
 }
 
-int spmv_finalize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+int spmm_finalize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                   DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
 
-    return spmv_dispatch(
+    return spmm_dispatch(
         context, A, X, Y, A_offset, X_offset, Y_offset,
         [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
            DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMV::spmv_finalize_cpu(context, A, X, Y, A_offset, X_offset,
+            return SPMM::spmm_finalize_cpu(context, A, X, Y, A_offset, X_offset,
                                            Y_offset);
         },
-        "spmv_finalize");
+        "spmm_finalize");
 }
 
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SMAX_SPMV_HPP
+#endif // SMAX_SPMM_HPP

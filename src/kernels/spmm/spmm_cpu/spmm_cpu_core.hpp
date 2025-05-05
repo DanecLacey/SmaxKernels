@@ -1,29 +1,29 @@
-#ifndef SMAX_SPMV_CPU_CORE_HPP
-#define SMAX_SPMV_CPU_CORE_HPP
+#ifndef SMAX_SPMM_CPU_CORE_HPP
+#define SMAX_SPMM_CPU_CORE_HPP
 
 #include "../../../common.hpp"
-#include "spmv_cpu_crs_impl.hpp"
+#include "spmm_cpu_crs_impl.hpp"
 
 namespace SMAX {
 namespace KERNELS {
-namespace SPMV {
-namespace SPMV_CPU {
+namespace SPMM {
+namespace SPMM_CPU {
 
 template <typename IT, typename VT>
-int spmv_initialize_cpu_core(KernelContext context, SparseMatrix *_A,
+int spmm_initialize_cpu_core(KernelContext context, SparseMatrix *_A,
                              DenseMatrix *_X, DenseMatrix *_Y, int A_offset,
                              int X_offset, int Y_offset) {
-    IF_DEBUG(ErrorHandler::log("Entering spmv_initialize_cpu_core"));
+    IF_DEBUG(ErrorHandler::log("Entering spmm_initialize_cpu_core"));
     // TODO
-    IF_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cpu_core"));
+    IF_DEBUG(ErrorHandler::log("Exiting spmm_initialize_cpu_core"));
     return 0;
 };
 
 template <typename IT, typename VT>
-int spmv_apply_cpu_core(KernelContext context, SparseMatrix *_A,
+int spmm_apply_cpu_core(KernelContext context, SparseMatrix *_A,
                         DenseMatrix *_X, DenseMatrix *_Y, int A_offset,
                         int X_offset, int Y_offset) {
-    IF_DEBUG(ErrorHandler::log("Entering spmv_apply_cpu_core"));
+    IF_DEBUG(ErrorHandler::log("Entering spmm_apply_cpu_core"));
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
@@ -35,29 +35,32 @@ int spmv_apply_cpu_core(KernelContext context, SparseMatrix *_A,
     VT *A_val = as<VT *>(_A->val);
     VT *X = as<VT *>(_X->val);
     VT *Y = as<VT *>(_Y->val);
+    int block_vector_size = _X->n_cols;
+
+    printf("A_n_rows = %d\n", A_n_rows);
 
 #if 1
-    naive_crs_spmv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val,
-                           X + X_offset, Y + Y_offset);
+    naive_crs_spmm<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val,
+                           X + X_offset, Y + Y_offset, block_vector_size);
 #endif
 
-    IF_DEBUG(ErrorHandler::log("Exiting spmv_apply_cpu_core"));
+    IF_DEBUG(ErrorHandler::log("Exiting spmm_apply_cpu_core"));
     return 0;
 }
 
 template <typename IT, typename VT>
-int spmv_finalize_cpu_core(KernelContext context, SparseMatrix *A,
+int spmm_finalize_cpu_core(KernelContext context, SparseMatrix *A,
                            DenseMatrix *X, DenseMatrix *Y, int A_offset,
                            int X_offset, int Y_offset) {
-    IF_DEBUG(ErrorHandler::log("Entering spmv_finalize_cpu_core"));
+    IF_DEBUG(ErrorHandler::log("Entering spmm_finalize_cpu_core"));
     // TODO
-    IF_DEBUG(ErrorHandler::log("Exiting spmv_finalize_cpu_core"));
+    IF_DEBUG(ErrorHandler::log("Exiting spmm_finalize_cpu_core"));
     return 0;
 }
 
-} // namespace SPMV_CPU
-} // namespace SPMV
+} // namespace SPMM_CPU
+} // namespace SPMM
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SMAX_SPMV_CPU_CORE_HPP
+#endif // SMAX_SPMM_CPU_CORE_HPP

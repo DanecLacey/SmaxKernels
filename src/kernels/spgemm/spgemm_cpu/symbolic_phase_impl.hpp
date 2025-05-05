@@ -1,5 +1,5 @@
-#ifndef SPGEMM_SYMBOLIC_CPU_IMPL_HPP
-#define SPGEMM_SYMBOLIC_CPU_IMPL_HPP
+#ifndef SMAX_SPGEMM_SYMBOLIC_CPU_IMPL_HPP
+#define SMAX_SPGEMM_SYMBOLIC_CPU_IMPL_HPP
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
@@ -18,6 +18,11 @@ inline void padded_symbolic_phase(int A_n_rows, int A_n_cols, int A_nnz,
                                   IT *RESTRICT B_row_ptr, VT *RESTRICT B_val,
                                   int &C_n_rows, int &C_n_cols, int &C_nnz,
                                   IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
+
+    GET_THREAD_COUNT(int, num_threads);
+    if (num_threads > 1) {
+        SPGEMMKernelErrorHandler::multithreaded_issue();
+    }
 
     // Enforce dimensions of C
     C_n_rows = A_n_rows;
@@ -41,7 +46,6 @@ inline void padded_symbolic_phase(int A_n_rows, int A_n_cols, int A_nnz,
     }
 
     // Collect upper-bound offsets for each thread
-    GET_THREAD_COUNT(int, num_threads)
     int *tl_ub = new int[num_threads];
     int *tl_offsets = new int[num_threads];
     for (int tid = 0; tid < num_threads; ++tid) {
@@ -151,4 +155,4 @@ inline void padded_symbolic_phase(int A_n_rows, int A_n_cols, int A_nnz,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SPGEMM_SYMBOLIC_CPU_IMPL_HPP
+#endif // SMAX_SPGEMM_SYMBOLIC_CPU_IMPL_HPP

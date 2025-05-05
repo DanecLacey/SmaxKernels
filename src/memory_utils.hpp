@@ -1,5 +1,5 @@
-#ifndef MEMORY_UTILS_HPP
-#define MEMORY_UTILS_HPP
+#ifndef SMAX_MEMORY_UTILS_HPP
+#define SMAX_MEMORY_UTILS_HPP
 
 #include <cstddef>
 #include <errno.h>
@@ -17,4 +17,4 @@ template <typename T> inline const T &as(const void *ptr) {
 
 } // namespace SMAX
 
-#endif // MEMORY_UTILS_HPP
+#endif // SMAX_MEMORY_UTILS_HPP

@@ -1,5 +1,5 @@
-#ifndef INTERFACE_HPP
-#define INTERFACE_HPP
+#ifndef SMAX_INTERFACE_HPP
+#define SMAX_INTERFACE_HPP
 
 #include <functional>
 #include <iostream>
@@ -38,4 +38,4 @@ class Interface {
 
 } // namespace SMAX
 
-#endif // INTERFACE_HPP
+#endif // SMAX_INTERFACE_HPP

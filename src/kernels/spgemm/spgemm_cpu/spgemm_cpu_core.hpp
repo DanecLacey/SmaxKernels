@@ -1,5 +1,5 @@
-#ifndef SPGEMM_CPU_CORE_HPP
-#define SPGEMM_CPU_CORE_HPP
+#ifndef SMAX_SPGEMM_CPU_CORE_HPP
+#define SMAX_SPGEMM_CPU_CORE_HPP
 
 #include "../../../common.hpp"
 #include "numerical_phase.hpp"
@@ -47,4 +47,4 @@ int spgemm_finalize_cpu_core(KernelContext context, SparseMatrix *A,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SPGEMM_CPU_CORE_HPP
+#endif // SMAX_SPGEMM_CPU_CORE_HPP

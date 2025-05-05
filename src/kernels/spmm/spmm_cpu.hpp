@@ -1,20 +1,20 @@
-#ifndef SMAX_SPMV_CPU_HPP
-#define SMAX_SPMV_CPU_HPP
+#ifndef SMAX_SPMM_CPU_HPP
+#define SMAX_SPMM_CPU_HPP
 
 #include "../../common.hpp"
-#include "spmv_cpu/spmv_cpu_core.hpp"
+#include "spmm_cpu/spmm_cpu_core.hpp"
 
 namespace SMAX {
 namespace KERNELS {
-namespace SPMV {
+namespace SPMM {
 
 // These templated structs are just little helpers to wrap the core functions.
-// The operator() function is called in the dispatch_spmv function to execute
+// The operator() function is called in the dispatch_spmm function to execute
 // the correct function for the given types.
 template <typename IT, typename VT> struct SpmvInit {
     int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                    DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-        return SPMV_CPU::spmv_initialize_cpu_core<IT, VT>(
+        return SPMM_CPU::spmm_initialize_cpu_core<IT, VT>(
             context, A, X, Y, A_offset, X_offset, Y_offset);
     }
 };
@@ -22,7 +22,7 @@ template <typename IT, typename VT> struct SpmvInit {
 template <typename IT, typename VT> struct SpmvApply {
     int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                    DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-        return SPMV_CPU::spmv_apply_cpu_core<IT, VT>(context, A, X, Y, A_offset,
+        return SPMM_CPU::spmm_apply_cpu_core<IT, VT>(context, A, X, Y, A_offset,
                                                      X_offset, Y_offset);
     }
 };
@@ -30,7 +30,7 @@ template <typename IT, typename VT> struct SpmvApply {
 template <typename IT, typename VT> struct SpmvFinalize {
     int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                    DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-        return SPMV_CPU::spmv_finalize_cpu_core<IT, VT>(
+        return SPMM_CPU::spmm_finalize_cpu_core<IT, VT>(
             context, A, X, Y, A_offset, X_offset, Y_offset);
     }
 };
@@ -38,7 +38,7 @@ template <typename IT, typename VT> struct SpmvFinalize {
 // The dispatcher function uses the above () operator with the correct
 // integer and floating point types.
 template <template <typename IT, typename VT> class Func>
-int spmv_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+int spmm_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                       DenseMatrix *Y, int A_offset, int X_offset,
                       int Y_offset) {
     switch (context.float_type) {
@@ -81,26 +81,26 @@ int spmv_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
 }
 
 // These invoke the dispatcher function with the correct template parameters
-int spmv_initialize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+int spmm_initialize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                         DenseMatrix *Y, int A_offset, int X_offset,
                         int Y_offset) {
-    return spmv_dispatch_cpu<SpmvInit>(context, A, X, Y, A_offset, X_offset,
+    return spmm_dispatch_cpu<SpmvInit>(context, A, X, Y, A_offset, X_offset,
                                        Y_offset);
 }
-int spmv_apply_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+int spmm_apply_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                    DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-    return spmv_dispatch_cpu<SpmvApply>(context, A, X, Y, A_offset, X_offset,
+    return spmm_dispatch_cpu<SpmvApply>(context, A, X, Y, A_offset, X_offset,
                                         Y_offset);
 }
-int spmv_finalize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
+int spmm_finalize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
                       DenseMatrix *Y, int A_offset, int X_offset,
                       int Y_offset) {
-    return spmv_dispatch_cpu<SpmvFinalize>(context, A, X, Y, A_offset, X_offset,
+    return spmm_dispatch_cpu<SpmvFinalize>(context, A, X, Y, A_offset, X_offset,
                                            Y_offset);
 }
 
-} // namespace SPMV
+} // namespace SPMM
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SMAX_SPMV_CPU_HPP
+#endif // SMAX_SPMM_CPU_HPP

@@ -1,10 +1,13 @@
-#ifndef KERNEL_HPP
-#define KERNEL_HPP
+#ifndef SMAX_KERNEL_HPP
+#define SMAX_KERNEL_HPP
 
 #include "common.hpp"
 #include "kernels/spgemm.hpp"
+#include "kernels/spgemv.hpp"
+#include "kernels/spmm.hpp"
 #include "kernels/spmv.hpp"
-#include "kernels/sptsv.hpp"
+#include "kernels/sptrsm.hpp"
+#include "kernels/sptrsv.hpp"
 
 #include <cstdarg>
 
@@ -23,8 +26,11 @@ class Kernel {
     SparseMatrix *B;
     SparseMatrix *C;
     SparseMatrixRef *C_ref;
-    DenseMatrix *X;
-    DenseMatrix *Y;
+    DenseMatrix *dX;
+    DenseMatrix *dY;
+    SparseVector *spX;
+    SparseVector *spY;
+    SparseVectorRef *spY_ref;
     KernelContext context;
 
     Kernel(KernelType kernel_type, PlatformType platform, IntType int_type,
@@ -38,8 +44,11 @@ class Kernel {
         delete B;
         delete C;
         delete C_ref;
-        delete X;
-        delete Y;
+        delete dX;
+        delete dY;
+        delete spX;
+        delete spY;
+        delete spY_ref;
     }
 
     // Register A, B, C matrices and x, y vectors
@@ -57,14 +66,32 @@ class Kernel {
             // this->timers->register_A_time->stop();
             return ret;
         }
+        case SPMM: {
+            int ret = SMAX::KERNELS::spmm_register_A(this->A, user_args);
+            va_end(user_args);
+            // this->timers->register_A_time->stop();
+            return ret;
+        }
+        case SPGEMV: {
+            int ret = SMAX::KERNELS::spgemv_register_A(this->A, user_args);
+            va_end(user_args);
+            // this->timers->register_A_time->stop();
+            return ret;
+        }
         case SPGEMM: {
             int ret = SMAX::KERNELS::spgemm_register_A(this->A, user_args);
             va_end(user_args);
             // this->timers->register_A_time->stop();
             return ret;
         }
-        case SPTSV: {
-            int ret = SMAX::KERNELS::sptsv_register_A(this->A, user_args);
+        case SPTRSV: {
+            int ret = SMAX::KERNELS::sptrsv_register_A(this->A, user_args);
+            va_end(user_args);
+            // this->timers->register_A_time->stop();
+            return ret;
+        }
+        case SPTRSM: {
+            int ret = SMAX::KERNELS::sptrsm_register_A(this->A, user_args);
             va_end(user_args);
             // this->timers->register_A_time->stop();
             return ret;
@@ -85,7 +112,19 @@ class Kernel {
 
         switch (this->context.kernel_type) {
         case SPMV: {
-            int ret = SMAX::KERNELS::spmv_register_B(this->X, user_args);
+            int ret = SMAX::KERNELS::spmv_register_B(this->dX, user_args);
+            va_end(user_args);
+            // this->timers->register_B_time->stop();
+            return ret;
+        }
+        case SPMM: {
+            int ret = SMAX::KERNELS::spmm_register_B(this->dX, user_args);
+            va_end(user_args);
+            // this->timers->register_B_time->stop();
+            return ret;
+        }
+        case SPGEMV: {
+            int ret = SMAX::KERNELS::spgemv_register_B(this->spX, user_args);
             va_end(user_args);
             // this->timers->register_B_time->stop();
             return ret;
@@ -96,8 +135,14 @@ class Kernel {
             // this->timers->register_B_time->stop();
             return ret;
         }
-        case SPTSV: {
-            int ret = SMAX::KERNELS::sptsv_register_B(this->X, user_args);
+        case SPTRSV: {
+            int ret = SMAX::KERNELS::sptrsv_register_B(this->dX, user_args);
+            va_end(user_args);
+            // this->timers->register_B_time->stop();
+            return ret;
+        }
+        case SPTRSM: {
+            int ret = SMAX::KERNELS::sptrsm_register_B(this->dX, user_args);
             va_end(user_args);
             // this->timers->register_B_time->stop();
             return ret;
@@ -118,7 +163,20 @@ class Kernel {
 
         switch (this->context.kernel_type) {
         case SPMV: {
-            int ret = SMAX::KERNELS::spmv_register_C(this->Y, user_args);
+            int ret = SMAX::KERNELS::spmv_register_C(this->dY, user_args);
+            va_end(user_args);
+            // this->timers->register_C_time->stop();
+            return ret;
+        }
+        case SPMM: {
+            int ret = SMAX::KERNELS::spmm_register_C(this->dY, user_args);
+            va_end(user_args);
+            // this->timers->register_C_time->stop();
+            return ret;
+        }
+        case SPGEMV: {
+            int ret =
+                SMAX::KERNELS::spgemv_register_C(this->spY_ref, user_args);
             va_end(user_args);
             // this->timers->register_C_time->stop();
             return ret;
@@ -129,8 +187,14 @@ class Kernel {
             // this->timers->register_C_time->stop();
             return ret;
         }
-        case SPTSV: {
-            int ret = SMAX::KERNELS::sptsv_register_C(this->Y, user_args);
+        case SPTRSV: {
+            int ret = SMAX::KERNELS::sptrsv_register_C(this->dY, user_args);
+            va_end(user_args);
+            // this->timers->register_C_time->stop();
+            return ret;
+        }
+        case SPTRSM: {
+            int ret = SMAX::KERNELS::sptrsm_register_C(this->dY, user_args);
             va_end(user_args);
             // this->timers->register_C_time->stop();
             return ret;
@@ -144,21 +208,32 @@ class Kernel {
         return 0;
     }
 
-    int dispatch(std::function<int(KernelContext)> func_spmv,
-                 const char *label_spmv,
-                 std::function<int(KernelContext)> func_spgemm,
-                 const char *label_spgemm,
-                 std::function<int(KernelContext)> func_sptsv,
-                 const char *label_sptsv) {
+    int dispatch(
+        std::function<int(KernelContext)> func_spmv, const char *label_spmv,
+        std::function<int(KernelContext)> func_spmm, const char *label_spmm,
+        std::function<int(KernelContext)> func_spgemv, const char *label_spgemv,
+        std::function<int(KernelContext)> func_spgemm, const char *label_spgemm,
+        std::function<int(KernelContext)> func_sptrsv, const char *label_sptrsv,
+        std::function<int(KernelContext)> func_sptrsm,
+        const char *label_sptrsm) {
         switch (this->context.kernel_type) {
         case SMAX::SPMV:
             CHECK_ERROR(func_spmv(this->context), label_spmv);
             break;
+        case SMAX::SPMM:
+            CHECK_ERROR(func_spmm(this->context), label_spmm);
+            break;
+        case SMAX::SPGEMV:
+            CHECK_ERROR(func_spgemv(this->context), label_spgemv);
+            break;
         case SMAX::SPGEMM:
             CHECK_ERROR(func_spgemm(this->context), label_spgemm);
             break;
-        case SMAX::SPTSV:
-            CHECK_ERROR(func_sptsv(this->context), label_sptsv);
+        case SMAX::SPTRSV:
+            CHECK_ERROR(func_sptrsv(this->context), label_sptrsv);
+            break;
+        case SMAX::SPTRSM:
+            CHECK_ERROR(func_sptrsm(this->context), label_sptrsm);
             break;
         default:
             std::cerr << "Error: Kernel: " << this->kernel_type
@@ -172,21 +247,37 @@ class Kernel {
         // this->timers->initialize_time->start();
         int ret = dispatch(
             [this, A_offset, B_offset, C_offset](KernelContext context) {
-                return SMAX::KERNELS::spmv_initialize(context, this->A, this->X,
-                                                      this->Y, A_offset,
-                                                      B_offset, C_offset);
+                return SMAX::KERNELS::spmv_initialize(
+                    context, this->A, this->dX, this->dY, A_offset, B_offset,
+                    C_offset);
             },
             "spmv_initialize",
+            [this, A_offset, B_offset, C_offset](KernelContext context) {
+                return SMAX::KERNELS::spmm_initialize(
+                    context, this->A, this->dX, this->dY, A_offset, B_offset,
+                    C_offset);
+            },
+            "spmm_initialize",
+            [this](KernelContext context) {
+                return SMAX::KERNELS::spgemv_initialize(
+                    context, this->A, this->spX, this->spY_ref);
+            },
+            "spgemv_initialize",
             [this](KernelContext context) {
                 return SMAX::KERNELS::spgemm_initialize(context, this->A,
                                                         this->B, this->C_ref);
             },
             "spgemm_initialize",
             [this](KernelContext context) {
-                return SMAX::KERNELS::sptsv_initialize(context, this->A,
-                                                       this->X, this->Y);
+                return SMAX::KERNELS::sptrsv_initialize(context, this->A,
+                                                        this->dX, this->dY);
             },
-            "sptsv_initialize");
+            "sptrsv_initialize",
+            [this](KernelContext context) {
+                return SMAX::KERNELS::sptrsm_initialize(context, this->A,
+                                                        this->dX, this->dY);
+            },
+            "sptrsm_initialize");
         // this->timers->initialize_time->stop();
         return ret;
     }
@@ -195,21 +286,37 @@ class Kernel {
         // this->timers->apply_time->start();
         int ret = dispatch(
             [this, A_offset, B_offset, C_offset](KernelContext context) {
-                return SMAX::KERNELS::spmv_apply(context, this->A, this->X,
-                                                 this->Y, A_offset, B_offset,
+                return SMAX::KERNELS::spmv_apply(context, this->A, this->dX,
+                                                 this->dY, A_offset, B_offset,
                                                  C_offset);
             },
             "spmv_apply",
+            [this, A_offset, B_offset, C_offset](KernelContext context) {
+                return SMAX::KERNELS::spmm_apply(context, this->A, this->dX,
+                                                 this->dY, A_offset, B_offset,
+                                                 C_offset);
+            },
+            "spmm_apply",
+            [this](KernelContext context) {
+                return SMAX::KERNELS::spgemv_apply(context, this->A, this->spX,
+                                                   this->spY_ref);
+            },
+            "spgemv_apply",
             [this](KernelContext context) {
                 return SMAX::KERNELS::spgemm_apply(context, this->A, this->B,
                                                    this->C_ref);
             },
             "spgemm_apply",
             [this](KernelContext context) {
-                return SMAX::KERNELS::sptsv_apply(context, this->A, this->X,
-                                                  this->Y);
+                return SMAX::KERNELS::sptrsv_apply(context, this->A, this->dX,
+                                                   this->dY);
             },
-            "sptsv_apply");
+            "sptrsv_apply",
+            [this](KernelContext context) {
+                return SMAX::KERNELS::sptrsm_apply(context, this->A, this->dX,
+                                                   this->dY);
+            },
+            "sptrsm_apply");
         // this->timers->apply_time->stop();
         return ret;
     }
@@ -218,21 +325,37 @@ class Kernel {
         // this->timers->finalize_time->start();
         int ret = dispatch(
             [this, A_offset, B_offset, C_offset](KernelContext context) {
-                return SMAX::KERNELS::spmv_finalize(context, this->A, this->X,
-                                                    this->Y, A_offset, B_offset,
-                                                    C_offset);
+                return SMAX::KERNELS::spmv_finalize(context, this->A, this->dX,
+                                                    this->dY, A_offset,
+                                                    B_offset, C_offset);
             },
             "spmv_finalize",
+            [this, A_offset, B_offset, C_offset](KernelContext context) {
+                return SMAX::KERNELS::spmm_finalize(context, this->A, this->dX,
+                                                    this->dY, A_offset,
+                                                    B_offset, C_offset);
+            },
+            "spmm_finalize",
+            [this](KernelContext context) {
+                return SMAX::KERNELS::spgemv_finalize(context, this->A,
+                                                      this->spX, this->spY_ref);
+            },
+            "spgemv_finalize",
             [this](KernelContext context) {
                 return SMAX::KERNELS::spgemm_finalize(context, this->A, this->B,
                                                       this->C_ref);
             },
             "spgemm_finalize",
             [this](KernelContext context) {
-                return SMAX::KERNELS::sptsv_finalize(context, this->A, this->X,
-                                                     this->Y);
+                return SMAX::KERNELS::sptrsv_finalize(context, this->A,
+                                                      this->dX, this->dY);
             },
-            "sptsv_finalize");
+            "sptrsv_finalize",
+            [this](KernelContext context) {
+                return SMAX::KERNELS::sptrsm_finalize(context, this->A,
+                                                      this->dX, this->dY);
+            },
+            "sptrsm_finalize");
         // this->timers->finalize_time->stop();
         return ret;
     }
@@ -292,4 +415,4 @@ class Kernel {
 
 } // namespace SMAX
 
-#endif // KERNEL_HPP
+#endif // SMAX_KERNEL_HPP

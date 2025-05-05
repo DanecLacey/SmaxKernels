@@ -1,5 +1,5 @@
-#ifndef SPMV_COMMON_HPP
-#define SPMV_COMMON_HPP
+#ifndef SMAX_SPMV_COMMON_HPP
+#define SMAX_SPMV_COMMON_HPP
 
 #include "../../common.hpp"
 #include "../kernels_common.hpp"
@@ -20,4 +20,4 @@ class SPMVKernelErrorHandler : public KernelErrorHandler {
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SPMV_COMMON_HPP
+#endif // SMAX_SPMV_COMMON_HPP

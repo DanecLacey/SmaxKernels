@@ -1,5 +1,5 @@
-#ifndef SPGEMM_CPU_HPP
-#define SPGEMM_CPU_HPP
+#ifndef SMAX_SPGEMM_CPU_HPP
+#define SMAX_SPGEMM_CPU_HPP
 
 #include "../../common.hpp"
 #include "spgemm_cpu/spgemm_cpu_core.hpp"
@@ -90,4 +90,4 @@ int spgemm_finalize_cpu(KernelContext context, SparseMatrix *A, SparseMatrix *B,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SPGEMM_CPU_HPP
+#endif // SMAX_SPGEMM_CPU_HPP

@@ -62,9 +62,12 @@ int Interface::register_kernel(const std::string &name, KernelType type,
     this->kernels[name]->A = new SparseMatrix();
     this->kernels[name]->B = new SparseMatrix();
     this->kernels[name]->C = new SparseMatrix();
-    this->kernels[name]->C_ref = new SparseMatrixRef();
-    this->kernels[name]->X = new DenseMatrix();
-    this->kernels[name]->Y = new DenseMatrix();
+    this->kernels[name]->C_ref = new SparseMatrixRef(); // SMAX will resize
+    this->kernels[name]->dX = new DenseMatrix();
+    this->kernels[name]->dY = new DenseMatrix();
+    this->kernels[name]->spX = new SparseVector();
+    this->kernels[name]->spY = new SparseVector();
+    this->kernels[name]->spY_ref = new SparseVectorRef(); // SMAX will resize
 
     return 0;
 }

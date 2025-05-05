@@ -1,5 +1,5 @@
-#ifndef SPGEMM_NUMERICAL_CPU_IMPL_HPP
-#define SPGEMM_NUMERICAL_CPU_IMPL_HPP
+#ifndef SMAX_SPGEMM_NUMERICAL_CPU_IMPL_HPP
+#define SMAX_SPGEMM_NUMERICAL_CPU_IMPL_HPP
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
@@ -69,4 +69,4 @@ basic_numerical_phase(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SPGEMM_NUMERICAL_CPU_IMPL_HPP
+#endif // SMAX_SPGEMM_NUMERICAL_CPU_IMPL_HPP
