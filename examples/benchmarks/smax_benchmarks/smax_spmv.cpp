@@ -1,10 +1,10 @@
 #include "../../examples_common.hpp"
+#include "../../spmv_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "smax_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_MTX;
-
+    INIT_SPMV;
     DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
     DenseMatrix *y = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
 
@@ -48,7 +48,8 @@ int main(int argc, char *argv[]) {
 
     RUN_BENCH;
     PRINT_SPMV_BENCH;
-    SPMV_CLEANUP;
+    FINALIZE_SPMV;
+    delete bench_harness;
     delete x;
     delete y;
 

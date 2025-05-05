@@ -1,9 +1,10 @@
 #include "../../examples_common.hpp"
+#include "../../spmv_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "petsc_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_MTX;
+    INIT_SPMV;
 
     PetscErrorCode ierr;
     ierr = PetscInitialize(&argc, &argv, NULL, NULL);
@@ -57,7 +58,8 @@ int main(int argc, char *argv[]) {
 
     RUN_BENCH;
     PRINT_SPMV_BENCH;
-    SPMV_CLEANUP;
+    FINALIZE_SPMV;
+    delete bench_harness;
 
     ierr = VecDestroy(&x);
     CHKERRQ(ierr);

@@ -2,7 +2,10 @@
 #define EXAMPLES_COMMON_HPP
 
 #include "mmio.hpp"
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <math.h>
 #include <numeric>
 #include <set>
 #include <vector>
@@ -11,18 +14,81 @@
 #include <omp.h>
 #endif
 
-#define INIT_MTX                                                               \
-    CliParser *parser = new CliParser;                                         \
-    CliParser::CliArgs *cli_args = parser->parse(argc, argv);                  \
-    COOMatrix *coo_mat = new COOMatrix;                                        \
-    coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
-    CRSMatrix *crs_mat = new CRSMatrix;                                        \
-    crs_mat->convert_coo_to_crs(coo_mat);
+#define PRINT_WIDTH 18
 
-#define DESTROY_MTX                                                            \
-    delete parser;                                                             \
-    delete coo_mat;                                                            \
-    delete crs_mat;
+#ifdef _OPENMP
+
+#define GET_THREAD_COUNT int num_threads = omp_get_max_threads();
+#define GET_THREAD_ID int tid = omp_get_thread_num();
+
+#else
+
+#define GET_THREAD_COUNT int num_threads = 1;
+#define GET_THREAD_ID int tid = 0;
+
+#endif
+
+#define REGISTER_SPMV_KERNEL(kernel_name, mat, X, Y)                           \
+    smax->register_kernel(kernel_name, SMAX::SPMV, SMAX::CPU);                 \
+    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
+                                           &mat->col, &mat->row_ptr,           \
+                                           &mat->values);                      \
+    smax->kernels[kernel_name]->register_B(mat->n_cols, &X->values);           \
+    smax->kernels[kernel_name]->register_C(mat->n_rows, &Y->values);
+
+#define REGISTER_SPMM_KERNEL(kernel_name, mat, n_vectors, X, Y)                \
+    smax->register_kernel(kernel_name, SMAX::SPMM, SMAX::CPU);                 \
+    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
+                                           &mat->col, &mat->row_ptr,           \
+                                           &mat->values);                      \
+    smax->kernels[kernel_name]->register_B(mat->n_cols, n_vectors,             \
+                                           &X->values);                        \
+    smax->kernels[kernel_name]->register_C(mat->n_rows, n_vectors, &Y->values);
+
+#define REGISTER_SPTRSV_KERNEL(kernel_name, mat, X, Y)                         \
+    smax->register_kernel(kernel_name, SMAX::SPTRSV, SMAX::CPU);               \
+    smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
+                                           &mat->col, &mat->row_ptr,           \
+                                           &mat->values);                      \
+    smax->kernels[kernel_name]->register_B(mat->n_cols, &X->values);           \
+    smax->kernels[kernel_name]->register_C(mat->n_rows, &Y->values);
+
+#define DIFF_STATUS_MACRO(relative_diff, working_file)                         \
+    do {                                                                       \
+        if ((std::abs(relative_diff) > 0.01) || std::isinf(relative_diff)) {   \
+            working_file << std::left << std::setw(PRINT_WIDTH) << "ERROR";    \
+        } else if (std::abs(relative_diff) > 0.0001) {                         \
+            working_file << std::left << std::setw(PRINT_WIDTH) << "WARNING";  \
+        }                                                                      \
+    } while (0)
+
+#define UPDATE_MAX_DIFFS(i, y_MKL, y_SMAX, relative_diff, absolute_diff)       \
+    do {                                                                       \
+        if ((relative_diff) > max_relative_diff) {                             \
+            max_relative_diff = (relative_diff);                               \
+            max_relative_diff_elem_SMAX = (y_SMAX)[(i)];                       \
+            max_relative_diff_elem_MKL = (y_MKL)[(i)];                         \
+        }                                                                      \
+        if ((absolute_diff) > max_absolute_diff) {                             \
+            max_absolute_diff = (absolute_diff);                               \
+            max_absolute_diff_elem_SMAX = (y_SMAX)[(i)];                       \
+            max_absolute_diff_elem_MKL = (y_MKL)[(i)];                         \
+        }                                                                      \
+    } while (0)
+
+#define CHECK_MAX_DIFFS_AND_PRINT_ERROR_WARNING(                               \
+    max_relative_diff, max_absolute_diff, working_file)                        \
+    do {                                                                       \
+        if ((((std::abs(max_relative_diff) > 0.01) ||                          \
+              std::isnan(max_relative_diff) ||                                 \
+              std::isinf(max_relative_diff)) ||                                \
+             (std::isnan(max_absolute_diff) ||                                 \
+              std::isinf(max_absolute_diff)))) {                               \
+            working_file << std::left << std::setw(PRINT_WIDTH) << "ERROR";    \
+        } else if (std::abs(max_relative_diff) > 0.0001) {                     \
+            working_file << std::left << std::setw(PRINT_WIDTH) << "WARNING";  \
+        }                                                                      \
+    } while (0)
 
 inline void sort_perm(int *arr, int *perm, int len, bool rev = false) {
     if (rev == false) {
@@ -36,40 +102,41 @@ inline void sort_perm(int *arr, int *perm, int len, bool rev = false) {
     }
 }
 
+double compute_euclid_dist(const int n_rows, const double *y_SMAX,
+                           const double *y_MKL) {
+    double tmp = 0.0;
+
+#pragma omp parallel for reduction(+ : tmp)
+    for (int i = 0; i < n_rows; ++i) {
+        tmp += (y_SMAX[i] - y_MKL[i]) * (y_SMAX[i] - y_MKL[i]);
+    }
+
+    return std::sqrt(tmp);
+}
+
 // DL 4.5.25 TODO: Probably a better idea to leave args_ private and add an
 // accessor
 class CliParser {
   public:
     struct CliArgs {
         std::string matrix_file_name;
-        int block_vec_width;
+        virtual ~CliArgs() = default;
     };
 
+  protected:
     CliArgs *args_;
 
+  public:
     CliParser() : args_(nullptr) {}
+    virtual ~CliParser() { delete args_; }
 
-    ~CliParser() { delete args_; }
-
-    CliArgs *parse(int argc, char *argv[]) {
-
-        int _block_vec_width = -1;
-        if (argc > 3) {
-            std::cerr << "Usage: " << argv[0]
-                      << " <matrix_file.mtx> <block_vec_width>\n";
-            std::exit(EXIT_FAILURE);
-        } else if (argc < 3) {
-            _block_vec_width = 1;
-        } else {
-            _block_vec_width = atoi(argv[2]);
-        }
-
-        delete args_; // Clean up if called multiple times
+    virtual CliArgs *parse(int argc, char *argv[]) {
+        delete args_;
         args_ = new CliArgs();
-        args_->matrix_file_name = argv[1];
-        args_->block_vec_width = _block_vec_width;
         return args_;
     }
+
+    CliArgs *args() const { return args_; }
 };
 
 struct COOMatrix {
@@ -350,4 +417,67 @@ struct DenseMatrix {
         std::cout << std::endl;
     }
 };
+
+void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
+    // Count nnz
+    for (int i = 0; i < A.n_rows; ++i) {
+        int row_start = A.row_ptr[i];
+        int row_end = A.row_ptr[i + 1];
+
+        // Loop over each non-zero entry in the current row
+        for (int idx = row_start; idx < row_end; ++idx) {
+            int col = A.col[idx];
+
+            if (col <= i) {
+                ++D_plus_L.nnz;
+            } else {
+                ++U.nnz;
+            }
+        }
+    }
+
+    // Allocate heap space and assign known metadata
+    D_plus_L.values = new double[D_plus_L.nnz];
+    D_plus_L.col = new int[D_plus_L.nnz];
+    D_plus_L.row_ptr = new int[A.n_rows + 1];
+    D_plus_L.row_ptr[0] = 0;
+    D_plus_L.n_rows = A.n_rows;
+    D_plus_L.n_cols = A.n_cols;
+
+    U.values = new double[U.nnz];
+    U.col = new int[U.nnz];
+    U.row_ptr = new int[A.n_rows + 1];
+    U.row_ptr[0] = 0;
+    U.n_rows = A.n_rows;
+    U.n_cols = A.n_cols;
+
+    // Assign nonzeros
+    int D_plus_L_count = 0;
+    int U_count = 0;
+    for (int i = 0; i < A.n_rows; ++i) {
+        int row_start = A.row_ptr[i];
+        int row_end = A.row_ptr[i + 1];
+
+        // Loop over each non-zero entry in the current row
+        for (int idx = row_start; idx < row_end; ++idx) {
+            int col = A.col[idx];
+            double val = A.values[idx];
+
+            if (col <= i) {
+                // Diagonal or lower triangular part (D + L)
+                D_plus_L.values[D_plus_L_count] = val;
+                D_plus_L.col[D_plus_L_count++] = col;
+            } else {
+                // Strictly upper triangular part (U)
+                U.values[U_count] = val;
+                U.col[U_count++] = col;
+            }
+        }
+
+        // Update row pointers
+        D_plus_L.row_ptr[i + 1] = D_plus_L_count;
+        U.row_ptr[i + 1] = U_count;
+    }
+}
+
 #endif // EXAMPLES_COMMON_HPP

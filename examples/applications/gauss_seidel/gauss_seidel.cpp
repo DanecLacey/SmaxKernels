@@ -54,14 +54,14 @@ void solve(double *b, double *tmp, double *residual, int n_rows, int &n_iters,
 
 int main(void) {
     // Set up problem
-    CRSMatrix A = create1DPoissonMatrixCRS(DOMAIN_SIZE);
-    DenseMatrix *x = new DenseMatrix(A.n_cols, 1, 0.0);
-    DenseMatrix *b = new DenseMatrix(A.n_cols, 1, 1.0);
-    DenseMatrix *tmp = new DenseMatrix(A.n_cols, 1, 0.0);
-    DenseMatrix *residual = new DenseMatrix(A.n_cols, 1, 0.0);
-    CRSMatrix D_plus_L;
-    CRSMatrix U;
-    extract_D_L_U(A, D_plus_L, U);
+    CRSMatrix *A = create1DPoissonMatrixCRS(DOMAIN_SIZE);
+    DenseMatrix *x = new DenseMatrix(A->n_cols, 1, 0.0);
+    DenseMatrix *b = new DenseMatrix(A->n_cols, 1, 1.0);
+    DenseMatrix *tmp = new DenseMatrix(A->n_cols, 1, 0.0);
+    DenseMatrix *residual = new DenseMatrix(A->n_cols, 1, 0.0);
+    CRSMatrix *D_plus_L = new CRSMatrix();
+    CRSMatrix *U = new CRSMatrix();
+    extract_D_L_U(*A, *D_plus_L, *U);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
@@ -93,5 +93,7 @@ int main(void) {
     delete tmp;
     delete residual;
     delete smax;
+    delete U;
+    delete D_plus_L;
     return 0;
 }

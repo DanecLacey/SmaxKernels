@@ -1,9 +1,10 @@
 #include "../../examples_common.hpp"
+#include "../../spmv_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "eigen_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_MTX;
+    INIT_SPMV;
 
     Eigen::VectorXd eigen_x = Eigen::VectorXd::Constant(crs_mat->n_cols, 1.0);
     Eigen::VectorXd eigen_y = Eigen::VectorXd::Constant(crs_mat->n_rows, 0.0);
@@ -54,7 +55,8 @@ int main(int argc, char *argv[]) {
 
     RUN_BENCH;
     PRINT_SPMV_BENCH;
-    SPMV_CLEANUP;
+    FINALIZE_SPMV;
+    delete bench_harness;
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;

@@ -17,9 +17,6 @@
 
 #define MIN_BENCH_TIME 1.0
 #define MIN_NUM_ITERS 1000
-#define SPMV_FLOPS_PER_NZ 2
-#define SPLTSV_FLOPS_PER_NZ 2
-#define SPLTSV_FLOPS_PER_ROW 2
 #define GF_TO_F 1000000000
 #define F_TO_GF 0.000000001
 
@@ -121,56 +118,6 @@ void init_pin() {
     bench_harness->warmup();                                                   \
     printf("Warmup complete\n");                                               \
     bench_harness->bench();                                                    \
-    printf("Bench complete\n");
-
-#define PRINT_SPMV_BENCH                                                       \
-    std::cout << "----------------" << std::endl;                              \
-    std::cout << "--" << bench_name << " Bench--" << std::endl;                \
-    std::cout << cli_args->matrix_file_name << " with " << n_threads           \
-              << " thread(s)" << std::endl;                                    \
-    std::cout << "Runtime: " << runtime << std::endl;                          \
-    std::cout << "Iterations: " << n_iter << std::endl;                        \
-                                                                               \
-    long flops_per_iter = crs_mat->nnz * SPMV_FLOPS_PER_NZ;                    \
-    long iter_per_second = static_cast<long>(n_iter / runtime);                \
-                                                                               \
-    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
-              << " [GF/s]" << std::endl;                                       \
-    std::cout << "----------------" << std::endl;
-
-#define SPMV_CLEANUP                                                           \
-    delete cli_args;                                                           \
-    delete coo_mat;                                                            \
-    delete crs_mat;                                                            \
-    delete bench_harness;
-
-#define PRINT_SPTSV_BENCH(bench_name, cli_args, n_threads, runtime, n_iter,    \
-                          crs_mat_L)                                           \
-    std::cout << "----------------" << std::endl;                              \
-    std::cout << "--" << bench_name << " Bench--" << std::endl;                \
-    std::cout << (cli_args)->matrix_file_name << " with " << (n_threads)       \
-              << " thread(s)" << std::endl;                                    \
-    std::cout << "Runtime: " << (runtime) << std::endl;                        \
-    std::cout << "Iterations: " << (n_iter) << std::endl;                      \
-                                                                               \
-    long flops_per_iter = ((crs_mat_L)->nnz * SPLTSV_FLOPS_PER_NZ +            \
-                           (crs_mat_L)->n_rows * SPLTSV_FLOPS_PER_ROW);        \
-    long iter_per_second = static_cast<long>((n_iter) / (runtime));            \
-                                                                               \
-    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
-              << " [GF/s]" << std::endl;                                       \
-    std::cout << "----------------" << std::endl;
-
-#define SPTSV_CLEANUP                                                          \
-    delete cli_args;                                                           \
-    delete coo_mat;                                                            \
-    delete crs_mat;                                                            \
-    delete coo_mat_L;                                                          \
-    delete coo_mat_U;                                                          \
-    delete crs_mat_L;                                                          \
-    delete bench_harness;                                                      \
-    delete[] D;                                                                \
-    delete[] x;                                                                \
-    delete[] b;
+    printf("Bench complete\n")
 
 #endif // BENCHMARKS_COMMON_HPP
