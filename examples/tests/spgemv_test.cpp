@@ -37,7 +37,7 @@ int main(void) {
 
     smax->print_timers();
 
-    print_sparse_vector<int, double>(Y_n_rows, Y_nnz, Y_idx, Y_val);
+    print_sparse_vector<int, double>(Y_nnz, Y_idx, Y_val);
 
     delete[] A_col;
     delete[] A_row_ptr;

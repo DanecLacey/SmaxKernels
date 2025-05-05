@@ -74,7 +74,6 @@ int main(void) {
     // Compute initial residual norm
     double residual_norm = check_residual(b->values, tmp->values,
                                           residual->values, b->n_rows, smax);
-    std::cout << "Initial residual norm: " << residual_norm << std::endl;
 
     // Iterate until convergence is reached
     int n_iters = 0;
