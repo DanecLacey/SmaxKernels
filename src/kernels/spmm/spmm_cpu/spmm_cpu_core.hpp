@@ -37,8 +37,6 @@ int spmm_apply_cpu_core(KernelContext context, SparseMatrix *_A,
     VT *Y = as<VT *>(_Y->val);
     int block_vector_size = _X->n_cols;
 
-    printf("A_n_rows = %d\n", A_n_rows);
-
 #if 1
     naive_crs_spmm<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val,
                            X + X_offset, Y + Y_offset, block_vector_size);

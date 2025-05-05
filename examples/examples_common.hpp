@@ -52,16 +52,22 @@ class CliParser {
     ~CliParser() { delete args_; }
 
     CliArgs *parse(int argc, char *argv[]) {
-        if (argc < 2 || argc > 3) {
+
+        int _block_vec_width = -1;
+        if (argc > 3) {
             std::cerr << "Usage: " << argv[0]
                       << " <matrix_file.mtx> <block_vec_width>\n";
             std::exit(EXIT_FAILURE);
+        } else if (argc < 3) {
+            _block_vec_width = 1;
+        } else {
+            _block_vec_width = atoi(argv[2]);
         }
 
         delete args_; // Clean up if called multiple times
         args_ = new CliArgs();
         args_->matrix_file_name = argv[1];
-        args_->block_vec_width = atoi(argv[2]);
+        args_->block_vec_width = _block_vec_width;
         return args_;
     }
 };

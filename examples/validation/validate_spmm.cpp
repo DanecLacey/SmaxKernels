@@ -1,11 +1,11 @@
 #include "../examples_common.hpp"
 #include "validation_common.hpp"
 
-void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
-                  const std::string mtx_name) {
+void compare_spmm(const int n_rows, const int n_vectors, const double *y_SMAX,
+                  const double *y_MKL, const std::string mtx_name) {
 
     std::fstream working_file;
-    std::string output_filename = "compare_spmv.txt";
+    std::string output_filename = "compare_spmm.txt";
     working_file.open(output_filename,
                       std::fstream::in | std::fstream::out | std::fstream::app);
 
@@ -65,7 +65,7 @@ void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
 
     // Print comparison
     int vec_count = 0;
-    for (int i = 0; i < n_rows; ++i) {
+    for (int i = 0; i < n_rows * n_vectors; ++i) {
 
         relative_diff = std::abs(y_MKL[i] - y_SMAX[i]) / y_MKL[i];
         absolute_diff = std::abs(y_MKL[i] - y_SMAX[i]);
@@ -141,23 +141,26 @@ void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
 int main(int argc, char *argv[]) {
     INIT_MTX;
 
-    DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *y_smax = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
-    DenseMatrix *y_mkl = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
+    int n_vectors = cli_args->block_vec_width;
 
-    // Smax SpMV
+    DenseMatrix *X = new DenseMatrix(crs_mat->n_cols, n_vectors, 1.0);
+    DenseMatrix *Y_smax = new DenseMatrix(crs_mat->n_cols, n_vectors, 0.0);
+    DenseMatrix *Y_mkl = new DenseMatrix(crs_mat->n_cols, n_vectors, 0.0);
+
+    // Smax SpMM
     SMAX::Interface *smax = new SMAX::Interface();
 
-    smax->register_kernel("spmv", SMAX::SPMV, SMAX::CPU);
-    smax->kernels["spmv"]->register_A(crs_mat->n_rows, crs_mat->n_cols,
+    smax->register_kernel("spmm", SMAX::SPMM, SMAX::CPU);
+    smax->kernels["spmm"]->register_A(crs_mat->n_rows, crs_mat->n_cols,
                                       crs_mat->nnz, &crs_mat->col,
                                       &crs_mat->row_ptr, &crs_mat->values);
-    smax->kernels["spmv"]->register_B(crs_mat->n_cols, &x->values);
-    smax->kernels["spmv"]->register_C(crs_mat->n_rows, &y_smax->values);
+    smax->kernels["spmm"]->register_B(crs_mat->n_cols, n_vectors, &X->values);
+    smax->kernels["spmm"]->register_C(crs_mat->n_rows, n_vectors,
+                                      &Y_smax->values);
 
-    smax->kernels["spmv"]->run();
+    smax->kernels["spmm"]->run();
 
-    // MKL SpMM (SpMV with block vectors)
+    // MKL SpMM
     sparse_matrix_t A;
     matrix_descr descr;
     descr.type = SPARSE_MATRIX_TYPE_GENERAL;
@@ -179,21 +182,28 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    status = mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr,
-                             x->values, 0.0, y_mkl->values);
+    status = mkl_sparse_d_mm(SPARSE_OPERATION_NON_TRANSPOSE,
+                             1.0, // alpha
+                             A, descr, SPARSE_LAYOUT_COLUMN_MAJOR, X->values,
+                             n_vectors,
+                             crs_mat->n_cols, // leading dimension of X
+                             0.0,             // beta
+                             Y_mkl->values,
+                             crs_mat->n_rows // leading dimension of Y
+    );
 
     if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "MKL sparse matrix-vector multiply failed.\n";
+        std::cerr << "MKL sparse matrix-matrix multiply failed.\n";
         return 1;
     }
 
     // Compare
-    compare_spmv(crs_mat->n_rows, y_smax->values, y_mkl->values,
+    compare_spmm(crs_mat->n_rows, n_vectors, Y_smax->values, Y_mkl->values,
                  cli_args->matrix_file_name);
 
-    delete x;
-    delete y_smax;
-    delete y_mkl;
+    delete X;
+    delete Y_smax;
+    delete Y_mkl;
     mkl_sparse_destroy(A);
     DESTROY_MTX;
 }
