@@ -1,6 +1,8 @@
 #include "error_handler.hpp"
 
 #include <chrono>
+#include <cstdarg>
+#include <cstdio>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -9,6 +11,7 @@
 
 #define LINE_COUNT_WARNING 100000
 #define LINE_COUNT_ERROR 1000000
+#define BUF_SIZE 1024
 
 namespace SMAX {
 std::ofstream ErrorHandler::log_file;
@@ -84,5 +87,17 @@ void ErrorHandler::warning(const std::string &message) {
 }
 
 void ErrorHandler::log(const std::string &message) { _log(message); }
+
+void ErrorHandler::log(const char *format, ...) {
+
+    char buffer[BUF_SIZE];
+
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, BUF_SIZE, format, args);
+    va_end(args);
+
+    _log(std::string(buffer));
+}
 
 } // namespace SMAX

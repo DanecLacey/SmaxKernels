@@ -15,7 +15,7 @@ inline void native_crs_sptrsm(int A_n_rows, int A_n_cols, int A_nnz,
                               IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
                               VT *RESTRICT A_val, VT *RESTRICT X,
                               VT *RESTRICT Y, int block_vector_size) {
-    SPTRSMKernelErrorHandler::not_implemented();
+    SpTRSMErrorHandler::not_implemented();
 }
 
 } // namespace SPTRSM_CPU

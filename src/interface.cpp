@@ -1,6 +1,7 @@
 #include "interface.hpp"
 #include "common.hpp"
 #include "error_handler.hpp"
+#include "utils.hpp"
 
 #include <functional>
 #include <iomanip>
@@ -18,6 +19,9 @@ Interface::Interface() {
 
     // Initialize logging
     ErrorHandler::initialize_log(".smax_log");
+
+    // Initialize utils
+    this->utils = new Utils{};
 }
 
 Interface::~Interface() {
@@ -26,7 +30,8 @@ Interface::~Interface() {
     for (auto &kv : kernels)
         delete kv.second;
 
-    delete timers;
+    delete this->timers;
+    delete this->utils;
 
     ErrorHandler::close_log();
 }
@@ -48,26 +53,70 @@ Interface::~Interface() {
 // }
 // #endif
 
-int Interface::register_kernel(const std::string &name, KernelType type,
+int Interface::register_kernel(const std::string &name, KernelType kernel_type,
                                PlatformType platform, IntType int_type,
                                FloatType float_type) {
 
-    IF_DEBUG(if (this->kernels.count(name)) {
-        std::cerr << "SMAX Warning: Kernel \"" << name
-                  << "\" already exists. Overwriting.\n";
-        delete this->kernels[name];
-    });
+    // DL 07.05.2025 TODO: Kernel string validation
+    // IF_DEBUG(if (this->kernels.count(name)) {
+    //     std::cerr << "SMAX Warning: Kernel \"" << name
+    //               << "\" already exists. Overwriting.\n";
+    //     delete this->kernels[name];
+    // });
 
-    this->kernels[name] = new Kernel(type, platform, int_type, float_type);
-    this->kernels[name]->A = new SparseMatrix();
-    this->kernels[name]->B = new SparseMatrix();
-    this->kernels[name]->C = new SparseMatrix();
-    this->kernels[name]->C_ref = new SparseMatrixRef(); // SMAX will resize
-    this->kernels[name]->dX = new DenseMatrix();
-    this->kernels[name]->dY = new DenseMatrix();
-    this->kernels[name]->spX = new SparseVector();
-    this->kernels[name]->spY = new SparseVector();
-    this->kernels[name]->spY_ref = new SparseVectorRef(); // SMAX will resize
+    this->kernels[name] =
+        new Kernel(kernel_type, platform, int_type, float_type);
+
+    switch (kernel_type) {
+    case SPMV: {
+        this->kernels[name]->spmv_args = new KERNELS::SPMV::Args();
+        this->kernels[name]->spmv_flags = new KERNELS::SPMV::Flags();
+        break;
+    }
+    case SPMM: {
+        this->kernels[name]->spmm_args = new KERNELS::SPMM::Args();
+        this->kernels[name]->spmm_flags = new KERNELS::SPMM::Flags();
+        break;
+    }
+    case SPGEMV: {
+        this->kernels[name]->spgemv_args = new KERNELS::SPGEMV::Args();
+        this->kernels[name]->spgemv_flags = new KERNELS::SPGEMV::Flags();
+        break;
+    }
+    case SPGEMM: {
+        this->kernels[name]->spgemm_args = new KERNELS::SPGEMM::Args();
+        this->kernels[name]->spgemm_flags = new KERNELS::SPGEMM::Flags();
+        break;
+    }
+    case SPTRSV: {
+        this->kernels[name]->sptrsv_args = new KERNELS::SPTRSV::Args();
+        this->kernels[name]->sptrsv_flags = new KERNELS::SPTRSV::Flags();
+        break;
+    }
+    case SPTRSM: {
+        this->kernels[name]->sptrsm_args = new KERNELS::SPTRSM::Args();
+        this->kernels[name]->sptrsm_flags = new KERNELS::SPTRSM::Flags();
+        break;
+    }
+    default:
+        std::cerr << "Error: Kernel not supported\n";
+        return 1;
+    }
+
+    // if (kernel_type == SPMV) {
+    //     this->kernels[name]->spmv_args = new SpMVArgs();
+    // } else {
+    //     this->kernels[name]->A = new SparseMatrix();
+    //     this->kernels[name]->B = new SparseMatrix();
+    //     this->kernels[name]->C = new SparseMatrix();
+    //     this->kernels[name]->C_ref = new SparseMatrixRef(); // SMAX will
+    //     resize this->kernels[name]->dX = new DenseMatrix();
+    //     this->kernels[name]->dY = new DenseMatrix();
+    //     this->kernels[name]->spX = new SparseVector();
+    //     this->kernels[name]->spY = new SparseVector();
+    //     this->kernels[name]->spY_ref =
+    //         new SparseVectorRef(); // SMAX will resize
+    // }
 
     return 0;
 }

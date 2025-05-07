@@ -455,4 +455,72 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
     }
 }
 
+void extract_D_L_U_arrays(
+
+    int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr, int *A_col,
+    double *A_values, int &D_plus_L_n_rows, int &D_plus_L_n_cols,
+    int &D_plus_L_nnz, int *&D_plus_L_row_ptr, int *&D_plus_L_col,
+    double *&D_plus_L_values, int &U_n_rows, int &U_n_cols, int &U_nnz,
+    int *&U_row_ptr, int *&U_col, double *&U_values) {
+    // Count nnz
+    for (int i = 0; i < A_n_rows; ++i) {
+        int row_start = A_row_ptr[i];
+        int row_end = A_row_ptr[i + 1];
+
+        // Loop over each non-zero entry in the current row
+        for (int idx = row_start; idx < row_end; ++idx) {
+            int col = A_col[idx];
+
+            if (col <= i) {
+                ++D_plus_L_nnz;
+            } else {
+                ++U_nnz;
+            }
+        }
+    }
+
+    // Allocate heap space and assign known metadata
+    D_plus_L_values = new double[D_plus_L_nnz];
+    D_plus_L_col = new int[D_plus_L_nnz];
+    D_plus_L_row_ptr = new int[A_n_rows + 1];
+    D_plus_L_row_ptr[0] = 0;
+    D_plus_L_n_rows = A_n_rows;
+    D_plus_L_n_cols = A_n_cols;
+
+    U_values = new double[U_nnz];
+    U_col = new int[U_nnz];
+    U_row_ptr = new int[A_n_rows + 1];
+    U_row_ptr[0] = 0;
+    U_n_rows = A_n_rows;
+    U_n_cols = A_n_cols;
+
+    // Assign nonzeros
+    int D_plus_L_count = 0;
+    int U_count = 0;
+    for (int i = 0; i < A_n_rows; ++i) {
+        int row_start = A_row_ptr[i];
+        int row_end = A_row_ptr[i + 1];
+
+        // Loop over each non-zero entry in the current row
+        for (int idx = row_start; idx < row_end; ++idx) {
+            int col = A_col[idx];
+            double val = A_values[idx];
+
+            if (col <= i) {
+                // Diagonal or lower triangular part (D + L)
+                D_plus_L_values[D_plus_L_count] = val;
+                D_plus_L_col[D_plus_L_count++] = col;
+            } else {
+                // Strictly upper triangular part (U)
+                U_values[U_count] = val;
+                U_col[U_count++] = col;
+            }
+        }
+
+        // Update row pointers
+        D_plus_L_row_ptr[i + 1] = D_plus_L_count;
+        U_row_ptr[i + 1] = U_count;
+    }
+}
+
 #endif // SMAX_EXAMPLES_COMMON_HPP

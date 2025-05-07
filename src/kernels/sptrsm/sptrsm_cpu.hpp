@@ -11,41 +11,39 @@ namespace SPTRSM {
 // These templated structs are just little helpers to wrap the core functions.
 // The operator() function is called in the dispatch_sptrsm function to execute
 // the correct function for the given types.
-template <typename IT, typename VT> struct SpmvInit {
-    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                   DenseMatrix *Y) {
-        return SPTRSM_CPU::sptrsm_initialize_cpu_core<IT, VT>(context, A, X, Y);
+template <typename IT, typename VT> struct Init {
+    int operator()(KernelContext context, Args *args, Flags *flags) {
+        return SPTRSM_CPU::sptrsm_initialize_cpu_core<IT, VT>(context, args,
+                                                              flags);
     }
 };
 
-template <typename IT, typename VT> struct SpmvApply {
-    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                   DenseMatrix *Y) {
-        return SPTRSM_CPU::sptrsm_apply_cpu_core<IT, VT>(context, A, X, Y);
+template <typename IT, typename VT> struct Apply {
+    int operator()(KernelContext context, Args *args, Flags *flags) {
+        return SPTRSM_CPU::sptrsm_apply_cpu_core<IT, VT>(context, args, flags);
     }
 };
 
-template <typename IT, typename VT> struct SpmvFinalize {
-    int operator()(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                   DenseMatrix *Y) {
-        return SPTRSM_CPU::sptrsm_finalize_cpu_core<IT, VT>(context, A, X, Y);
+template <typename IT, typename VT> struct Finalize {
+    int operator()(KernelContext context, Args *args, Flags *flags) {
+        return SPTRSM_CPU::sptrsm_finalize_cpu_core<IT, VT>(context, args,
+                                                            flags);
     }
 };
 
 // The dispatcher function uses the above () operator with the correct
 // integer and floating point types.
 template <template <typename IT, typename VT> class Func>
-int sptrsm_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                        DenseMatrix *Y) {
+int sptrsm_dispatch_cpu(KernelContext context, Args *args, Flags *flags) {
     switch (context.float_type) {
     case FLOAT32:
         switch (context.int_type) {
         case UINT16:
-            return Func<uint16_t, float>()(context, A, X, Y);
+            return Func<uint16_t, float>()(context, args, flags);
         case UINT32:
-            return Func<uint32_t, float>()(context, A, X, Y);
+            return Func<uint32_t, float>()(context, args, flags);
         case UINT64:
-            return Func<uint64_t, float>()(context, A, X, Y);
+            return Func<uint64_t, float>()(context, args, flags);
         default:
             std::cerr << "Error: Int type not supported\n";
             return 1;
@@ -53,11 +51,11 @@ int sptrsm_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
     case FLOAT64:
         switch (context.int_type) {
         case UINT16:
-            return Func<uint16_t, double>()(context, A, X, Y);
+            return Func<uint16_t, double>()(context, args, flags);
         case UINT32:
-            return Func<uint32_t, double>()(context, A, X, Y);
+            return Func<uint32_t, double>()(context, args, flags);
         case UINT64:
-            return Func<uint64_t, double>()(context, A, X, Y);
+            return Func<uint64_t, double>()(context, args, flags);
         default:
             std::cerr << "Unsupported int type\n";
             return 1;
@@ -71,17 +69,14 @@ int sptrsm_dispatch_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
 }
 
 // These invoke the dispatcher function with the correct template parameters
-int sptrsm_initialize_cpu(KernelContext context, SparseMatrix *A,
-                          DenseMatrix *X, DenseMatrix *Y) {
-    return sptrsm_dispatch_cpu<SpmvInit>(context, A, X, Y);
+int sptrsm_initialize_cpu(KernelContext context, Args *args, Flags *flags) {
+    return sptrsm_dispatch_cpu<Init>(context, args, flags);
 }
-int sptrsm_apply_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                     DenseMatrix *Y) {
-    return sptrsm_dispatch_cpu<SpmvApply>(context, A, X, Y);
+int sptrsm_apply_cpu(KernelContext context, Args *args, Flags *flags) {
+    return sptrsm_dispatch_cpu<Apply>(context, args, flags);
 }
-int sptrsm_finalize_cpu(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                        DenseMatrix *Y) {
-    return sptrsm_dispatch_cpu<SpmvFinalize>(context, A, X, Y);
+int sptrsm_finalize_cpu(KernelContext context, Args *args, Flags *flags) {
+    return sptrsm_dispatch_cpu<Finalize>(context, args, flags);
 }
 
 } // namespace SPTRSM

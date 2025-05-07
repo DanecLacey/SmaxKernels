@@ -29,8 +29,7 @@ inline void naive_crs_spmv(int A_n_rows, int A_n_cols, int A_nnz,
                 printf("X[A_col[%d]] = %f\n", j, X[A_col[j]]);
 #endif
                 if (A_col[j] < 0 || A_col[j] >= (IT)A_n_cols)
-                    SPMVKernelErrorHandler::col_oob<IT>(A_col[j], j,
-                                                        A_n_cols););
+                    SpMVErrorHandler::col_oob<IT>(A_col[j], j, A_n_cols););
 
             sum += A_val[j] * X[A_col[j]];
         }

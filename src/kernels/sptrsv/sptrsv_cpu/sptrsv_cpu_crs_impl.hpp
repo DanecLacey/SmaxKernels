@@ -11,12 +11,6 @@ namespace SPTRSV {
 namespace SPTRSV_CPU {
 
 // TODO: JH
-// // Saad: Iterative Methods for Sparse Linear Systems (ch 11.6)
-// void spltsv_lvl(
-
-// ){
-//     // TODO
-// }
 
 // // https://icl.utk.edu/files/publications/2018/icl-utk-1067-2018.pdf
 // // https://www.nrel.gov/docs/fy22osti/80263.pdf
@@ -43,9 +37,9 @@ inline void naive_crs_sptrsv(int A_n_rows, int A_n_cols, int A_nnz,
         VT diag = 0.0;
 
         for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
-            IF_DEBUG(if (A_col[j] < 0 || A_col[j] >= A_n_cols)
-                         SPTRSVKernelErrorHandler::col_oob<IT>(A_col[j], j,
-                                                               A_n_cols););
+            IF_DEBUG(
+                if (A_col[j] < 0 || A_col[j] >= A_n_cols)
+                    SpTRSVErrorHandler::col_oob<IT>(A_col[j], j, A_n_cols););
             VT val = A_val[j];
 
             if (A_col[j] < i) {
@@ -55,12 +49,11 @@ inline void naive_crs_sptrsv(int A_n_rows, int A_n_cols, int A_nnz,
             } else {
                 IF_DEBUG(
                     printf("row: %d, col: %d, val: %f\n", i, A_col[j], val));
-                IF_DEBUG(SPTRSVKernelErrorHandler::super_diag());
+                IF_DEBUG(SpTRSVErrorHandler::super_diag());
             }
         }
 
-        IF_DEBUG(
-            if (abs(diag) < 1e-16) { SPTRSVKernelErrorHandler::zero_diag(); });
+        IF_DEBUG(if (abs(diag) < 1e-16) { SpTRSVErrorHandler::zero_diag(); });
 
         X[i] = (Y[i] - sum) / diag;
     }

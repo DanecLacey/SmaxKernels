@@ -38,17 +38,17 @@ int spmm_register_C(DenseMatrix *Y, va_list args) {
     return 0;
 }
 
-int spmm_dispatch(
-    KernelContext context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y,
-    int A_offset, int X_offset, int Y_offset,
-    std::function<int(KernelContext, SparseMatrix *, DenseMatrix *,
-                      DenseMatrix *, int, int, int)>
-        cpu_func,
-    const char *label) {
+int spmm_dispatch(KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
+                  int A_offset, int X_offset, int Y_offset,
+                  std::function<int(KernelContext, SPMM::Args *, SPMM::Flags *,
+                                    int, int, int)>
+                      cpu_func,
+                  const char *label) {
     switch (context.platform_type) {
-    case SMAX::CPU:
-        CHECK_ERROR(cpu_func(context, A, X, Y, A_offset, X_offset, Y_offset),
-                    label);
+    case CPU:
+        CHECK_ERROR(
+            cpu_func(context, args, flags, A_offset, X_offset, Y_offset),
+            label);
         break;
     default:
         std::cerr << "Error: Platform not supported\n";
@@ -57,41 +57,41 @@ int spmm_dispatch(
     return 0;
 }
 
-int spmm_initialize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                    DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+int spmm_initialize(KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
+                    int A_offset, int X_offset, int Y_offset) {
 
     return spmm_dispatch(
-        context, A, X, Y, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
-           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMM::spmm_initialize_cpu(context, A, X, Y, A_offset,
+        context, args, flags, A_offset, X_offset, Y_offset,
+        [](KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
+           int A_offset, int X_offset, int Y_offset) {
+            return SPMM::spmm_initialize_cpu(context, args, flags, A_offset,
                                              X_offset, Y_offset);
         },
         "spmm_initialize");
 }
 
-int spmm_apply(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-               DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+int spmm_apply(KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
+               int A_offset, int X_offset, int Y_offset) {
 
     return spmm_dispatch(
-        context, A, X, Y, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
-           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMM::spmm_apply_cpu(context, A, X, Y, A_offset, X_offset,
-                                        Y_offset);
+        context, args, flags, A_offset, X_offset, Y_offset,
+        [](KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
+           int A_offset, int X_offset, int Y_offset) {
+            return SPMM::spmm_apply_cpu(context, args, flags, A_offset,
+                                        X_offset, Y_offset);
         },
         "spmm_apply");
 }
 
-int spmm_finalize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                  DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+int spmm_finalize(KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
+                  int A_offset, int X_offset, int Y_offset) {
 
     return spmm_dispatch(
-        context, A, X, Y, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
-           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMM::spmm_finalize_cpu(context, A, X, Y, A_offset, X_offset,
-                                           Y_offset);
+        context, args, flags, A_offset, X_offset, Y_offset,
+        [](KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
+           int A_offset, int X_offset, int Y_offset) {
+            return SPMM::spmm_finalize_cpu(context, args, flags, A_offset,
+                                           X_offset, Y_offset);
         },
         "spmm_finalize");
 }

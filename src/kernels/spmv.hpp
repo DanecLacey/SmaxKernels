@@ -1,5 +1,5 @@
-#ifndef SMAX_SPMV_HPP
-#define SMAX_SPMV_HPP
+#ifndef SMAx_SPMV_HPP
+#define SMAx_SPMV_HPP
 
 #include "../common.hpp"
 #include "../macros.hpp"
@@ -22,31 +22,31 @@ int spmv_register_A(SparseMatrix *A, va_list args) {
     return 0;
 }
 
-int spmv_register_B(DenseMatrix *X, va_list args) {
-    X->n_rows = va_arg(args, int);
-    X->val = va_arg(args, void **);
+int spmv_register_B(DenseMatrix *x, va_list args) {
+    x->n_rows = va_arg(args, int);
+    x->val = va_arg(args, void **);
 
     return 0;
 }
 
-int spmv_register_C(DenseMatrix *Y, va_list args) {
-    Y->n_rows = va_arg(args, int);
-    Y->val = va_arg(args, void **);
+int spmv_register_C(DenseMatrix *y, va_list args) {
+    y->n_rows = va_arg(args, int);
+    y->val = va_arg(args, void **);
 
     return 0;
 }
 
-int spmv_dispatch(
-    KernelContext context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y,
-    int A_offset, int X_offset, int Y_offset,
-    std::function<int(KernelContext, SparseMatrix *, DenseMatrix *,
-                      DenseMatrix *, int, int, int)>
-        cpu_func,
-    const char *label) {
+int spmv_dispatch(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
+                  int A_offset, int x_offset, int y_offset,
+                  std::function<int(KernelContext, SPMV::Args *, SPMV::Flags *,
+                                    int, int, int)>
+                      cpu_func,
+                  const char *label) {
     switch (context.platform_type) {
-    case SMAX::CPU:
-        CHECK_ERROR(cpu_func(context, A, X, Y, A_offset, X_offset, Y_offset),
-                    label);
+    case CPU:
+        CHECK_ERROR(
+            cpu_func(context, args, flags, A_offset, x_offset, y_offset),
+            label);
         break;
     default:
         std::cerr << "Error: Platform not supported\n";
@@ -55,41 +55,41 @@ int spmv_dispatch(
     return 0;
 }
 
-int spmv_initialize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                    DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+int spmv_initialize(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
+                    int A_offset, int x_offset, int y_offset) {
 
     return spmv_dispatch(
-        context, A, X, Y, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
-           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMV::spmv_initialize_cpu(context, A, X, Y, A_offset,
-                                             X_offset, Y_offset);
+        context, args, flags, A_offset, x_offset, y_offset,
+        [](KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
+           int A_offset, int x_offset, int y_offset) {
+            return SPMV::spmv_initialize_cpu(context, args, flags, A_offset,
+                                             x_offset, y_offset);
         },
         "spmv_initialize");
 }
 
-int spmv_apply(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-               DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+int spmv_apply(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
+               int A_offset, int x_offset, int y_offset) {
 
     return spmv_dispatch(
-        context, A, X, Y, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
-           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMV::spmv_apply_cpu(context, A, X, Y, A_offset, X_offset,
-                                        Y_offset);
+        context, args, flags, A_offset, x_offset, y_offset,
+        [](KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
+           int A_offset, int x_offset, int y_offset) {
+            return SPMV::spmv_apply_cpu(context, args, flags, A_offset,
+                                        x_offset, y_offset);
         },
         "spmv_apply");
 }
 
-int spmv_finalize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                  DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
+int spmv_finalize(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
+                  int A_offset, int x_offset, int y_offset) {
 
     return spmv_dispatch(
-        context, A, X, Y, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SparseMatrix *A, DenseMatrix *X,
-           DenseMatrix *Y, int A_offset, int X_offset, int Y_offset) {
-            return SPMV::spmv_finalize_cpu(context, A, X, Y, A_offset, X_offset,
-                                           Y_offset);
+        context, args, flags, A_offset, x_offset, y_offset,
+        [](KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
+           int A_offset, int x_offset, int y_offset) {
+            return SPMV::spmv_finalize_cpu(context, args, flags, A_offset,
+                                           x_offset, y_offset);
         },
         "spmv_finalize");
 }
@@ -97,4 +97,4 @@ int spmv_finalize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SMAX_SPMV_HPP
+#endif // SMAx_SPMV_HPP

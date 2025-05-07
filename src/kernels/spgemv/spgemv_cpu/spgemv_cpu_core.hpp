@@ -10,8 +10,8 @@ namespace SPGEMV {
 namespace SPGEMV_CPU {
 
 template <typename IT, typename VT>
-int spgemv_initialize_cpu_core(KernelContext context, SparseMatrix *_A,
-                               SparseVector *_spX, SparseVectorRef *_spY_ref) {
+int spgemv_initialize_cpu_core(KernelContext context, Args *args,
+                               Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering spgemv_initialize_cpu_core"));
     // TODO
 
@@ -20,32 +20,31 @@ int spgemv_initialize_cpu_core(KernelContext context, SparseMatrix *_A,
 };
 
 template <typename IT, typename VT>
-int spgemv_apply_cpu_core(KernelContext context, SparseMatrix *_A,
-                          SparseVector *_spX, SparseVectorRef *_spY_ref) {
+int spgemv_apply_cpu_core(KernelContext context, Args *args, Flags *flags) {
 
     IF_DEBUG(ErrorHandler::log("Entering spgemv_apply_cpu_core"));
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
-    int A_n_rows = _A->n_rows;
-    int A_n_cols = _A->n_cols;
-    int A_nnz = _A->nnz;
-    IT *A_col = as<IT *>(_A->col);
-    IT *A_row_ptr = as<IT *>(_A->row_ptr);
-    VT *A_val = as<VT *>(_A->val);
-    int spX_n_rows = _spX->n_rows;
-    int spX_nnz = _spX->nnz;
-    IT *spX_idx = as<IT *>(_spX->idx);
-    VT *spX_val = as<VT *>(_spX->val);
-    int &spY_n_rows = *(_spY_ref->n_rows);
-    int &spY_nnz = *(_spY_ref->nnz);
-    IT *&spY_idx = as<IT *>(_spY_ref->idx);
-    VT *&spY_val = as<VT *>(_spY_ref->val);
+    int A_n_rows = args->A->n_rows;
+    int A_n_cols = args->A->n_cols;
+    int A_nnz = args->A->nnz;
+    IT *A_col = as<IT *>(args->A->col);
+    IT *A_row_ptr = as<IT *>(args->A->row_ptr);
+    VT *A_val = as<VT *>(args->A->val);
+    int x_n_rows = args->x->n_rows;
+    int x_nnz = args->x->nnz;
+    IT *x_idx = as<IT *>(args->x->idx);
+    VT *x_val = as<VT *>(args->x->val);
+    int &y_n_rows = *(args->y->n_rows);
+    int &y_nnz = *(args->y->nnz);
+    IT *&y_idx = as<IT *>(args->y->idx);
+    VT *&y_val = as<VT *>(args->y->val);
 
 #if 1
     naive_crs_coo_spgemv(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val,
-                         spX_n_rows, spX_nnz, spX_idx, spX_val, spY_n_rows,
-                         spY_nnz, spY_idx, spY_val);
+                         x_n_rows, x_nnz, x_idx, x_val, y_n_rows, y_nnz, y_idx,
+                         y_val);
 #endif
 
     IF_DEBUG(ErrorHandler::log("Exiting spgemv_apply_cpu_core"));
@@ -53,8 +52,7 @@ int spgemv_apply_cpu_core(KernelContext context, SparseMatrix *_A,
 };
 
 template <typename IT, typename VT>
-int spgemv_finalize_cpu_core(KernelContext context, SparseMatrix *_A,
-                             SparseVector *_spX, SparseVectorRef *_spY_ref) {
+int spgemv_finalize_cpu_core(KernelContext context, Args *args, Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering spgemv_finalize_cpu_core"));
     // TODO
     IF_DEBUG(ErrorHandler::log("Exiting spgemv_finalize_cpu_core"));

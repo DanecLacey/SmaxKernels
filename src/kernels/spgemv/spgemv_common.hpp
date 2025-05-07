@@ -8,15 +8,41 @@ namespace SMAX {
 namespace KERNELS {
 namespace SPGEMV {
 
-class SPGEMVKernelErrorHandler : public KernelErrorHandler {
+struct Args {
+
+    SparseMatrix *A;
+    SparseVector *x;
+    SparseVectorRef *y;
+
+    Args() {
+        A = new SparseMatrix();
+        x = new SparseVector();
+        y = new SparseVectorRef();
+    }
+
+    // Destructor
+    ~Args() {
+        delete A;
+        delete x;
+        delete y;
+    }
+
+    // Disable copying to prevent double deletion
+    Args(const Args &) = delete;
+    Args &operator=(const Args &) = delete;
+};
+
+struct Flags {};
+
+class SpGEMVErrorHandler : public KernelErrorHandler {
   public:
     template <typename IT>
     static void col_oob(IT col_value, int j, int A_n_cols) {
-        KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SPGEMV");
+        KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SpGEMV");
     }
 
     static void not_implemented() {
-        KernelErrorHandler::not_implemented("SPGEMV");
+        KernelErrorHandler::not_implemented("SpGEMV");
     }
 };
 

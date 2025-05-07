@@ -40,8 +40,7 @@ inline void naive_crs_spmm(int A_n_rows, int A_n_cols, int A_nnz,
                            X[(A_n_rows * vec_idx) + A_col[j]]);
 #endif
                     if (A_col[j] < 0 || A_col[j] >= (IT)A_n_cols)
-                        SPMMKernelErrorHandler::col_oob<IT>(A_col[j], j,
-                                                            A_n_cols););
+                        SpMMErrorHandler::col_oob<IT>(A_col[j], j, A_n_cols););
             }
         }
 

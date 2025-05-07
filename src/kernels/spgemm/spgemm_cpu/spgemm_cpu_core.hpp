@@ -2,8 +2,8 @@
 #define SMAX_SPGEMM_CPU_CORE_HPP
 
 #include "../../../common.hpp"
-#include "numerical_phase.hpp"
-#include "symbolic_phase.hpp"
+#include "numerical_phase_core.hpp"
+#include "symbolic_phase_core.hpp"
 
 namespace SMAX {
 namespace KERNELS {
@@ -11,8 +11,8 @@ namespace SPGEMM {
 namespace SPGEMM_CPU {
 
 template <typename IT, typename VT>
-int spgemm_initialize_cpu_core(KernelContext context, SparseMatrix *A,
-                               SparseMatrix *B, SparseMatrixRef *C_ref) {
+int spgemm_initialize_cpu_core(KernelContext context, Args *args,
+                               Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering spgemm_initialize_cpu_core"));
     // TODO
 
@@ -21,21 +21,19 @@ int spgemm_initialize_cpu_core(KernelContext context, SparseMatrix *A,
 };
 
 template <typename IT, typename VT>
-int spgemm_apply_cpu_core(KernelContext context, SparseMatrix *A,
-                          SparseMatrix *B, SparseMatrixRef *C_ref) {
+int spgemm_apply_cpu_core(KernelContext context, Args *args, Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering spgemm_apply_cpu_core"));
 
     // DL 02.05.25 NOTE: Enforcing two-phase approach Gustavson's algorithm
-    symbolic_phase_cpu<IT, VT>(context, A, B, C_ref);
-    numerical_phase_cpu<IT, VT>(context, A, B, C_ref);
+    symbolic_phase_cpu<IT, VT>(context, args, flags);
+    numerical_phase_cpu<IT, VT>(context, args, flags);
 
     IF_DEBUG(ErrorHandler::log("Exiting spgemm_apply_cpu_core"));
     return 0;
 };
 
 template <typename IT, typename VT>
-int spgemm_finalize_cpu_core(KernelContext context, SparseMatrix *A,
-                             SparseMatrix *B, SparseMatrixRef *C_ref) {
+int spgemm_finalize_cpu_core(KernelContext context, Args *args, Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering spgemm_finalize_cpu_core"));
     // TODO
     IF_DEBUG(ErrorHandler::log("Exiting spgemm_finalize_cpu_core"));

@@ -55,8 +55,8 @@ basic_numerical_phase(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
             // Write row-local accumulators to C
             for (IT j = C_row_ptr[i]; j < C_row_ptr[i + 1]; ++j) {
                 IF_DEBUG(if (C_col[j] < 0 || C_col[j] >= C_n_cols)
-                             SPGEMMKernelErrorHandler::col_oob<IT>(C_col[j], j,
-                                                                   C_n_cols););
+                             SpGEMMErrorHandler::col_oob<IT>(C_col[j], j,
+                                                             C_n_cols););
                 C_val[j] = dense_accumulators[tid][C_col[j]];
                 dense_accumulators[tid][C_col[j]] = (VT)0.0;
             }

@@ -11,43 +11,39 @@ namespace SPGEMM {
 // These templated structs are just little helpers to wrap the core functions.
 // The operator() function is called in the dispatch_spgemm function to execute
 // the correct function for the given types.
-template <typename IT, typename VT> struct SPGEMMInit {
-    int operator()(KernelContext context, SparseMatrix *A, SparseMatrix *B,
-                   SparseMatrixRef *C_ref) {
-        return SPGEMM_CPU::spgemm_initialize_cpu_core<IT, VT>(context, A, B,
-                                                              C_ref);
+template <typename IT, typename VT> struct Init {
+    int operator()(KernelContext context, Args *args, Flags *flags) {
+        return SPGEMM_CPU::spgemm_initialize_cpu_core<IT, VT>(context, args,
+                                                              flags);
     }
 };
 
-template <typename IT, typename VT> struct SPGEMMApply {
-    int operator()(KernelContext context, SparseMatrix *A, SparseMatrix *B,
-                   SparseMatrixRef *C_ref) {
-        return SPGEMM_CPU::spgemm_apply_cpu_core<IT, VT>(context, A, B, C_ref);
+template <typename IT, typename VT> struct Apply {
+    int operator()(KernelContext context, Args *args, Flags *flags) {
+        return SPGEMM_CPU::spgemm_apply_cpu_core<IT, VT>(context, args, flags);
     }
 };
 
-template <typename IT, typename VT> struct SPGEMMFinalize {
-    int operator()(KernelContext context, SparseMatrix *A, SparseMatrix *B,
-                   SparseMatrixRef *C_ref) {
-        return SPGEMM_CPU::spgemm_finalize_cpu_core<IT, VT>(context, A, B,
-                                                            C_ref);
+template <typename IT, typename VT> struct Finalize {
+    int operator()(KernelContext context, Args *args, Flags *flags) {
+        return SPGEMM_CPU::spgemm_finalize_cpu_core<IT, VT>(context, args,
+                                                            flags);
     }
 };
 
 // The dispatcher function uses the above () operator with the correct
 // integer and floating point types.
 template <template <typename IT, typename VT> class Func>
-int spgemm_dispatch_cpu(KernelContext context, SparseMatrix *A, SparseMatrix *B,
-                        SparseMatrixRef *C_ref) {
+int spgemm_dispatch_cpu(KernelContext context, Args *args, Flags *flags) {
     switch (context.float_type) {
     case FLOAT32:
         switch (context.int_type) {
         case UINT16:
-            return Func<uint16_t, float>()(context, A, B, C_ref);
+            return Func<uint16_t, float>()(context, args, flags);
         case UINT32:
-            return Func<uint32_t, float>()(context, A, B, C_ref);
+            return Func<uint32_t, float>()(context, args, flags);
         case UINT64:
-            return Func<uint64_t, float>()(context, A, B, C_ref);
+            return Func<uint64_t, float>()(context, args, flags);
         default:
             std::cerr << "Error: Int type not supported\n";
             return 1;
@@ -55,11 +51,11 @@ int spgemm_dispatch_cpu(KernelContext context, SparseMatrix *A, SparseMatrix *B,
     case FLOAT64:
         switch (context.int_type) {
         case UINT16:
-            return Func<uint16_t, double>()(context, A, B, C_ref);
+            return Func<uint16_t, double>()(context, args, flags);
         case UINT32:
-            return Func<uint32_t, double>()(context, A, B, C_ref);
+            return Func<uint32_t, double>()(context, args, flags);
         case UINT64:
-            return Func<uint64_t, double>()(context, A, B, C_ref);
+            return Func<uint64_t, double>()(context, args, flags);
         default:
             std::cerr << "Unsupported int type\n";
             return 1;
@@ -73,17 +69,14 @@ int spgemm_dispatch_cpu(KernelContext context, SparseMatrix *A, SparseMatrix *B,
 }
 
 // These invoke the dispatcher function with the correct template parameters
-int spgemm_initialize_cpu(KernelContext context, SparseMatrix *A,
-                          SparseMatrix *B, SparseMatrixRef *C_ref) {
-    return spgemm_dispatch_cpu<SPGEMMInit>(context, A, B, C_ref);
+int spgemm_initialize_cpu(KernelContext context, Args *args, Flags *flags) {
+    return spgemm_dispatch_cpu<Init>(context, args, flags);
 }
-int spgemm_apply_cpu(KernelContext context, SparseMatrix *A, SparseMatrix *B,
-                     SparseMatrixRef *C_ref) {
-    return spgemm_dispatch_cpu<SPGEMMApply>(context, A, B, C_ref);
+int spgemm_apply_cpu(KernelContext context, Args *args, Flags *flags) {
+    return spgemm_dispatch_cpu<Apply>(context, args, flags);
 }
-int spgemm_finalize_cpu(KernelContext context, SparseMatrix *A, SparseMatrix *B,
-                        SparseMatrixRef *C_ref) {
-    return spgemm_dispatch_cpu<SPGEMMFinalize>(context, A, B, C_ref);
+int spgemm_finalize_cpu(KernelContext context, Args *args, Flags *flags) {
+    return spgemm_dispatch_cpu<Finalize>(context, args, flags);
 }
 
 } // namespace SPGEMM

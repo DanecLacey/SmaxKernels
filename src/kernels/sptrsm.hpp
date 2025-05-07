@@ -38,15 +38,13 @@ int sptrsm_register_C(DenseMatrix *Y, va_list args) {
     return 0;
 }
 
-int sptrsm_dispatch(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                    DenseMatrix *Y,
-                    std::function<int(KernelContext, SparseMatrix *,
-                                      DenseMatrix *, DenseMatrix *)>
-                        cpu_func,
-                    const char *label) {
+int sptrsm_dispatch(
+    KernelContext context, SPTRSM::Args *args, SPTRSM::Flags *flags,
+    std::function<int(KernelContext, SPTRSM::Args *, SPTRSM::Flags *)> cpu_func,
+    const char *label) {
     switch (context.platform_type) {
     case SMAX::CPU:
-        CHECK_ERROR(cpu_func(context, A, X, Y), label);
+        CHECK_ERROR(cpu_func(context, args, flags), label);
         break;
     default:
         std::cerr << "Error: Platform not supported\n";
@@ -55,32 +53,32 @@ int sptrsm_dispatch(KernelContext context, SparseMatrix *A, DenseMatrix *X,
     return 0;
 }
 
-int sptrsm_initialize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                      DenseMatrix *Y) {
+int sptrsm_initialize(KernelContext context, SPTRSM::Args *args,
+                      SPTRSM::Flags *flags) {
     return sptrsm_dispatch(
-        context, A, X, Y,
-        [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y) {
-            return SPTRSM::sptrsm_initialize_cpu(context, A, X, Y);
+        context, args, flags,
+        [](auto context, SPTRSM::Args *args, SPTRSM::Flags *flags) {
+            return SPTRSM::sptrsm_initialize_cpu(context, args, flags);
         },
         "sptrsm_initialize");
 }
 
-int sptrsm_apply(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                 DenseMatrix *Y) {
+int sptrsm_apply(KernelContext context, SPTRSM::Args *args,
+                 SPTRSM::Flags *flags) {
     return sptrsm_dispatch(
-        context, A, X, Y,
-        [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y) {
-            return SPTRSM::sptrsm_apply_cpu(context, A, X, Y);
+        context, args, flags,
+        [](auto context, SPTRSM::Args *args, SPTRSM::Flags *flags) {
+            return SPTRSM::sptrsm_apply_cpu(context, args, flags);
         },
         "sptrsm_apply");
 }
 
-int sptrsm_finalize(KernelContext context, SparseMatrix *A, DenseMatrix *X,
-                    DenseMatrix *Y) {
+int sptrsm_finalize(KernelContext context, SPTRSM::Args *args,
+                    SPTRSM::Flags *flags) {
     return sptrsm_dispatch(
-        context, A, X, Y,
-        [](auto context, SparseMatrix *A, DenseMatrix *X, DenseMatrix *Y) {
-            return SPTRSM::sptrsm_finalize_cpu(context, A, X, Y);
+        context, args, flags,
+        [](auto context, SPTRSM::Args *args, SPTRSM::Flags *flags) {
+            return SPTRSM::sptrsm_finalize_cpu(context, args, flags);
         },
         "sptrsm_finalize");
 }

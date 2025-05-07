@@ -22,33 +22,31 @@ int spgemv_register_A(SparseMatrix *A, va_list args) {
     return 0;
 }
 
-int spgemv_register_B(SparseVector *spX, va_list args) {
-    spX->n_rows = va_arg(args, int);
-    spX->nnz = va_arg(args, int);
-    spX->idx = va_arg(args, void **);
-    spX->val = va_arg(args, void **);
+int spgemv_register_B(SparseVector *x, va_list args) {
+    x->n_rows = va_arg(args, int);
+    x->nnz = va_arg(args, int);
+    x->idx = va_arg(args, void **);
+    x->val = va_arg(args, void **);
 
     return 0;
 }
 
-int spgemv_register_C(SparseVectorRef *spY_ref, va_list args) {
-    spY_ref->n_rows = va_arg(args, int *);
-    spY_ref->nnz = va_arg(args, int *);
-    spY_ref->idx = va_arg(args, void **);
-    spY_ref->val = va_arg(args, void **);
+int spgemv_register_C(SparseVectorRef *y, va_list args) {
+    y->n_rows = va_arg(args, int *);
+    y->nnz = va_arg(args, int *);
+    y->idx = va_arg(args, void **);
+    y->val = va_arg(args, void **);
 
     return 0;
 }
 
-int spgemv_dispatch(KernelContext context, SparseMatrix *A, SparseVector *spX,
-                    SparseVectorRef *spY_ref,
-                    std::function<int(KernelContext, SparseMatrix *,
-                                      SparseVector *, SparseVectorRef *)>
-                        cpu_func,
-                    const char *label) {
+int spgemv_dispatch(
+    KernelContext context, SPGEMV::Args *args, SPGEMV::Flags *flags,
+    std::function<int(KernelContext, SPGEMV::Args *, SPGEMV::Flags *)> cpu_func,
+    const char *label) {
     switch (context.platform_type) {
     case SMAX::CPU:
-        CHECK_ERROR(cpu_func(context, A, spX, spY_ref), label);
+        CHECK_ERROR(cpu_func(context, args, flags), label);
         break;
     default:
         std::cerr << "Error: Platform not supported\n";
@@ -57,35 +55,32 @@ int spgemv_dispatch(KernelContext context, SparseMatrix *A, SparseVector *spX,
     return 0;
 }
 
-int spgemv_initialize(KernelContext context, SparseMatrix *A, SparseVector *spX,
-                      SparseVectorRef *spY_ref) {
+int spgemv_initialize(KernelContext context, SPGEMV::Args *args,
+                      SPGEMV::Flags *flags) {
     return spgemv_dispatch(
-        context, A, spX, spY_ref,
-        [](KernelContext context, SparseMatrix *A, SparseVector *spX,
-           SparseVectorRef *spY_ref) {
-            return SPGEMV::spgemv_initialize_cpu(context, A, spX, spY_ref);
+        context, args, flags,
+        [](KernelContext context, SPGEMV::Args *args, SPGEMV::Flags *flags) {
+            return SPGEMV::spgemv_initialize_cpu(context, args, flags);
         },
         "spgemv_initialize");
 }
 
-int spgemv_apply(KernelContext context, SparseMatrix *A, SparseVector *spX,
-                 SparseVectorRef *spY_ref) {
+int spgemv_apply(KernelContext context, SPGEMV::Args *args,
+                 SPGEMV::Flags *flags) {
     return spgemv_dispatch(
-        context, A, spX, spY_ref,
-        [](KernelContext context, SparseMatrix *A, SparseVector *spX,
-           SparseVectorRef *spY_ref) {
-            return SPGEMV::spgemv_apply_cpu(context, A, spX, spY_ref);
+        context, args, flags,
+        [](KernelContext context, SPGEMV::Args *args, SPGEMV::Flags *flags) {
+            return SPGEMV::spgemv_apply_cpu(context, args, flags);
         },
         "spgemv_apply");
 }
 
-int spgemv_finalize(KernelContext context, SparseMatrix *A, SparseVector *spX,
-                    SparseVectorRef *spY_ref) {
+int spgemv_finalize(KernelContext context, SPGEMV::Args *args,
+                    SPGEMV::Flags *flags) {
     return spgemv_dispatch(
-        context, A, spX, spY_ref,
-        [](KernelContext context, SparseMatrix *A, SparseVector *spX,
-           SparseVectorRef *spY_ref) {
-            return SPGEMV::spgemv_finalize_cpu(context, A, spX, spY_ref);
+        context, args, flags,
+        [](KernelContext context, SPGEMV::Args *args, SPGEMV::Flags *flags) {
+            return SPGEMV::spgemv_finalize_cpu(context, args, flags);
         },
         "spgemv_finalize");
 }

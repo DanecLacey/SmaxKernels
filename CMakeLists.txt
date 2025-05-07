@@ -1,17 +1,15 @@
-# Minimum required CMake version
 cmake_minimum_required(VERSION 3.23.1)
 
-# Set project and library names
 set(PROJECT_NAME "SmaxKernels")
 set(LIBRARY_NAME "smaxkernels")
 
-# Declare the project and its version
 project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
 # Source and header files for the library
 set(SOURCES
     src/interface.cpp
     src/error_handler.cpp
+    # src/utils/permutation.cpp
 )
 
 set(HEADERS
@@ -22,11 +20,13 @@ set(HEADERS
     src/stopwatch.hpp
     src/kernel.hpp
     src/error_handler.hpp
+    src/utils.hpp
 )
 
-# Header directories (if any)
+# Header directories
 set(HEADER_DIRS
     src/kernels
+    src/utils
 )
 
 # Set default build type if not defined
@@ -62,7 +62,7 @@ message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 # Set architecture flags for all builds
 add_compile_options(-march=native -std=c++17)
 
-# Compiler-specific flags for GNU and Intel compilers
+# Compiler-specific flags for GNU and Intel(LLVM) compilers
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstrict-aliasing -O3")
@@ -79,10 +79,9 @@ else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
-# Options for external library support
+# Options
 option(USE_TIMERS "Enable Timers support" ON)
 option(USE_OPENMP "Enable OpenMP support" ON)
-option(USE_MPI "Enable MPI support" OFF)
 option(USE_LIKWID "Enable LIKWID support" OFF)
 
 # Enable timers support if option is set
@@ -103,30 +102,6 @@ if(USE_OPENMP)
     endif()
 else()
     message(STATUS "OpenMP support is disabled.")
-endif()
-
-# === MPI Support ===
-if(USE_MPI)
-    # Find MPI package and enable if found
-    find_package(MPI REQUIRED)
-    if(MPI_CXX_FOUND)
-        message(STATUS "MPI found, enabling MPI support.")
-        add_compile_definitions(USE_MPI)
-        set(MPI_COMPILE_FLAGS "${MPI_CXX_COMPILE_FLAGS}")
-        set(MPI_LIBRARIES_TO_LINK ${MPI_CXX_LIBRARIES})
-        include_directories(${MPI_CXX_INCLUDE_PATH})
-
-        # Optional: switch compiler to MPI wrapper if needed
-        if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-            set(CMAKE_CXX_COMPILER "mpic++")
-        elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
-            set(CMAKE_CXX_COMPILER "mpiicpc")
-        endif()
-    else()
-        message(FATAL_ERROR "MPI requested but not found.")
-    endif()
-else()
-    message(STATUS "MPI support is disabled.")
 endif()
 
 # === LIKWID Support ===

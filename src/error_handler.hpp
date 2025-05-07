@@ -22,6 +22,7 @@ class ErrorHandler {
     static void fatal(const std::string &message);
     static void warning(const std::string &message);
     static void log(const std::string &message);
+    static void log(const char *format, ...);
 };
 
 } // namespace SMAX

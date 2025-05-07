@@ -9,6 +9,7 @@
 #include "common.hpp"
 #include "kernel.hpp"
 #include "macros.hpp"
+#include "utils.hpp"
 
 namespace SMAX {
 
@@ -24,6 +25,7 @@ class Interface {
                         IntType = UINT32, FloatType = FLOAT64);
 
     Timers *timers;
+    Utils *utils;
 
     Interface();
     ~Interface();

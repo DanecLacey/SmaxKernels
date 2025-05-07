@@ -8,25 +8,51 @@ namespace SMAX {
 namespace KERNELS {
 namespace SPTRSM {
 
-class SPTRSMKernelErrorHandler : public KernelErrorHandler {
+struct Args {
+
+    SparseMatrix *A;
+    DenseMatrix *X;
+    DenseMatrix *Y;
+
+    Args() {
+        A = new SparseMatrix();
+        X = new DenseMatrix();
+        Y = new DenseMatrix();
+    }
+
+    // Destructor
+    ~Args() {
+        delete A;
+        delete X;
+        delete Y;
+    }
+
+    // Disable copying to prevent double deletion
+    Args(const Args &) = delete;
+    Args &operator=(const Args &) = delete;
+};
+
+struct Flags {};
+
+class SpTRSMErrorHandler : public KernelErrorHandler {
   public:
     static void zero_diag() {
         const std::string message = "Zero detected on diagonal.";
-        kernel_fatal("[SPTRSM] " + message);
+        kernel_fatal("[SpTRSM] " + message);
     }
 
     static void super_diag() {
         const std::string message = "Nonzero above diagonal detected.";
-        kernel_fatal("[SPTRSM] " + message);
+        kernel_fatal("[SpTRSM] " + message);
     }
 
     template <typename IT>
     static void col_oob(IT col_value, int j, int A_n_cols) {
-        KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SPTRSM");
+        KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SpTRSM");
     }
 
     static void not_implemented() {
-        KernelErrorHandler::not_implemented("SPTRSM");
+        KernelErrorHandler::not_implemented("SpTRSM");
     }
 };
 

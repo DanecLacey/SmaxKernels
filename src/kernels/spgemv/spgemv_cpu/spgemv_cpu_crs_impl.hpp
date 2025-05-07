@@ -11,14 +11,13 @@ namespace SPGEMV {
 namespace SPGEMV_CPU {
 
 template <typename IT, typename VT>
-inline void naive_crs_coo_spgemv(int A_n_rows, int A_n_cols, int A_nnz,
-                                 IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
-                                 VT *RESTRICT A_val, int spX_n_rows,
-                                 int spX_nnz, IT *RESTRICT spX_idx,
-                                 VT *RESTRICT spX_val, int &spY_n_rows,
-                                 int &spY_nnz, IT *&spY_idx, VT *&spY_val) {
+inline void
+naive_crs_coo_spgemv(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
+                     IT *RESTRICT A_row_ptr, VT *RESTRICT A_val, int x_n_rows,
+                     int x_nnz, IT *RESTRICT x_idx, VT *RESTRICT x_val,
+                     int &y_n_rows, int &y_nnz, IT *&y_idx, VT *&y_val) {
 
-    SPGEMVKernelErrorHandler::not_implemented();
+    SpGEMVErrorHandler::not_implemented();
 }
 
 } // namespace SPGEMV_CPU

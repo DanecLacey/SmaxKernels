@@ -20,12 +20,106 @@ enum IntType { UINT16, UINT32, UINT64 };
 // Available floating point types
 enum FloatType { FLOAT32, FLOAT64 };
 
+struct FlagType {
+    bool is_lvl_ptr_collected = false;
+    bool is_mat_permuted = false;
+};
+
+// Make base class. All child classes will be created for each kernel
+// wasteful, but should work for now
 struct KernelContext {
     KernelType kernel_type;
     PlatformType platform_type;
     IntType int_type;
     FloatType float_type;
+    FlagType flags;
 };
+
+// template <KernelType K> struct FlagType {
+//     // DL 06.05.2025 TODO: General flags that could be used by all kernels
+// };
+
+// template <> struct FlagType<KernelType::SPMV> {
+//     // DL 06.05.2025 TODO: Add SpMV specific flags
+// };
+
+// template <> struct FlagType<KernelType::SPMM> {
+//     // DL 06.05.2025 TODO: Add SpMM specific flags
+// };
+
+// template <> struct FlagType<KernelType::SPGEMV> {
+//     // DL 06.05.2025 TODO: Add SPGEMV specific flags
+// };
+
+// template <> struct FlagType<KernelType::SPGEMM> {
+//     // DL 06.05.2025 TODO: Add SPGEMM specific flags
+// };
+
+// template <> struct FlagType<KernelType::SPTRSV> {
+//     bool is_lvl_ptr_collected = false;
+//     bool is_mat_permuted = false;
+// };
+
+// template <> struct FlagType<KernelType::SPTRSM> {
+//     // DL 06.05.2025 TODO: Add SPTRSM specific flags
+// };
+
+// template <KernelType K> struct KernelContext {
+//     using IntType = u_int32_t; // Default
+//     using FloatType = double;  // Default
+
+//     PlatformType platform_type;
+//     IntType int_type;
+//     FloatType float_type;
+//     FlagType<K> flags;
+
+//     KernelContext(PlatformType platform, IntType int_val, FloatType
+//     float_val,
+//                   FlagType<K> flag)
+//         : platform_type(platform), int_type(int_val), float_type(float_val),
+//           flags(flag) {}
+
+//     void display() {
+//         std::cout << "KernelType: " << static_cast<int>(kernel_type)
+//                   << ", PlatformType: " << static_cast<int>(platform_type)
+//                   << ", IntType: " << int_type << ", FloatType: " <<
+//                   float_type
+//                   << std::endl;
+//     }
+// };
+
+// template <> struct KernelContext<KernelType::SPTRSV> {
+//     FlagType<KernelType::SPTRSV> flags;
+
+//     int *lvl_ptr;
+// };
+
+// // Specialization for Spmv
+// template <> struct KernelContext<KernelType::SPMV> {
+//     using IntType = long long;
+//     using FloatType = double;
+//     using FlagType = unsigned long long;
+
+//     KernelType kernel_type;
+//     PlatformType platform_type;
+//     IntType int_type;
+//     FloatType float_type;
+//     FlagType flags;
+
+//     KernelContext(KernelType kernel, PlatformType platform, IntType int_val,
+//                   FloatType float_val, FlagType flag)
+//         : kernel_type(kernel), platform_type(platform), int_type(int_val),
+//           float_type(float_val), flags(flag) {}
+
+//     void display() {
+//         std::cout << "Spmv Kernel - KernelType: "
+//                   << static_cast<int>(kernel_type)
+//                   << ", PlatformType: " << static_cast<int>(platform_type)
+//                   << ", IntType: " << int_type << ", FloatType: " <<
+//                   float_type
+//                   << ", Flags: " << flags << std::endl;
+//     }
+// };
 
 // For simplicity, assume all matrices are in CSR format
 // DL 5.5.25 TODO: Rename to SparseMatrixCRS

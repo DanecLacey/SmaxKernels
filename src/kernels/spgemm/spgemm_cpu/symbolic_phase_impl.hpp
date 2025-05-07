@@ -21,7 +21,7 @@ inline void padded_symbolic_phase(int A_n_rows, int A_n_cols, int A_nnz,
 
     GET_THREAD_COUNT(int, num_threads);
     if (num_threads > 1) {
-        SPGEMMKernelErrorHandler::multithreaded_issue();
+        SpGEMMErrorHandler::multithreaded_issue();
     }
 
     // Enforce dimensions of C
