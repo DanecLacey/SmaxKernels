@@ -14,6 +14,8 @@ template <typename IT>
 void collect_lvl_ptr(int A_n_rows, IT *row_ptr, IT *col, int *level_ptrs,
                      int &n_levels) {
 
+    SpTRSVErrorHandler::levels_issue();
+
     int *row_levels = new int[A_n_rows];
     int max_level = 0;
 
@@ -47,6 +49,8 @@ inline void crs_sptrsv_lvl(int A_n_rows, int A_n_cols, int A_nnz,
                            IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
                            VT *RESTRICT A_val, VT *RESTRICT x, VT *RESTRICT y,
                            int *lvl_ptr, int n_levels) {
+
+    SpTRSVErrorHandler::not_validated();
 
     for (int lvl_idx = 0; lvl_idx < n_levels; ++lvl_idx) {
 #pragma omp parallel for

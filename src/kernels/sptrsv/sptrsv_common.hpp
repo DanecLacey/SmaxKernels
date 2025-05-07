@@ -57,6 +57,14 @@ class SpTRSVErrorHandler : public KernelErrorHandler {
     static void col_oob(IT col_value, int j, int A_n_cols) {
         KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SpTRSV");
     }
+
+    static void levels_issue() {
+        KernelErrorHandler::issue("Levels aren't detected", "SpTRSV");
+    }
+
+    static void not_validated() {
+        KernelErrorHandler::issue("Results not yet validated", "SpTRSV");
+    }
 };
 
 } // namespace SPTRSV
