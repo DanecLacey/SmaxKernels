@@ -24,8 +24,14 @@ int sptrsv_initialize_cpu_core(KernelContext context, Args *args,
         IT *A_row_ptr = as<IT *>(args->A->row_ptr);
         IT *A_col = as<IT *>(args->A->col);
 
-        // NOTE: Overallocated
+        // NOTE: We far overallocate, since we have no idea how many level exist
+        // at this point
         args->lvl_ptr = new int[A_n_rows];
+
+#pragma omp parallel for
+        for (int i = 0; i < A_n_rows; ++i) {
+            args->lvl_ptr[i] = 0;
+        }
 
         collect_lvl_ptr(A_n_rows, A_row_ptr, A_col, args->lvl_ptr,
                         args->n_levels);

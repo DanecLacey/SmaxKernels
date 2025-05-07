@@ -1,53 +1,52 @@
 #ifndef SMAX_PERMUTATION_HPP
 #define SMAX_PERMUTATION_HPP
 
-#include "../utils.hpp"
+#include "helpers.hpp"
 #include <queue>
 
 namespace SMAX {
 
 template <typename IT>
 void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
-                         IT *&A_sym_row_ptr, IT *&A_sym_col) {
+                         IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz) {
 
     A_sym_row_ptr = new IT[A_n_rows + 1];
     A_sym_row_ptr[0] = 0;
     IT *nnz_per_row = new IT[A_n_rows];
     bool *col_visited = new bool[A_n_rows]; // used to prevent duplicates
-    bool *row_visited = new bool[A_n_rows]; // used to prevent duplicates
+    bool *sym_visited = new bool[A_n_rows]; // used to prevent duplicates
 
 #pragma omp parallel for
     for (int i = 0; i < A_n_rows; ++i) {
         A_sym_row_ptr[i + 1] = (IT)0;
         nnz_per_row[i] = (IT)0;
         col_visited[i] = false;
-        row_visited[i] = false;
+        sym_visited[i] = false;
     }
 
-    // DL 06.05.25 NOTE: We could parallelize if performance is a problem
-    // === First Pass: Count entries per row for A + A^T ===
+    // === First pass: counting ===
     for (int i = 0; i < A_n_rows; ++i) {
-        for (int jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
+        for (IT jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
             int j = A_col[jj];
 
-            // Insert nz
+            // original entry in row i
             if (!col_visited[j]) {
                 col_visited[j] = true;
                 ++nnz_per_row[i];
             }
 
-            // Insert symmetric nz if not on diagonal
-            if (i != j && !row_visited[i]) {
-                row_visited[i] = true;
+            // symmetric entry in row j
+            if (i != j && !sym_visited[j]) {
+                sym_visited[j] = true;
                 ++nnz_per_row[j];
             }
         }
 
-        // Clear visited arrays
-        for (int jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
-            col_visited[A_col[jj]] = false;
+        // TODO: Clearly not scalable
+        for (int i = 0; i < A_n_rows; ++i) {
+            col_visited[i] = false;
+            sym_visited[i] = false;
         }
-        row_visited[i] = false;
     }
 
     // === Build row_ptr ===
@@ -55,38 +54,41 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
     for (int i = 0; i < A_n_rows; ++i) {
         A_sym_row_ptr[i + 1] = A_sym_row_ptr[i] + nnz_per_row[i];
     }
-    A_sym_col = new IT[A_sym_row_ptr[A_n_rows]];
+    A_sym_nnz = A_sym_row_ptr[A_n_rows];
+    A_sym_col = new IT[A_sym_nnz];
 
-    // DL 06.05.25 NOTE: We could parallelize if performance is a problem
-    // === Second Pass: Fill col indices ===
+    // === Second pass: assignment ===
     for (int i = 0; i < A_n_rows; ++i) {
+        // TODO: Clearly not scalable
+        for (int i = 0; i < A_n_rows; ++i) {
+            col_visited[i] = false;
+            sym_visited[i] = false;
+        }
+
         int offset = A_sym_row_ptr[i];
-        for (int jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
+        for (IT jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
             int j = A_col[jj];
 
-            // Insert nz
+            // original
             if (!col_visited[j]) {
                 col_visited[j] = true;
                 A_sym_col[offset++] = j;
             }
 
-            // Insert symmetric nz if not on diagonal
-            if (i != j && !row_visited[i]) {
-                row_visited[i] = true;
-                A_sym_col[offset++] = i;
+            // symmetric
+            if (i != j && !sym_visited[j]) {
+                sym_visited[j] = true;
+                // insert i into row j → use A_sym_col[A_sym_row_ptr[j] + …]
+                A_sym_col[A_sym_row_ptr[j] + (--nnz_per_row[j])] = i;
+                // –––or alternatively build a per‐row cursor array just like we
+                // did for col_perm–––
             }
         }
-
-        // Clear visiteds
-        for (int jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
-            col_visited[A_col[jj]] = false;
-        }
-        row_visited[i] = false;
     }
 
     delete[] nnz_per_row;
     delete[] col_visited;
-    delete[] row_visited;
+    delete[] sym_visited;
 }
 
 template <typename IT>
@@ -95,13 +97,16 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
 
     // Step 1: Build symmetric structure of A + A^T
     IT *A_sym_row_ptr, *A_sym_col;
-    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col);
+    int A_sym_nnz = 0;
+    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
+                        A_sym_nnz);
+    print_matrix<IT>(A_n_rows, A_n_rows, A_sym_nnz, A_sym_col, A_sym_row_ptr);
 
     // Step 2: Simulate a level-order traversal (BFS)
     std::vector<bool> visited(A_n_rows, false);
     int perm_index = 0;
 
-    // TODO: island?
+    // DL 07.05.25 TODO: How to account for islands?
     for (int start = 0; start < A_n_rows; ++start) {
         if (visited[start])
             continue; // Skip already visited nodes
@@ -151,7 +156,6 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
         A_perm_row_ptr[i + 1] = (IT)0;
     }
 
-#pragma omp parallel for
     for (int i = 0; i < A_n_rows; ++i) {
         int perm_row = perm[i];
 
@@ -168,14 +172,13 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
 
     for (int i = 0; i < A_n_rows; ++i) {
         int perm_row = perm[i];
+        int offset = A_perm_row_ptr[perm_row];
         for (int jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
             IT j = A_col[jj];
             VT value = A_val[jj]; // Original value at (i, j)
 
             // Put the value in the new position
-            int permuted_index =
-                A_perm_row_ptr[perm_row]++; // Get the index for the
-                                            // permuted row
+            int permuted_index = offset++;
 
             // Store the column index and value in the permuted matrix
             A_perm_col[permuted_index] = perm[j];
