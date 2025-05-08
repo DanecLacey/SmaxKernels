@@ -15,7 +15,7 @@ inline void check(T result, char const *const func, const char *const file,
   }
 }
 
-inline void __getLastCudaError(const char *errorMessage = nullptr, const char *file,
+inline void __getLastCudaError(const char *errorMessage, const char *file,
                                const int line) {
   cudaError_t err = cudaGetLastError();
 
