@@ -21,7 +21,7 @@ cd SmaxKernels
 export INSTALL_PATH=<install path>
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
-make install
+make install -j
 ```
 
 ## Usage Examples ##
@@ -30,7 +30,7 @@ Basic usage examples are provided in the `/examples` directory.
 cd ../examples
 mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH=$INSTALL_PATH
-make
+make -j
 ```
 * Very basic examples are provided in `/examples/tests`.
 * More realistic examples can be found in `/examples/applications`.
