@@ -45,6 +45,24 @@ namespace cuda_timer_helper {
     EH::cudaEvent stop_;
     cudaStream_t stream_;
   };
+  
+  class cudaScopedTimer {
+    public:
+     explicit cudaScopedTimer(const std::string &label,
+                              const SH::cudaStream &stream = {})
+         : label_(label), timer_(stream) {
+       timer_.start();
+     }
+     ~cudaScopedTimer() {
+       timer_.stop();
+       float ms = timer_.elapsedMilliseconds();
+       fprintf(stderr, "[%s] Elapsed: %.3f ms\n", label_.c_str(), ms);
+     }
+ 
+    private:
+     std::string label_;
+     cuda_timer_helper::cudaTimer timer_;
+   };
 
 }  // namespace cuda_timer_helper
 
