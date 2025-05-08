@@ -48,7 +48,7 @@ namespace stream_helper {
 
     void synchronize() { CHECK_CUDA_ERR(cudaStreamSynchronize(stream_)); }
 
-    explicit operator cudaStream_t() const noexcept { return stream_; }
+    operator cudaStream_t() const noexcept { return stream_; }
 
     static std::pair<int, int> getPriorityRange() {
       if (least == 0 && highest == 0) {

@@ -40,7 +40,7 @@ namespace event_helper {
 
     void synchronize() const { CHECK_CUDA_ERR(cudaEventSynchronize(event_)); }
 
-    explicit operator cudaEvent_t() const { return event_; }
+    operator cudaEvent_t() const { return event_; }
 
     // Query event status
     bool isReady() const { return cudaEventQuery(event_) == cudaSuccess; }
