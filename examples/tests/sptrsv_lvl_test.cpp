@@ -2,34 +2,35 @@
  * @file
  * @brief Example demonstrating how to use the SMAX library to perform
  * sparse triangular solve with a lower triangular matrix (SpTSV) with
- * permutation and level-set scheduling.
+ * BFS permutation and level-set scheduling.
  */
 
 //          Before BFS Permutation
-//        1   2   3   4   5   6   7   8
+//        0   1   2   3   4   5   6   7
 //       _______________________________
-//  1   |11                            |
-//  2   |    22                        |
-//  3   |31      33                    |
-//  4   |    42  43  44                |
-//  5   |        53      55            |
-//  6   |            64      66        |
-//  7   |                75      77    |
-//  8   |                    86      88|
+//  0   |11                            |
+//  1   |    22                        |
+//  2   |31      33                    |
+//  3   |    42  43  44                |
+//  4   |        53      55            |
+//  5   |            64      66        |
+//  6   |                75      77    |
+//  7   |                    86      88|
 //       _______________________________
 
 //      After BFS Permutation using A+A^T
-//        1   2   3   4   5   6   7   8
+//        0   2   4   3   6   1   5   7
 //       _______________________________
-//  1   |11                            |
-//  2   |    66      64                |
-//  3   |        22                    |
-//  4   |        42  45  43            |
-//  5   |31              33            |
-//  6   |                    77  75    |
-//  7   |                53      55    |
-//  8   |    86                      88|
+//  0   |11                            | L0
+//  2   |31  33                        | L1
+//  4   |    53  55                    | L2
+//  3   |    43      44      42        | L3
+//  6   |        75      77            | L3
+//  1   |                    22        | L4
+//  5   |            64          66    | L4
+//  7   |                        86  88| L5
 //       _______________________________
+
 #include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
 #include "utils.hpp"
@@ -75,15 +76,18 @@ int main(void) {
 
     printf("BFS Permutation:\n");
     print_vector<int>(perm, A_n_rows);
-    // print_matrix(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
+
+    printf("A:\n");
+    print_matrix(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
 
     // Apply permutation vector to A
     smax->utils->apply_mat_perm<int, double>(A_n_rows, A_row_ptr, A_col, A_val,
                                              A_perm_row_ptr, A_perm_col,
-                                             A_perm_val, perm);
+                                             A_perm_val, perm, inv_perm);
 
-    // print_matrix(A_n_rows, A_n_cols, A_nnz, A_perm_col, A_perm_row_ptr,
-    //              A_perm_val);
+    printf("A_perm:\n");
+    print_matrix(A_n_rows, A_n_cols, A_nnz, A_perm_col, A_perm_row_ptr,
+                 A_perm_val);
 
     // Apply permutation vector to x and b
     smax->utils->apply_vec_perm<double>(A_n_cols, x, x_perm, perm);
@@ -103,10 +107,10 @@ int main(void) {
     int *U_row_ptr = nullptr;
     double *U_val = nullptr;
 
-    extract_D_L_U_arrays(A_n_rows, A_n_cols, A_nnz, A_perm_col, A_perm_row_ptr,
-                         A_perm_val, L_n_rows, L_n_cols, L_nnz, L_col,
-                         L_row_ptr, L_val, U_n_rows, U_n_cols, U_nnz, U_col,
-                         U_row_ptr, U_val);
+    extract_D_L_U_arrays(A_n_rows, A_n_cols, A_nnz, A_perm_row_ptr, A_perm_col,
+                         A_perm_val, L_n_rows, L_n_cols, L_nnz, L_row_ptr,
+                         L_col, L_val, U_n_rows, U_n_cols, U_nnz, U_row_ptr,
+                         U_col, U_val);
 
     // Register kernel tag, platform, and metadata
     smax->register_kernel("solve_perm_Lx=b", SMAX::SPTRSV, SMAX::CPU);
@@ -116,7 +120,6 @@ int main(void) {
     smax->kernels["solve_perm_Lx=b"]->set_perm(true);
 
     // Register operands to this kernel tag
-    // A is assumed to be in CRS format
     smax->kernels["solve_perm_Lx=b"]->register_A(L_n_rows, L_n_cols, L_nnz,
                                                  &L_col, &L_row_ptr, &L_val);
 
@@ -128,7 +131,7 @@ int main(void) {
     smax->kernels["solve_perm_Lx=b"]->run();
 
     // Unpermute solution vector
-    smax->utils->apply_vec_perm<double>(A_n_cols, x_perm, x, perm);
+    smax->utils->apply_vec_perm<double>(A_n_cols, x_perm, x, inv_perm);
 
     smax->print_timers();
 

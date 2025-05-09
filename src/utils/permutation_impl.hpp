@@ -1,7 +1,8 @@
-#ifndef SMAX_PERMUTATION_HPP
-#define SMAX_PERMUTATION_HPP
+#ifndef SMAX_PERMUTATION_IMPL_HPP
+#define SMAX_PERMUTATION_IMPL_HPP
 
-#include "helpers.hpp"
+#include "../common.hpp"
+#include "utils_common.hpp"
 #include <queue>
 
 namespace SMAX {
@@ -9,6 +10,8 @@ namespace SMAX {
 template <typename IT>
 void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
                          IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz) {
+
+    IF_DEBUG(ErrorHandler::log("Entering build_symmetric_csr"));
 
     A_sym_row_ptr = new IT[A_n_rows + 1];
     A_sym_row_ptr[0] = 0;
@@ -78,10 +81,7 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
             // symmetric
             if (i != j && !sym_visited[j]) {
                 sym_visited[j] = true;
-                // insert i into row j → use A_sym_col[A_sym_row_ptr[j] + …]
                 A_sym_col[A_sym_row_ptr[j] + (--nnz_per_row[j])] = i;
-                // –––or alternatively build a per‐row cursor array just like we
-                // did for col_perm–––
             }
         }
     }
@@ -89,22 +89,28 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
     delete[] nnz_per_row;
     delete[] col_visited;
     delete[] sym_visited;
-}
+
+    IF_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
+};
 
 template <typename IT>
 void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                           int *inv_perm) {
+
+    IF_DEBUG(ErrorHandler::log("Entering generate_perm"));
+
+    int *lvl = new int[A_n_rows];
 
     // Step 1: Build symmetric structure of A + A^T
     IT *A_sym_row_ptr, *A_sym_col;
     int A_sym_nnz = 0;
     build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
                         A_sym_nnz);
-    print_matrix<IT>(A_n_rows, A_n_rows, A_sym_nnz, A_sym_col, A_sym_row_ptr);
 
-    // Step 2: Simulate a level-order traversal (BFS)
+    // Step 2: Simulate a level-order traversal (BFS) and collect levels
     std::vector<bool> visited(A_n_rows, false);
     int perm_index = 0;
+    int global_max_level = 0;
 
     // DL 07.05.25 TODO: How to account for islands?
     for (int start = 0; start < A_n_rows; ++start) {
@@ -115,128 +121,126 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         q.push(start);
         visited[start] = true;
 
+        int current_level = 0;
+
         // Perform BFS
         while (!q.empty()) {
-            int u = q.front(); // Get the front node in the queue
-            q.pop();           // Remove the front node from the queue
+            int level_size = int(q.size());
 
-            perm[perm_index++] = u;
+            for (int i = 0; i < level_size; ++i) {
+                int u = q.front();
+                q.pop();
 
-            // For each non-zero element (neighbor) v in row u
-            for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; ++jj) {
-                int v = A_sym_col[jj]; // Column index represents a neighbor
+                // Record in perm & level
+                perm[perm_index++] = u;
+                lvl[u] = current_level;
+                global_max_level = std::max(global_max_level, current_level);
 
-                if (!visited[v]) {
-                    visited[v] = true;
-                    q.push(v); // Add the neighbor to the queue
+                // Enqueue all unvisited neighbors
+                for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1];
+                     ++jj) {
+                    int v = A_sym_col[jj];
+                    if (!visited[v]) {
+                        visited[v] = true;
+                        q.push(v);
+                    }
                 }
             }
+
+            // Done one whole level
+            ++current_level;
         }
     }
 
-    // Step 3: Compute inverse permutation
+    // Compute inverse permutation
     for (int i = 0; i < A_n_rows; ++i) {
         inv_perm[perm[i]] = i;
     }
 
+    int n_levels = global_max_level + 1;
+    IF_DEBUG(
+        ErrorHandler::log("%d levels detected in generate_perm", n_levels));
+    uc->lvl_ptr = new int[n_levels + 1];
+
+    // Count nodes per level
+    int *count = new int[n_levels];
+    for (int i = 0; i < n_levels; ++i) {
+        count[i] = 0;
+    }
+    for (int i = 0; i < A_n_rows; ++i) {
+        ++count[lvl[i]];
+    }
+
+    // Build the prefix‐sum pointer array (size = n_levels+1)
+    uc->lvl_ptr[0] = 0;
+    for (int L = 0; L < n_levels; ++L) {
+        uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
+    }
+
+    uc->n_levels = n_levels;
     delete[] A_sym_row_ptr;
     delete[] A_sym_col;
+    delete[] lvl;
+
+    IF_DEBUG(ErrorHandler::log("Exiting generate_perm"));
 };
 
 template <typename IT, typename VT>
 void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
                            IT *A_perm_row_ptr, IT *A_perm_col, VT *A_perm_val,
-                           int *perm) {
+                           int *perm, int *inv_perm) {
 
-    // Construct row_ptr for permuted mat
+    IF_DEBUG(ErrorHandler::log("Entering apply_mat_perm"));
+
     A_perm_row_ptr[0] = (IT)0;
+    int perm_idx = 0;
 
-#pragma omp parallel for
-    for (int i = 0; i < A_n_rows; ++i) {
-        A_perm_row_ptr[i + 1] = (IT)0;
+    for (int row = 0; row < A_n_rows; ++row) {
+        IT perm_row = perm[row];
+        for (int idx = A_row_ptr[perm_row]; idx < A_row_ptr[perm_row + 1];
+             ++idx) {
+            ++perm_idx;
+        }
+        A_perm_row_ptr[row + 1] = perm_idx;
     }
 
-    for (int i = 0; i < A_n_rows; ++i) {
-        int perm_row = perm[i];
+#pragma omp parallel for schedule(static)
+    for (int row = 0; row < A_n_rows; ++row) {
+        IT perm_row = perm[row];
 
-        // Count the non-zero elements in the permuted row
-        for (IT jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
-            IT j = A_col[jj];
-            ++A_perm_row_ptr[perm_row + 1];
+        for (int perm_idx = A_perm_row_ptr[row], idx = A_row_ptr[perm_row];
+             perm_idx < A_perm_row_ptr[row + 1]; ++idx, ++perm_idx) {
+
+            A_perm_col[perm_idx] = inv_perm[A_col[idx]];
+            A_perm_val[perm_idx] = A_val[idx];
+
+            IF_DEBUG(
+                if (A_perm_col[perm_idx] >= A_n_rows) {
+                    UtilsErrorHandler::col_ob(A_perm_col[perm_idx], perm_idx,
+                                              A_n_rows, "apply_mat_perm");
+                } if (A_perm_col[perm_idx] < 0) {
+                    UtilsErrorHandler::col_ub(A_perm_col[perm_idx], perm_idx, 0,
+                                              "apply_mat_perm");
+                });
         }
     }
 
-    for (int i = 0; i < A_n_rows; ++i) {
-        A_perm_row_ptr[i + 1] += A_perm_row_ptr[i];
-    }
-
-    for (int i = 0; i < A_n_rows; ++i) {
-        int perm_row = perm[i];
-        int offset = A_perm_row_ptr[perm_row];
-        for (int jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
-            IT j = A_col[jj];
-            VT value = A_val[jj]; // Original value at (i, j)
-
-            // Put the value in the new position
-            int permuted_index = offset++;
-
-            // Store the column index and value in the permuted matrix
-            A_perm_col[permuted_index] = perm[j];
-            A_perm_val[permuted_index] = value;
-        }
-    }
-
-    // DL 06.05.2020 TODO: Obvious candidate for loop fusion
-    // #pragma omp parallel
-    //     {
-    // #pragma omp for
-    //         for (int i = 0; i < A_n_rows; ++i) {
-    //             A_perm_row_ptr[i + 1] = (IT)0;
-
-    //             int perm_row = perm[i];
-
-    //             // Count the non-zero elements in the permuted row
-    //             for (IT jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
-    //                 IT j = A_col[jj];
-    //                 ++A_perm_row_ptr[perm_row + 1];
-    //             }
-    //         }
-    // #pragma omp barrier
-    // #pragma omp for
-    //         for (int i = 0; i < A_n_rows; ++i) {
-    //             A_perm_row_ptr[i + 1] += A_perm_row_ptr[i];
-    //         }
-    // #pragma omp barrier
-    // #pragma omp for
-    //         for (int i = 0; i < A_n_rows; ++i) {
-    //             int perm_row = perm[i];
-    //             for (int jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
-    //                 IT j = A_col[jj];
-    //                 VT value = A_val[jj]; // Original value at (i, j)
-
-    //                 // Put the value in the new position
-    //                 int permuted_index =
-    //                     A_perm_row_ptr[perm_row]++; // Get the index for
-    // the
-    //                                                 // permuted row
-
-    //                 // Store the column index and value in the permuted
-    //                 matrix A_perm_col[permuted_index] = inv_perm[j];
-    //                 A_perm_val[permuted_index] = value;
-    //             }
-    //         }
-    //     }
+    IF_DEBUG(ErrorHandler::log("Exiting apply_mat_perm"));
 };
 
 template <typename VT>
 void Utils::apply_vec_perm(int n_rows, VT *vec, VT *vec_perm, int *perm) {
 
+    IF_DEBUG(ErrorHandler::log("Entering apply_vec_perm"));
+
 #pragma omp parallel for
     for (int i = 0; i < n_rows; ++i) {
-        vec[perm[i]] = vec_perm[i];
+        vec_perm[i] = vec[perm[i]];
     }
+
+    IF_DEBUG(ErrorHandler::log("Exiting apply_vec_perm"));
 };
 
 } // namespace SMAX
 
-#endif // SMAX_PERMUTATION_HPP
+#endif // SMAX_PERMUTATION_IMPL_HPP

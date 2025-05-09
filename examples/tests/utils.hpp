@@ -5,7 +5,7 @@ template <typename VT> void print_vector(VT *vec, int n_rows) {
     for (int i = 0; i < n_rows; ++i) {
         std::cout << vec[i] << ", ";
     }
-    printf("]\n");
+    printf("]\n\n");
 }
 
 template <typename IT, typename VT>
@@ -15,7 +15,7 @@ void print_sparse_vector(int nnz, IT *idx, VT *vec) {
         std::cout << "idx: " << idx[i] << ", ";
         std::cout << "val: " << vec[i] << std::endl;
     }
-    printf("]\n");
+    printf("]\n\n");
 }
 
 template <typename IT, typename VT>

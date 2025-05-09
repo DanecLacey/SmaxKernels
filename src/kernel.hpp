@@ -29,6 +29,8 @@ class Kernel {
   public:
     // DL 06.05.2025 TODO: Do these need to be public? Or am I being lazy?
     KernelContext context;
+    UtilitiesContainer *uc;
+
     // DL 07.05.2025 NOTE: Only the chosen kernel has args struct populated
     // A bit wasteful, but cleaner interface
     KERNELS::SPMV::Args *spmv_args;
@@ -88,11 +90,10 @@ class Kernel {
         }
     }
 
-    // Setters for flags
-    int set_perm(bool flag) { this->sptrsv_flags->mat_permuted = flag; }
+    // Flag setters
+    void set_perm(bool flag) { this->sptrsv_flags->mat_permuted = flag; }
 
-    // Register A, B, C matrices and x, y vectors
-    // These functions are variadic and take a variable number of arguments
+    // C-style variadic function arg list
     int register_A(...) {
         // this->timers->register_A_time->start();
 
@@ -149,6 +150,7 @@ class Kernel {
         return 0;
     }
 
+    // C-style variadic function arg list
     int register_B(...) {
         // this->timers->register_B_time->start();
         va_list user_args;
@@ -204,6 +206,7 @@ class Kernel {
         return 0;
     }
 
+    // C-style variadic function arg list
     int register_C(...) {
         // this->timers->register_C_time->start();
         va_list user_args;
@@ -458,7 +461,9 @@ class Kernel {
     }
 
     int run(int A_offset = 0, int B_offset = 0, int C_offset = 0) {
-
+        // DL 09.05.2025 NOTE: Since only a single memory address is registered,
+        // the offsets are to access other parts of memory at runtime
+        // (e.g. register A to kernel, but A[i*n_rows] used for computation)
         CHECK_ERROR(initialize(A_offset, B_offset, C_offset), "initialize");
         CHECK_ERROR(apply(A_offset, B_offset, C_offset), "apply");
         CHECK_ERROR(finalize(A_offset, B_offset, C_offset), "finalize");

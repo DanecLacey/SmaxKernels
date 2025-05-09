@@ -50,8 +50,6 @@ inline void crs_sptrsv_lvl(int A_n_rows, int A_n_cols, int A_nnz,
                            VT *RESTRICT A_val, VT *RESTRICT x, VT *RESTRICT y,
                            int *lvl_ptr, int n_levels) {
 
-    SpTRSVErrorHandler::not_validated();
-
     for (int lvl_idx = 0; lvl_idx < n_levels; ++lvl_idx) {
 #pragma omp parallel for
         for (int row = lvl_ptr[lvl_idx]; row < lvl_ptr[lvl_idx + 1]; ++row) {

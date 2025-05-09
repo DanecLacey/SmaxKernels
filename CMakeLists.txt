@@ -9,7 +9,6 @@ project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 set(SOURCES
     src/interface.cpp
     src/error_handler.cpp
-    # src/utils/permutation.cpp
 )
 
 set(HEADERS

@@ -455,13 +455,13 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
     }
 }
 
-void extract_D_L_U_arrays(
-
-    int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr, int *A_col,
-    double *A_values, int &D_plus_L_n_rows, int &D_plus_L_n_cols,
-    int &D_plus_L_nnz, int *&D_plus_L_row_ptr, int *&D_plus_L_col,
-    double *&D_plus_L_values, int &U_n_rows, int &U_n_cols, int &U_nnz,
-    int *&U_row_ptr, int *&U_col, double *&U_values) {
+void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
+                          int *A_col, double *A_values, int &D_plus_L_n_rows,
+                          int &D_plus_L_n_cols, int &D_plus_L_nnz,
+                          int *&D_plus_L_row_ptr, int *&D_plus_L_col,
+                          double *&D_plus_L_values, int &U_n_rows,
+                          int &U_n_cols, int &U_nnz, int *&U_row_ptr,
+                          int *&U_col, double *&U_values) {
     // Count nnz
     for (int i = 0; i < A_n_rows; ++i) {
         int row_start = A_row_ptr[i];

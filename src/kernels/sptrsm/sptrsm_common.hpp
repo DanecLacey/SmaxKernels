@@ -13,11 +13,13 @@ struct Args {
     SparseMatrix *A;
     DenseMatrix *X;
     DenseMatrix *Y;
+    UtilitiesContainer *uc;
 
-    Args() {
+    Args(UtilitiesContainer *_uc) {
         A = new SparseMatrix();
         X = new DenseMatrix();
         Y = new DenseMatrix();
+        uc = _uc;
     }
 
     // Destructor

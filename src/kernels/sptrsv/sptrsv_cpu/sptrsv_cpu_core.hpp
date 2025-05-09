@@ -17,28 +17,8 @@ namespace SPTRSV_CPU {
 template <typename IT, typename VT>
 int sptrsv_initialize_cpu_core(KernelContext context, Args *args,
                                Flags *flags) {
+
     IF_DEBUG(ErrorHandler::log("Entering sptrsv_initialize_cpu_core"));
-
-    if (!flags->lvl_ptr_collected) {
-        int A_n_rows = args->A->n_rows;
-        IT *A_row_ptr = as<IT *>(args->A->row_ptr);
-        IT *A_col = as<IT *>(args->A->col);
-
-        // NOTE: We far overallocate, since we have no idea how many level exist
-        // at this point
-        args->lvl_ptr = new int[A_n_rows];
-
-#pragma omp parallel for
-        for (int i = 0; i < A_n_rows; ++i) {
-            args->lvl_ptr[i] = 0;
-        }
-
-        collect_lvl_ptr(A_n_rows, A_row_ptr, A_col, args->lvl_ptr,
-                        args->n_levels);
-
-        flags->lvl_ptr_collected = true;
-        IF_DEBUG(ErrorHandler::log("Detected %d levels", args->n_levels));
-    }
 
     IF_DEBUG(ErrorHandler::log("Exiting sptrsv_initialize_cpu_core"));
     return 0;
@@ -58,10 +38,10 @@ int sptrsv_apply_cpu_core(KernelContext context, Args *args, Flags *flags) {
     VT *A_val = as<VT *>(args->A->val);
     VT *x = as<VT *>(args->x->val);
     VT *y = as<VT *>(args->y->val);
-    int *lvl_ptr = args->lvl_ptr;
-    int n_levels = args->n_levels;
 
     if (flags->mat_permuted) {
+        int *lvl_ptr = args->uc->lvl_ptr;
+        int n_levels = args->uc->n_levels;
         crs_sptrsv_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
                                A_val, x, y, lvl_ptr, n_levels);
     } else {

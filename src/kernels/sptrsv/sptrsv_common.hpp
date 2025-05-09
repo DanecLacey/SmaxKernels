@@ -13,14 +13,13 @@ struct Args {
     SparseMatrix *A;
     DenseMatrix *x;
     DenseMatrix *y;
-    int *lvl_ptr;
-    int n_levels;
+    UtilitiesContainer *uc;
 
-    Args() {
+    Args(UtilitiesContainer *_uc) {
         A = new SparseMatrix();
         x = new DenseMatrix();
         y = new DenseMatrix();
-        lvl_ptr = new int[A->n_rows];
+        uc = _uc;
     }
 
     // Destructor
@@ -28,7 +27,6 @@ struct Args {
         delete A;
         delete x;
         delete y;
-        delete lvl_ptr;
     }
 
     // Disable copying to prevent double deletion
