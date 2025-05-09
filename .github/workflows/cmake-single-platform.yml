@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build
+    - name: Configure build
       run: |
         mkdir ${{github.workspace}}/build 
         cd ${{github.workspace}}/build
@@ -22,4 +22,27 @@ jobs:
     - name: Make
       working-directory: ${{github.workspace}}/build
       run: make install
+
+    - uses: actions/upload-artifact@v4
+      with: 
+        name: install-dir
+        path: ${{github.workspace}}/install/
       
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: install-dir
+          path: ${{github.workspace}}/install
+
+      - name: CMake and make
+        run: |
+          cd examples
+          mkdir build && cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=../../install
+          make
+
