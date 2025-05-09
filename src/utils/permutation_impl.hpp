@@ -3,6 +3,8 @@
 
 #include "../common.hpp"
 #include "utils_common.hpp"
+#include <algorithm>
+#include <cstdlib>
 #include <queue>
 
 namespace SMAX {
@@ -92,6 +94,56 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
 
     IF_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
 };
+
+template <typename IT>
+void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                             int *inv_perm) {
+
+    int *levels = (int *)malloc(sizeof(int) * A_n_rows);
+    if (levels == nullptr) {
+        fprintf(stderr, "Malloc not succesfull in generate_perm.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Step 1: Build symmetric structure of A + A^T
+    IT *A_sym_row_ptr, *A_sym_col;
+    int A_sym_nnz = 0;
+    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
+                        A_sym_nnz);
+    print_matrix<IT>(A_n_rows, A_n_rows, A_sym_nnz, A_sym_col, A_sym_row_ptr);
+
+    int max_level = 0;
+
+    // Step 2: Compute levels for each row in A + A^T
+    for (int row_idx = 0; row_idx < A_n_rows; row_idx++) {
+        levels[row_idx] = 0;
+        for (int nz = A_sym_row_ptr[row_idx]; nz < A_sym_row_ptr[row_idx + 1];
+             nz++) {
+            if (A_sym_col[nz] < row_idx) {
+                levels[row_idx] =
+                    std::max(levels[row_idx], levels[A_sym_col[nz]] + 1);
+                max_level =
+                    max_level < levels[row_idx] ? levels[row_idx] : max_level;
+            }
+        }
+    }
+
+    // Step 3: Create range vector and use sorting function to permute into
+    // final permutation
+    for (int i = 0; i < A_n_rows; i++) {
+        perm[i] = i;
+    }
+    std::stable_sort(perm, perm + A_n_rows, [&](const int &a, const int &b) {
+        return (levels[a] < levels[b]);
+    });
+
+    // Step 4: Compute inverse perm
+    for (int i = 0; i < A_n_rows; ++i) {
+        inv_perm[perm[i]] = i;
+    }
+
+    free(levels);
+}
 
 template <typename IT>
 void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
