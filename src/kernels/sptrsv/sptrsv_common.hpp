@@ -36,7 +36,9 @@ struct Args {
 
 struct Flags {
     bool mat_permuted = false;
-    bool lvl_ptr_collected = false;
+    bool mat_upper_triang = false;
+    bool mat_lower_triang = false;
+    bool diag_collected = false;
 };
 
 class SpTRSVErrorHandler : public KernelErrorHandler {

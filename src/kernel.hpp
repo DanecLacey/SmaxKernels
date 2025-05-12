@@ -4,8 +4,6 @@
 #include "common.hpp"
 #include "kernels/spgemm.hpp"
 #include "kernels/spgemm/spgemm_common.hpp"
-#include "kernels/spgemv.hpp"
-#include "kernels/spgemv/spgemv_common.hpp"
 #include "kernels/spmm.hpp"
 #include "kernels/spmm/spmm_common.hpp"
 #include "kernels/spmv.hpp"
@@ -37,8 +35,6 @@ class Kernel {
     KERNELS::SPMV::Flags *spmv_flags;
     KERNELS::SPMM::Args *spmm_args;
     KERNELS::SPMM::Flags *spmm_flags;
-    KERNELS::SPGEMV::Args *spgemv_args;
-    KERNELS::SPGEMV::Flags *spgemv_flags;
     KERNELS::SPGEMM::Args *spgemm_args;
     KERNELS::SPGEMM::Flags *spgemm_flags;
     KERNELS::SPTRSV::Args *sptrsv_args;
@@ -65,11 +61,6 @@ class Kernel {
             delete spmm_flags;
             break;
         }
-        case SPGEMV: {
-            delete spgemv_args;
-            delete spgemv_flags;
-            break;
-        }
         case SPGEMM: {
             delete spgemm_args;
             delete spgemm_flags;
@@ -91,7 +82,62 @@ class Kernel {
     }
 
     // Flag setters
-    void set_perm(bool flag) { this->sptrsv_flags->mat_permuted = flag; }
+    int set_mat_perm(bool flag) {
+
+        switch (this->context.kernel_type) {
+        case SPTRSV: {
+            this->sptrsv_flags->mat_permuted = flag;
+            break;
+        }
+        case SPTRSM: {
+            this->sptrsm_flags->mat_permuted = flag;
+            break;
+        }
+        default:
+            std::cerr << "Error: This kernel does not support this flag.\n";
+            return 1;
+        }
+
+        return 0;
+    }
+
+    int set_mat_upper_triang(bool flag) {
+
+        switch (this->context.kernel_type) {
+        case SPTRSV: {
+            this->sptrsv_flags->mat_upper_triang = flag;
+            break;
+        }
+        case SPTRSM: {
+            this->sptrsm_flags->mat_upper_triang = flag;
+            break;
+        }
+        default:
+            std::cerr << "Error: This kernel does not support this flag.\n";
+            return 1;
+        }
+
+        return 0;
+    }
+
+    int set_mat_lower_triang(bool flag) {
+
+        switch (this->context.kernel_type) {
+        case SPTRSV: {
+            this->sptrsv_flags->mat_lower_triang = flag;
+            break;
+        }
+        case SPTRSM: {
+            this->sptrsm_flags->mat_lower_triang = flag;
+            break;
+        }
+        default:
+            std::cerr << "Error: This kernel does not support this flag.\n";
+            return 1;
+        }
+
+        return 0;
+    }
 
     // C-style variadic function arg list
     int register_A(...) {
@@ -109,13 +155,6 @@ class Kernel {
         }
         case SPMM: {
             int ret = KERNELS::spmm_register_A(this->spmm_args->A, user_args);
-            va_end(user_args);
-            // this->timers->register_A_time->stop();
-            return ret;
-        }
-        case SPGEMV: {
-            int ret =
-                KERNELS::spgemv_register_A(this->spgemv_args->A, user_args);
             va_end(user_args);
             // this->timers->register_A_time->stop();
             return ret;
@@ -169,13 +208,6 @@ class Kernel {
             // this->timers->register_B_time->stop();
             return ret;
         }
-        case SPGEMV: {
-            int ret =
-                KERNELS::spgemv_register_B(this->spgemv_args->x, user_args);
-            va_end(user_args);
-            // this->timers->register_B_time->stop();
-            return ret;
-        }
         case SPGEMM: {
             int ret =
                 KERNELS::spgemm_register_B(this->spgemm_args->B, user_args);
@@ -225,13 +257,6 @@ class Kernel {
             // this->timers->register_C_time->stop();
             return ret;
         }
-        case SPGEMV: {
-            int ret =
-                KERNELS::spgemv_register_C(this->spgemv_args->y, user_args);
-            va_end(user_args);
-            // this->timers->register_C_time->stop();
-            return ret;
-        }
         case SPGEMM: {
             int ret =
                 KERNELS::spgemm_register_C(this->spgemm_args->C, user_args);
@@ -270,10 +295,6 @@ class Kernel {
                                    KERNELS::SPMM::Flags *)>
                      func_spmm,
                  const char *label_spmm,
-                 std::function<int(KernelContext, KERNELS::SPGEMV::Args *,
-                                   KERNELS::SPGEMV::Flags *)>
-                     func_spgemv,
-                 const char *label_spgemv,
                  std::function<int(KernelContext, KERNELS::SPGEMM::Args *,
                                    KERNELS::SPGEMM::Flags *)>
                      func_spgemm,
@@ -296,11 +317,6 @@ class Kernel {
             CHECK_ERROR(
                 func_spmm(this->context, this->spmm_args, this->spmm_flags),
                 label_spmm);
-            break;
-        case SPGEMV:
-            CHECK_ERROR(func_spgemv(this->context, this->spgemv_args,
-                                    this->spgemv_flags),
-                        label_spgemv);
             break;
         case SPGEMM:
             CHECK_ERROR(func_spgemm(this->context, this->spgemm_args,
@@ -342,12 +358,6 @@ class Kernel {
                                                 A_offset, B_offset, C_offset);
             },
             "spmm_initialize",
-            [](KernelContext context, KERNELS::SPGEMV::Args *spgemv_args,
-               KERNELS::SPGEMV::Flags *spgemv_flags) {
-                return KERNELS::spgemv_initialize(context, spgemv_args,
-                                                  spgemv_flags);
-            },
-            "spgemv_initialize",
             [this](KernelContext context, KERNELS::SPGEMM::Args *spgemm_args,
                    KERNELS::SPGEMM::Flags *spgemm_flags) {
                 return KERNELS::spgemm_initialize(context, spgemm_args,
@@ -387,12 +397,6 @@ class Kernel {
                                            A_offset, B_offset, C_offset);
             },
             "spmm_apply",
-            [this](KernelContext context, KERNELS::SPGEMV::Args *spgemv_args,
-                   KERNELS::SPGEMV::Flags *spgemv_flags) {
-                return KERNELS::spgemv_apply(context, spgemv_args,
-                                             spgemv_flags);
-            },
-            "spgemv_apply",
             [this](KernelContext context, KERNELS::SPGEMM::Args *spgemm_args,
                    KERNELS::SPGEMM::Flags *spgemm_flags) {
                 return KERNELS::spgemm_apply(context, spgemm_args,
@@ -432,12 +436,6 @@ class Kernel {
                                               A_offset, B_offset, C_offset);
             },
             "spmm_finalize",
-            [this](KernelContext context, KERNELS::SPGEMV::Args *spgemv_args,
-                   KERNELS::SPGEMV::Flags *spgemv_flags) {
-                return KERNELS::spgemv_finalize(context, spgemv_args,
-                                                spgemv_flags);
-            },
-            "spgemv_finalize",
             [this](KernelContext context, KERNELS::SPGEMM::Args *spgemm_args,
                    KERNELS::SPGEMM::Flags *spgemm_flags) {
                 return KERNELS::spgemm_finalize(context, spgemm_args,

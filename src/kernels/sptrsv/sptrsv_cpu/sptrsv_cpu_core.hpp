@@ -42,11 +42,22 @@ int sptrsv_apply_cpu_core(KernelContext context, Args *args, Flags *flags) {
     if (flags->mat_permuted) {
         int *lvl_ptr = args->uc->lvl_ptr;
         int n_levels = args->uc->n_levels;
-        crs_sptrsv_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
-                               A_val, x, y, lvl_ptr, n_levels);
+        if (flags->mat_upper_triang) {
+            crs_sputrsv_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
+                                    A_val, x, y, lvl_ptr, n_levels);
+        } else {
+            crs_sputrsv_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
+                                    A_val, x, y, lvl_ptr, n_levels);
+        }
+
     } else {
-        naive_crs_sptrsv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
-                                 A_val, x, y);
+        if (flags->mat_upper_triang) {
+            naive_crs_sputrsv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col,
+                                      A_row_ptr, A_val, x, y);
+        } else {
+            naive_crs_spltrsv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col,
+                                      A_row_ptr, A_val, x, y);
+        }
     }
 
     IF_DEBUG(ErrorHandler::log("Exiting sptrsv_apply_cpu_core"));

@@ -117,7 +117,7 @@ int main(void) {
 
     // Tell SMAX to expect a permuted matrix
     // This enables level-set scheduling for SpTRSV
-    smax->kernels["solve_perm_Lx=b"]->set_perm(true);
+    smax->kernels["solve_perm_Lx=b"]->set_mat_perm(true);
 
     // Register operands to this kernel tag
     smax->kernels["solve_perm_Lx=b"]->register_A(L_n_rows, L_n_cols, L_nnz,

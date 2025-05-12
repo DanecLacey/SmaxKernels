@@ -34,7 +34,12 @@ struct Args {
     Args &operator=(const Args &) = delete;
 };
 
-struct Flags {};
+struct Flags {
+    bool mat_permuted = false;
+    bool mat_upper_triang = false;
+    bool mat_lower_triang = false;
+    bool diag_collected = false;
+};
 
 class SpTRSMErrorHandler : public KernelErrorHandler {
   public:

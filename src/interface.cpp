@@ -80,11 +80,6 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
         this->kernels[name]->spmm_flags = new KERNELS::SPMM::Flags();
         break;
     }
-    case SPGEMV: {
-        this->kernels[name]->spgemv_args = new KERNELS::SPGEMV::Args(this->uc);
-        this->kernels[name]->spgemv_flags = new KERNELS::SPGEMV::Flags();
-        break;
-    }
     case SPGEMM: {
         this->kernels[name]->spgemm_args = new KERNELS::SPGEMM::Args(this->uc);
         this->kernels[name]->spgemm_flags = new KERNELS::SPGEMM::Flags();
