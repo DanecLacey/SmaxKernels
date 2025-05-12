@@ -81,6 +81,23 @@ class Kernel {
         }
     }
 
+    int swap_operands(void) {
+
+        switch (this->context.kernel_type) {
+        case SPMV: {
+            std::swap(*this->spmv_args->x->val, *this->spmv_args->y->val);
+            break;
+        }
+        case SPMM: {
+            std::swap(*this->spmm_args->X->val, *this->spmm_args->Y->val);
+            break;
+        }
+        default:
+            std::cerr << "Error: Swapping not yet supported for this kernel.\n";
+            return 1;
+        }
+    }
+
     // Flag setters
     int set_mat_perm(bool flag) {
 

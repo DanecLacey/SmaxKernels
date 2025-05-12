@@ -1,6 +1,7 @@
 # List of subdirectories containing applications
 set(APPLICATION_DIRS
     gauss_seidel
+    jacobi
 )
 
 # Clear a global list to collect all app targets
