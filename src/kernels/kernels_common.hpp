@@ -28,6 +28,24 @@ class KernelErrorHandler : public ErrorHandler {
         kernel_fatal("[" + kernel_name + "] " + oss.str());
     }
 
+    template <typename IT, typename VT>
+    static void super_diag(int row_idx, IT col, VT val,
+                           const std::string &kernel_name) {
+        std::ostringstream oss;
+        oss << "Nonzero:" << val << " detected above diagonal at (" << row_idx
+            << ", " << col << ").";
+        kernel_fatal("[" + kernel_name + "] " + oss.str());
+    }
+
+    template <typename IT, typename VT>
+    static void sub_diag(int row_idx, IT col, VT val,
+                         const std::string &kernel_name) {
+        std::ostringstream oss;
+        oss << "Nonzero:" << val << " detected below diagonal at (" << row_idx
+            << ", " << col << ").";
+        kernel_fatal("[" + kernel_name + "] " + oss.str());
+    }
+
     static void not_implemented(const std::string &kernel_name) {
         std::ostringstream oss;
         oss << "This kernel is not yet implemented.";

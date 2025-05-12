@@ -31,12 +31,12 @@ int symbolic_phase_cpu(KernelContext context, Args *args, Flags *flags) {
 
     // Since we want to reallocate the data pointed to by _C,
     // we need references to each of the pointers
-    int &C_n_rows = *(args->C->n_rows);
-    int &C_n_cols = *(args->C->n_cols);
-    int &C_nnz = *(args->C->nnz);
-    IT *&C_col = as<IT *>(args->C->col);
-    IT *&C_row_ptr = as<IT *>(args->C->row_ptr);
-    VT *&C_val = as<VT *>(args->C->val);
+    int &C_n_rows = *args->C->n_rows;
+    int &C_n_cols = *args->C->n_cols;
+    int &C_nnz = *args->C->nnz;
+    IT *&C_col = as_ptr_ref<IT>(args->C->col);
+    IT *&C_row_ptr = as_ptr_ref<IT>(args->C->row_ptr);
+    VT *&C_val = as_ptr_ref<VT>(args->C->val);
 
 #if 1
     padded_symbolic_phase(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val,

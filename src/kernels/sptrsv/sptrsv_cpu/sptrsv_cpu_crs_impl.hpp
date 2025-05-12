@@ -30,64 +30,55 @@ namespace SPTRSV_CPU {
 template <typename IT, typename VT>
 inline void naive_crs_spltrsv(int A_n_rows, int A_n_cols, int A_nnz,
                               IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
-                              VT *RESTRICT A_val, VT *RESTRICT X,
-                              VT *RESTRICT Y) {
-    for (int i = 0; i < A_n_rows; ++i) {
-        VT sum = 0.0;
-        VT diag = 0.0;
+                              VT *RESTRICT A_val, VT *RESTRICT D_val,
+                              VT *RESTRICT x, VT *RESTRICT y) {
+    for (int row_idx = 0; row_idx < A_n_rows; ++row_idx) {
+        VT sum = (VT)0.0;
 
-        for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
-            IF_DEBUG(
-                if (A_col[j] < 0 || A_col[j] >= A_n_cols)
-                    SpTRSVErrorHandler::col_oob<IT>(A_col[j], j, A_n_cols););
-            VT val = A_val[j];
+        for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1]; ++j) {
+            IT col = A_col[j];
 
-            if (A_col[j] < i) {
-                sum += val * X[A_col[j]];
-            } else if (A_col[j] == i) {
-                diag = val;
-            } else {
-                IF_DEBUG(
-                    printf("row: %d, col: %d, val: %f\n", i, A_col[j], val));
-                IF_DEBUG(SpTRSVErrorHandler::super_diag());
-            }
+            IF_DEBUG(if (col < 0 || col >= A_n_cols)
+                         SpTRSVErrorHandler::col_oob<IT>(col, j, A_n_cols););
+
+            sum += A_val[j] * x[col];
+
+            IF_DEBUG(if (col > row_idx) SpTRSVErrorHandler::super_diag(
+                         row_idx, col, A_val[j]););
         }
 
-        IF_DEBUG(if (abs(diag) < 1e-16) { SpTRSVErrorHandler::zero_diag(); });
+        IF_DEBUG(if (std::abs(D_val[row_idx]) < 1e-16) {
+            SpTRSVErrorHandler::zero_diag();
+        });
 
-        X[i] = (Y[i] - sum) / diag;
+        x[row_idx] = (y[row_idx] - sum) / D_val[row_idx];
     }
 }
 
 template <typename IT, typename VT>
 inline void naive_crs_sputrsv(int A_n_rows, int A_n_cols, int A_nnz,
                               IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
-                              VT *RESTRICT A_val, VT *RESTRICT X,
-                              VT *RESTRICT Y) {
-    for (int i = A_n_rows - 1; i >= 0; --i) {
-        VT sum = 0.0;
-        VT diag = 0.0;
+                              VT *RESTRICT A_val, VT *RESTRICT D_val,
+                              VT *RESTRICT x, VT *RESTRICT y) {
+    for (int row_idx = A_n_rows - 1; row_idx >= 0; --row_idx) {
+        VT sum = (VT)0.0;
 
-        for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
-            IF_DEBUG(
-                if (A_col[j] < 0 || A_col[j] >= A_n_cols)
-                    SpTRSVErrorHandler::col_oob<IT>(A_col[j], j, A_n_cols););
-            VT val = A_val[j];
+        for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1]; ++j) {
+            IT col = A_col[j];
 
-            if (A_col[j] < i) {
-                sum += val * X[A_col[j]];
-            } else if (A_col[j] == i) {
-                diag = val;
-            } else {
-                IF_DEBUG(
-                    printf("row: %d, col: %d, val: %f\n", i, A_col[j], val));
-                IF_DEBUG(SpTRSVErrorHandler::super_diag());
-            }
+            IF_DEBUG(if (col < 0 || col >= A_n_cols)
+                         SpTRSVErrorHandler::col_oob<IT>(col, j, A_n_cols););
+
+            sum += A_val[j] * x[col];
+
+            IF_DEBUG(if (col < row_idx)
+                         SpTRSVErrorHandler::sub_diag(row_idx, col, A_val[j]););
         }
 
-        IF_DEBUG(if (abs(diag) < 1e-16) { SpTRSVErrorHandler::zero_diag(); });
+        IF_DEBUG(
+            if (D_val[row_idx] < 1e-16) { SpTRSVErrorHandler::zero_diag(); });
 
-        X[i] = (Y[i] - sum) / diag;
+        x[row_idx] = (y[row_idx] - sum) / D_val[row_idx];
     }
 }
 

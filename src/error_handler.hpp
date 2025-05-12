@@ -2,6 +2,7 @@
 #define SMAX_ERROR_HANDLER_HPP
 
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>

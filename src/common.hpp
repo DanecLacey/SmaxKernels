@@ -77,18 +77,6 @@ struct SparseVector {
     SparseVector() : n_rows(0), nnz(0), idx(nullptr), val(nullptr) {}
 };
 
-// Workaround
-struct SparseVectorRef {
-    int *n_rows;
-    int *nnz;
-    void **idx;
-    void **val;
-
-    // Default constructor
-    SparseVectorRef()
-        : n_rows(nullptr), nnz(nullptr), idx(nullptr), val(nullptr) {}
-};
-
 // TODO
 // // Available sparse matrix storage formats
 // enum SparseMatrixStorageFormat
@@ -100,14 +88,22 @@ struct SparseVectorRef {
 struct DenseMatrix {
     int n_rows;
     int n_cols;
+
+    // hidden storage for the data pointer:
+    // DL 12.05.2025 NOTE: As a workaround for internal D struct in SpTRSV
+    void *_val_storage;
+
+    // this is the slot we alias via void**:
     void **val;
 
-    // Default constructor
-    DenseMatrix() : n_rows(0), n_cols(0), val(nullptr) {}
+    // Default constructor uses our own storage (only for internal structs):
+    DenseMatrix()
+        : n_rows(0), n_cols(0), _val_storage(nullptr), val(&_val_storage) {}
 
-    // Parameterized constructor
+    // If a user really passes in their own void** (typical case)
     DenseMatrix(int rows, int cols, void **val_ptr = nullptr)
-        : n_rows(rows), n_cols(cols), val(val_ptr) {}
+        : n_rows(rows), n_cols(cols), _val_storage(nullptr),
+          val(val_ptr ? val_ptr : &_val_storage) {}
 };
 
 // TODO

@@ -11,12 +11,14 @@ namespace SPTRSV {
 struct Args {
 
     SparseMatrix *A;
+    DenseMatrix *D;
     DenseMatrix *x;
     DenseMatrix *y;
     UtilitiesContainer *uc;
 
     Args(UtilitiesContainer *_uc) {
         A = new SparseMatrix();
+        D = new DenseMatrix();
         x = new DenseMatrix();
         y = new DenseMatrix();
         uc = _uc;
@@ -25,6 +27,7 @@ struct Args {
     // Destructor
     ~Args() {
         delete A;
+        delete D;
         delete x;
         delete y;
     }
@@ -48,9 +51,14 @@ class SpTRSVErrorHandler : public KernelErrorHandler {
         kernel_fatal("[SpTRSV] " + message);
     }
 
-    static void super_diag() {
-        const std::string message = "Nonzero above diagonal detected.";
-        kernel_fatal("[SpTRSV] " + message);
+    template <typename IT, typename VT>
+    static void super_diag(int row_idx, IT col, VT val) {
+        KernelErrorHandler::super_diag<IT>(row_idx, col, val, "SpTRSV");
+    }
+
+    template <typename IT, typename VT>
+    static void sub_diag(int row_idx, IT col, VT val) {
+        KernelErrorHandler::sub_diag<IT>(row_idx, col, val, "SpTRSV");
     }
 
     template <typename IT>

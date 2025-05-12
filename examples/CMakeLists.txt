@@ -163,10 +163,8 @@ else()
     message(STATUS "PETSc support is disabled.")
 endif()
 
+
 if(USE_MKL)
-    add_subdirectory(validation)
-    add_custom_target(validation DEPENDS ${validation_targets})
-    
     # DL 05.04.25 TODO: Would be useful to have other intermediate levels
     set(VERBOSITY 1 CACHE STRING "Set the validation verbosity level (0 or 1)")
 
@@ -178,6 +176,9 @@ if(USE_MKL)
     # Set the verbosity level as a compile definition
     set_property(CACHE VERBOSITY PROPERTY STRINGS 0 1)
     message(STATUS "Verbosity Level: ${VERBOSITY}")
+
+    add_subdirectory(validation)
+    add_custom_target(validation DEPENDS ${validation_targets})
 else()
     message(WARNING "Validation checks not built. MKL is required.")
 endif()

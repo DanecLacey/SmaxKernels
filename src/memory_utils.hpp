@@ -8,11 +8,16 @@
 
 namespace SMAX {
 
-// Generic accessor for casting a void* to a reference of type T
+// one‐level overloads
 template <typename T> inline T &as(void *ptr) { return *static_cast<T *>(ptr); }
 
 template <typename T> inline const T &as(const void *ptr) {
     return *static_cast<const T *>(ptr);
+}
+
+template <typename T> inline T *&as_ptr_ref(void **slot) {
+    // reinterpret the pointed-at void* as a T*
+    return *reinterpret_cast<T **>(slot);
 }
 
 } // namespace SMAX

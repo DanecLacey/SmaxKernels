@@ -1,5 +1,5 @@
-#ifndef SMAx_SPMV_CPU_HPP
-#define SMAx_SPMV_CPU_HPP
+#ifndef SMAX_SPMV_CPU_HPP
+#define SMAX_SPMV_CPU_HPP
 
 #include "../../common.hpp"
 #include "spmv_cpu/spmv_cpu_core.hpp"
@@ -100,4 +100,4 @@ int spmv_finalize_cpu(KernelContext context, Args *args, Flags *flags,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SMAx_SPMV_CPU_HPP
+#endif // SMAX_SPMV_CPU_HPP

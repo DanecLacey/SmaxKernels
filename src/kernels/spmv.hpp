@@ -1,5 +1,5 @@
-#ifndef SMAx_SPMV_HPP
-#define SMAx_SPMV_HPP
+#ifndef SMAX_SPMV_HPP
+#define SMAX_SPMV_HPP
 
 #include "../common.hpp"
 #include "../macros.hpp"
@@ -97,4 +97,4 @@ int spmv_finalize(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
 } // namespace KERNELS
 } // namespace SMAX
 
-#endif // SMAx_SPMV_HPP
+#endif // SMAX_SPMV_HPP

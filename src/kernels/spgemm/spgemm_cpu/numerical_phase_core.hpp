@@ -29,9 +29,9 @@ int numerical_phase_cpu(KernelContext context, Args *args, Flags *flags) {
     IT *B_row_ptr = as<IT *>(args->B->row_ptr);
     VT *B_val = as<VT *>(args->B->val);
 
-    int C_n_rows = *(args->C->n_rows);
-    int C_n_cols = *(args->C->n_cols);
-    int C_nnz = *(args->C->nnz);
+    int C_n_rows = *args->C->n_rows;
+    int C_n_cols = *args->C->n_cols;
+    int C_nnz = *args->C->nnz;
     IT *C_col = as<IT *>(args->C->col);
     IT *C_row_ptr = as<IT *>(args->C->row_ptr);
     VT *C_val = as<VT *>(args->C->val);
