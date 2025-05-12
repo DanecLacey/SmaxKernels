@@ -39,7 +39,11 @@ Interface::~Interface() {
 }
 
 Kernel *Interface::kernel(const std::string &kernel_name) {
-    return this->kernels.at(kernel_name); // Safe access with .at()
+    try {
+        return this->kernels.at(kernel_name);
+    } catch (const std::out_of_range &) {
+        ErrorHandler::kernel_dne(kernel_name);
+    }
 }
 
 int Interface::register_kernel(const std::string &name, KernelType kernel_type,

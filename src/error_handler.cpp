@@ -100,4 +100,11 @@ void ErrorHandler::log(const char *format, ...) {
     _log(std::string(buffer));
 }
 
+void ErrorHandler::kernel_dne(const std::string &kernel_name) {
+    std::ostringstream oss;
+    oss << "Kernel: '" << kernel_name << "' does not exist.";
+
+    ErrorHandler::fatal(oss.str());
+}
+
 } // namespace SMAX

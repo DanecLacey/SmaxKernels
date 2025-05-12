@@ -24,6 +24,7 @@ class ErrorHandler {
     static void warning(const std::string &message);
     static void log(const std::string &message);
     static void log(const char *format, ...);
+    static void kernel_dne(const std::string &kernel_name);
 };
 
 } // namespace SMAX
