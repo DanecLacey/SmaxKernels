@@ -22,7 +22,8 @@ crs_spltrsv_lvl(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
              ++row_idx) {
             VT sum = (VT)0.0;
 
-            for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1]; ++j) {
+            for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1] - 1;
+                 ++j) {
                 IT col = A_col[j];
 
                 IF_DEBUG(
@@ -36,7 +37,7 @@ crs_spltrsv_lvl(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
             }
 
             IF_DEBUG(if (D_val[row_idx] < 1e-16) {
-                SpTRSVErrorHandler::zero_diag();
+                SpTRSVErrorHandler::zero_diag(row_idx);
             });
 
             x[row_idx] = (y[row_idx] - sum) / D_val[row_idx];
@@ -59,7 +60,8 @@ crs_sputrsv_lvl(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
              row_idx >= lvl_ptr[lvl_idx]; --row_idx) {
             VT sum = (VT)0.0;
 
-            for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1]; ++j) {
+            for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1] - 1;
+                 ++j) {
                 IT col = A_col[j];
 
                 IF_DEBUG(
@@ -73,7 +75,7 @@ crs_sputrsv_lvl(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
             }
 
             IF_DEBUG(if (std::abs(D_val[row_idx]) < 1e-16) {
-                SpTRSVErrorHandler::zero_diag();
+                SpTRSVErrorHandler::zero_diag(row_idx);
             });
 
             x[row_idx] = (y[row_idx] - sum) / D_val[row_idx];

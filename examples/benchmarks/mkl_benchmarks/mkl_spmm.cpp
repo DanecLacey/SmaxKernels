@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     // Create the matrix handle from CSR data
     sparse_status_t status = mkl_sparse_d_create_csr(
         &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows, crs_mat->n_cols,
-        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->values);
+        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val);
 
     if (status != SPARSE_STATUS_SUCCESS) {
         std::cerr << "Failed to create MKL sparse matrix.\n";
@@ -59,11 +59,10 @@ int main(int argc, char *argv[]) {
 
         mkl_sparse_d_mm(SPARSE_OPERATION_NON_TRANSPOSE,
                         1.0, // alpha
-                        A, descr, SPARSE_LAYOUT_COLUMN_MAJOR, X->values,
-                        n_vectors,
+                        A, descr, SPARSE_LAYOUT_COLUMN_MAJOR, X->val, n_vectors,
                         crs_mat->n_cols, // leading dimension of X
                         0.0,             // beta
-                        Y->values,
+                        Y->val,
                         crs_mat->n_rows // leading dimension of Y
         );
 

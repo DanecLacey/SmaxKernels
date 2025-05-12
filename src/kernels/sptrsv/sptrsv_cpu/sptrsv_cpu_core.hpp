@@ -71,7 +71,7 @@ int sptrsv_apply_cpu_core(KernelContext context, Args *args, Flags *flags) {
             crs_sputrsv_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
                                     A_val, D_val, x, y, lvl_ptr, n_levels);
         } else {
-            crs_sputrsv_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
+            crs_spltrsv_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
                                     A_val, D_val, x, y, lvl_ptr, n_levels);
         }
 
@@ -81,8 +81,7 @@ int sptrsv_apply_cpu_core(KernelContext context, Args *args, Flags *flags) {
             naive_crs_sputrsv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col,
                                       A_row_ptr, A_val, D_val, x, y);
         } else {
-            // Unpermuted matrix (e.g. no lvl-set scheduling) is the default
-            // case
+            // Unpermuted matrix (e.g. no lvl-set sched) is the default case
             naive_crs_spltrsv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col,
                                       A_row_ptr, A_val, D_val, x, y);
         }

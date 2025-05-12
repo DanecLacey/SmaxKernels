@@ -46,9 +46,16 @@ struct Flags {
 
 class SpTRSVErrorHandler : public KernelErrorHandler {
   public:
-    static void zero_diag() {
-        const std::string message = "Zero detected on diagonal.";
-        kernel_fatal("[SpTRSV] " + message);
+    static void zero_diag(int row_idx) {
+        std::ostringstream oss;
+        oss << "Zero detected on diagonal at row index" << row_idx;
+        kernel_fatal("[SpTRSV] " + oss.str());
+    }
+
+    static void no_diag(int row_idx) {
+        std::ostringstream oss;
+        oss << "No diagonal to extract at row index" << row_idx;
+        kernel_fatal("[SpTRSV] " + oss.str());
     }
 
     template <typename IT, typename VT>

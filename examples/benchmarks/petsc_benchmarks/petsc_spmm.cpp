@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     // Wrap CRS matrix in PETSc
     Mat A;
     ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF, m, n, crs_mat->row_ptr,
-                                     crs_mat->col, crs_mat->values, &A);
+                                     crs_mat->col, crs_mat->val, &A);
     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
     std::string bench_name = "petsc_spmm";

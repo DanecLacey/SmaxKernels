@@ -35,7 +35,8 @@ inline void naive_crs_spltrsv(int A_n_rows, int A_n_cols, int A_nnz,
     for (int row_idx = 0; row_idx < A_n_rows; ++row_idx) {
         VT sum = (VT)0.0;
 
-        for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1]; ++j) {
+        // NOTE: we assume the diagonal was sorted to the end of the row
+        for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1] - 1; ++j) {
             IT col = A_col[j];
 
             IF_DEBUG(if (col < 0 || col >= A_n_cols)
@@ -48,7 +49,7 @@ inline void naive_crs_spltrsv(int A_n_rows, int A_n_cols, int A_nnz,
         }
 
         IF_DEBUG(if (std::abs(D_val[row_idx]) < 1e-16) {
-            SpTRSVErrorHandler::zero_diag();
+            SpTRSVErrorHandler::zero_diag(row_idx);
         });
 
         x[row_idx] = (y[row_idx] - sum) / D_val[row_idx];
@@ -63,7 +64,7 @@ inline void naive_crs_sputrsv(int A_n_rows, int A_n_cols, int A_nnz,
     for (int row_idx = A_n_rows - 1; row_idx >= 0; --row_idx) {
         VT sum = (VT)0.0;
 
-        for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1]; ++j) {
+        for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1] - 1; ++j) {
             IT col = A_col[j];
 
             IF_DEBUG(if (col < 0 || col >= A_n_cols)
@@ -75,8 +76,9 @@ inline void naive_crs_sputrsv(int A_n_rows, int A_n_cols, int A_nnz,
                          SpTRSVErrorHandler::sub_diag(row_idx, col, A_val[j]););
         }
 
-        IF_DEBUG(
-            if (D_val[row_idx] < 1e-16) { SpTRSVErrorHandler::zero_diag(); });
+        IF_DEBUG(if (D_val[row_idx] < 1e-16) {
+            SpTRSVErrorHandler::zero_diag(row_idx);
+        });
 
         x[row_idx] = (y[row_idx] - sum) / D_val[row_idx];
     }

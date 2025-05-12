@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
         for (int idx = crs_mat->row_ptr[i]; idx < crs_mat->row_ptr[i + 1];
              ++idx) {
             int j = crs_mat->col[idx];
-            double val = crs_mat->values[idx];
+            double val = crs_mat->val[idx];
             triplets.emplace_back(i, j, val);
         }
     }

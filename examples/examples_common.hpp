@@ -124,7 +124,7 @@ struct COOMatrix {
 
     std::vector<int> I;
     std::vector<int> J;
-    std::vector<double> values;
+    std::vector<double> val;
 
     void write_to_mtx(int my_rank, std::string file_out_name) {
         std::string file_name =
@@ -138,7 +138,7 @@ struct COOMatrix {
         char arg_str[] = "MCRG";
 
         mm_write_mtx_crd(&file_name[0], n_rows, n_cols, nnz, &(I)[0], &(J)[0],
-                         &(values)[0],
+                         &(val)[0],
                          arg_str // TODO: <- make more general, i.e. flexible
                                  // based on the matrix. Read from original mtx?
         );
@@ -220,12 +220,12 @@ struct COOMatrix {
 
         this->I.resize(nnz);
         this->J.resize(nnz);
-        this->values.resize(nnz);
+        this->val.resize(nnz);
 
         for (int i = 0; i < nnz; ++i) {
             this->I[i] = row_data[perm[i]];
             this->J[i] = col_data[perm[i]];
-            this->values[i] = val_data[perm[i]];
+            this->val[i] = val_data[perm[i]];
         }
 
         this->n_rows = nrows;
@@ -244,7 +244,7 @@ struct COOMatrix {
 
         std::cout << "Values: ";
         for (int i = 0; i < this->nnz; ++i)
-            std::cout << this->values[i] << " ";
+            std::cout << this->val[i] << " ";
 
         std::cout << "\nCol: ";
         for (int i = 0; i < this->nnz; ++i)
@@ -263,7 +263,7 @@ struct CRSMatrix {
     int nnz;
     int n_rows;
     int n_cols;
-    double *values;
+    double *val;
     int *col;
     int *row_ptr;
 
@@ -272,7 +272,7 @@ struct CRSMatrix {
         this->nnz = 0;
         this->n_cols = 0;
 
-        values = nullptr;
+        val = nullptr;
         col = nullptr;
         row_ptr = nullptr;
     }
@@ -282,7 +282,7 @@ struct CRSMatrix {
         this->nnz = nnz;
         this->n_cols = n_cols;
 
-        values = new double[nnz];
+        val = new double[nnz];
         col = new int[nnz];
         row_ptr = new int[n_rows + 1];
 
@@ -290,7 +290,7 @@ struct CRSMatrix {
     }
 
     ~CRSMatrix() {
-        delete[] values;
+        delete[] val;
         delete[] col;
         delete[] row_ptr;
     }
@@ -302,7 +302,7 @@ struct CRSMatrix {
 
         std::cout << "Values: ";
         for (int i = 0; i < this->nnz; ++i)
-            std::cout << this->values[i] << " ";
+            std::cout << this->val[i] << " ";
 
         std::cout << "\nCol Indices: ";
         for (int i = 0; i < this->nnz; ++i)
@@ -325,11 +325,11 @@ struct CRSMatrix {
         int *nnz_per_row = new int[this->n_rows];
 
         this->col = new int[this->nnz];
-        this->values = new double[this->nnz];
+        this->val = new double[this->nnz];
 
         for (int idx = 0; idx < this->nnz; ++idx) {
             this->col[idx] = coo_mat->J[idx];
-            this->values[idx] = coo_mat->values[idx];
+            this->val[idx] = coo_mat->val[idx];
         }
 
         for (int i = 0; i < this->n_rows; ++i) {
@@ -358,27 +358,27 @@ struct CRSMatrix {
 struct DenseMatrix {
     int n_rows;
     int n_cols;
-    double *values;
+    double *val;
 
     DenseMatrix() {
         this->n_rows = 0;
         this->n_cols = 0;
-        values = nullptr;
+        val = nullptr;
     }
 
-    DenseMatrix(int n_rows, int n_cols, double val) {
+    DenseMatrix(int n_rows, int n_cols, double _val) {
         this->n_rows = n_rows;
         this->n_cols = n_cols;
 
-        values = new double[n_rows * n_cols];
+        val = new double[n_rows * n_cols];
 
         // Initialize all elements to val
         for (int i = 0; i < n_rows * n_cols; ++i) {
-            values[i] = val;
+            val[i] = _val;
         }
     }
 
-    ~DenseMatrix() { delete[] values; }
+    ~DenseMatrix() { delete[] val; }
 
     void print() {
         std::cout << "N_rows: " << this->n_rows << std::endl;
@@ -386,7 +386,7 @@ struct DenseMatrix {
 
         std::cout << "Values: ";
         for (int i = 0; i < this->n_rows * this->n_cols; ++i)
-            std::cout << this->values[i] << " ";
+            std::cout << this->val[i] << " ";
 
         std::cout << std::endl;
         std::cout << std::endl;
@@ -412,14 +412,14 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
     }
 
     // Allocate heap space and assign known metadata
-    D_plus_L.values = new double[D_plus_L.nnz];
+    D_plus_L.val = new double[D_plus_L.nnz];
     D_plus_L.col = new int[D_plus_L.nnz];
     D_plus_L.row_ptr = new int[A.n_rows + 1];
     D_plus_L.row_ptr[0] = 0;
     D_plus_L.n_rows = A.n_rows;
     D_plus_L.n_cols = A.n_cols;
 
-    U.values = new double[U.nnz];
+    U.val = new double[U.nnz];
     U.col = new int[U.nnz];
     U.row_ptr = new int[A.n_rows + 1];
     U.row_ptr[0] = 0;
@@ -436,15 +436,15 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
         // Loop over each non-zero entry in the current row
         for (int idx = row_start; idx < row_end; ++idx) {
             int col = A.col[idx];
-            double val = A.values[idx];
+            double val = A.val[idx];
 
             if (col <= i) {
                 // Diagonal or lower triangular part (D + L)
-                D_plus_L.values[D_plus_L_count] = val;
+                D_plus_L.val[D_plus_L_count] = val;
                 D_plus_L.col[D_plus_L_count++] = col;
             } else {
                 // Strictly upper triangular part (U)
-                U.values[U_count] = val;
+                U.val[U_count] = val;
                 U.col[U_count++] = col;
             }
         }
@@ -456,12 +456,12 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
 }
 
 void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
-                          int *A_col, double *A_values, int &D_plus_L_n_rows,
+                          int *A_col, double *A_val, int &D_plus_L_n_rows,
                           int &D_plus_L_n_cols, int &D_plus_L_nnz,
                           int *&D_plus_L_row_ptr, int *&D_plus_L_col,
-                          double *&D_plus_L_values, int &U_n_rows,
-                          int &U_n_cols, int &U_nnz, int *&U_row_ptr,
-                          int *&U_col, double *&U_values) {
+                          double *&D_plus_L_val, int &U_n_rows, int &U_n_cols,
+                          int &U_nnz, int *&U_row_ptr, int *&U_col,
+                          double *&U_val) {
     // Count nnz
     for (int i = 0; i < A_n_rows; ++i) {
         int row_start = A_row_ptr[i];
@@ -480,14 +480,14 @@ void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
     }
 
     // Allocate heap space and assign known metadata
-    D_plus_L_values = new double[D_plus_L_nnz];
+    D_plus_L_val = new double[D_plus_L_nnz];
     D_plus_L_col = new int[D_plus_L_nnz];
     D_plus_L_row_ptr = new int[A_n_rows + 1];
     D_plus_L_row_ptr[0] = 0;
     D_plus_L_n_rows = A_n_rows;
     D_plus_L_n_cols = A_n_cols;
 
-    U_values = new double[U_nnz];
+    U_val = new double[U_nnz];
     U_col = new int[U_nnz];
     U_row_ptr = new int[A_n_rows + 1];
     U_row_ptr[0] = 0;
@@ -504,15 +504,15 @@ void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
         // Loop over each non-zero entry in the current row
         for (int idx = row_start; idx < row_end; ++idx) {
             int col = A_col[idx];
-            double val = A_values[idx];
+            double val = A_val[idx];
 
             if (col <= i) {
                 // Diagonal or lower triangular part (D + L)
-                D_plus_L_values[D_plus_L_count] = val;
+                D_plus_L_val[D_plus_L_count] = val;
                 D_plus_L_col[D_plus_L_count++] = col;
             } else {
                 // Strictly upper triangular part (U)
-                U_values[U_count] = val;
+                U_val[U_count] = val;
                 U_col[U_count++] = col;
             }
         }

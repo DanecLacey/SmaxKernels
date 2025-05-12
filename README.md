@@ -1,13 +1,12 @@
 # SmaxKernels
 
-**S**parse **MA**trix mpi+**X** **Kernels** is a lightweight, portable C++ library providing high-performance implementations of sparse matrix kernels of the form `C = A op B`.
+**S**parse **MA**trix mpi+**X** **Kernels** is a lightweight, portable C++ library providing high-performance implementations of popular sparse matrix kernels of the form `C = A op B`.
 
 ## Features ##
 * Clean, minimalist library interface 
 * Efficient implementations of Sparse:
     * Matrix-Vector Multiplication -- **SpMV**
     * Matrix-Multiple Vector Multiplication -- **SpMM**
-    * Matrix-Sparse Vector Multiplication -- **SpGEMV**
     * Matrix-Sparse Matrix Multiplication -- **SpGEMM**
     * Triangular Solve -- **SpTRSV**
     * Batched Triangular Solve -- **SpTRSM**

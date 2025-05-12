@@ -11,7 +11,8 @@ int main(int argc, char *argv[]) {
 
     // Smax SpMM
     SMAX::Interface *smax = new SMAX::Interface();
-    REGISTER_SPMM_KERNEL("my_spmm", crs_mat, n_vectors, X, Y_smax);
+    smax->register_kernel("my_spmm", SMAX::SPMM, SMAX::CPU);
+    REGISTER_SPMM_DATA("my_spmm", crs_mat, n_vectors, X, Y_smax);
     smax->kernels["my_spmm"]->run();
 
     // MKL SpMM
@@ -22,7 +23,7 @@ int main(int argc, char *argv[]) {
     // Create the matrix handle from CSR data
     sparse_status_t status = mkl_sparse_d_create_csr(
         &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows, crs_mat->n_cols,
-        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->values);
+        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val);
 
     if (status != SPARSE_STATUS_SUCCESS) {
         std::cerr << "Failed to create MKL sparse matrix.\n";
@@ -36,23 +37,23 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    status = mkl_sparse_d_mm(SPARSE_OPERATION_NON_TRANSPOSE,
-                             1.0, // alpha
-                             A, descr, SPARSE_LAYOUT_COLUMN_MAJOR, X->values,
-                             n_vectors,
-                             crs_mat->n_cols, // leading dimension of X
-                             0.0,             // beta
-                             Y_mkl->values,
-                             crs_mat->n_rows // leading dimension of Y
-    );
+    status =
+        mkl_sparse_d_mm(SPARSE_OPERATION_NON_TRANSPOSE,
+                        1.0, // alpha
+                        A, descr, SPARSE_LAYOUT_COLUMN_MAJOR, X->val, n_vectors,
+                        crs_mat->n_cols, // leading dimension of X
+                        0.0,             // beta
+                        Y_mkl->val,
+                        crs_mat->n_rows // leading dimension of Y
+        );
 
     if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "MKL sparse matrix-matrix multiply failed.\n";
+        std::cerr << "MKL sparse matrix-block vector multiply failed.\n";
         return 1;
     }
 
     // Compare
-    compare_spmm(crs_mat->n_rows, n_vectors, Y_smax->values, Y_mkl->values,
+    compare_spmm(crs_mat->n_rows, n_vectors, Y_smax->val, Y_mkl->val,
                  cli_args->matrix_file_name);
 
     delete X;

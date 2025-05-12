@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     //     Mat A;
     //     ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF, crs_mat->n_rows,
     //                                      crs_mat->n_cols, crs_mat->row_ptr,
-    //                                      crs_mat->col, crs_mat->values, &A);
+    //                                      crs_mat->col, crs_mat->val, &A);
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
     //     // Indicate that the matrix is lower triangular

@@ -19,13 +19,12 @@
     delete coo_mat;                                                            \
     delete crs_mat;
 
-#define REGISTER_SPMV_KERNEL(kernel_name, mat, X, Y)                           \
-    smax->register_kernel(kernel_name, SMAX::SPMV, SMAX::CPU);                 \
+#define REGISTER_SPMV_DATA(kernel_name, mat, X, Y)                             \
     smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
                                            &mat->col, &mat->row_ptr,           \
-                                           &mat->values);                      \
-    smax->kernels[kernel_name]->register_B(mat->n_cols, &X->values);           \
-    smax->kernels[kernel_name]->register_C(mat->n_rows, &Y->values);
+                                           &mat->val);                         \
+    smax->kernels[kernel_name]->register_B(mat->n_cols, &X->val);              \
+    smax->kernels[kernel_name]->register_C(mat->n_rows, &Y->val);
 
 #define PRINT_SPMV_BENCH                                                       \
     std::cout << "----------------" << std::endl;                              \

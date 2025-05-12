@@ -20,14 +20,12 @@
     delete coo_mat;                                                            \
     delete crs_mat;
 
-#define REGISTER_SPMM_KERNEL(kernel_name, mat, n_vectors, X, Y)                \
-    smax->register_kernel(kernel_name, SMAX::SPMM, SMAX::CPU);                 \
+#define REGISTER_SPMM_DATA(kernel_name, mat, n_vectors, X, Y)                  \
     smax->kernels[kernel_name]->register_A(mat->n_rows, mat->n_cols, mat->nnz, \
                                            &mat->col, &mat->row_ptr,           \
-                                           &mat->values);                      \
-    smax->kernels[kernel_name]->register_B(mat->n_cols, n_vectors,             \
-                                           &X->values);                        \
-    smax->kernels[kernel_name]->register_C(mat->n_rows, n_vectors, &Y->values);
+                                           &mat->val);                         \
+    smax->kernels[kernel_name]->register_B(mat->n_cols, n_vectors, &X->val);   \
+    smax->kernels[kernel_name]->register_C(mat->n_rows, n_vectors, &Y->val);
 
 #define PRINT_SPMM_BENCH                                                       \
     std::cout << "----------------" << std::endl;                              \

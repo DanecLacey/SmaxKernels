@@ -10,7 +10,8 @@ int main(int argc, char *argv[]) {
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    REGISTER_SPMV_KERNEL("my_spmv", crs_mat, x, y);
+    smax->register_kernel("my_spmv", SMAX::SPMV, SMAX::CPU);
+    REGISTER_SPMV_DATA("my_spmv", crs_mat, x, y);
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "smax_spmv";

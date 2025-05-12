@@ -10,7 +10,8 @@ int main(int argc, char *argv[]) {
 
     // Smax SpMV
     SMAX::Interface *smax = new SMAX::Interface();
-    REGISTER_SPMV_KERNEL("my_spmv", crs_mat, x, y_smax);
+    smax->register_kernel("my_spmv", SMAX::SPMV, SMAX::CPU);
+    REGISTER_SPMV_DATA("my_spmv", crs_mat, x, y_smax);
     smax->kernels["my_spmv"]->run();
 
     // MKL SpMV
@@ -21,7 +22,7 @@ int main(int argc, char *argv[]) {
     // Create the matrix handle from CSR data
     sparse_status_t status = mkl_sparse_d_create_csr(
         &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows, crs_mat->n_cols,
-        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->values);
+        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val);
 
     if (status != SPARSE_STATUS_SUCCESS) {
         std::cerr << "Failed to create MKL sparse matrix.\n";
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
     }
 
     status = mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr,
-                             x->values, 0.0, y_mkl->values);
+                             x->val, 0.0, y_mkl->val);
 
     if (status != SPARSE_STATUS_SUCCESS) {
         std::cerr << "MKL sparse matrix-vector multiply failed.\n";
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Compare
-    compare_spmv(crs_mat->n_rows, y_smax->values, y_mkl->values,
+    compare_spmv(crs_mat->n_rows, y_smax->val, y_mkl->val,
                  cli_args->matrix_file_name);
 
     delete x;

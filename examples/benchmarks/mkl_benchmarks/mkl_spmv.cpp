@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     // Create the matrix handle from CSR data
     sparse_status_t status = mkl_sparse_d_create_csr(
         &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows, crs_mat->n_cols,
-        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->values);
+        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val);
 
     if (status != SPARSE_STATUS_SUCCESS) {
         std::cerr << "Failed to create MKL sparse matrix.\n";
@@ -56,8 +56,8 @@ int main(int argc, char *argv[]) {
     std::function<void(bool)> lambda = [bench_name, A, descr, x,
                                         y](bool warmup) {
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
-        mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr,
-                        x->values, 0.0, y->values);
+        mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr, x->val,
+                        0.0, y->val);
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
     };
 
