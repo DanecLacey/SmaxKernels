@@ -33,14 +33,14 @@ int main(void) {
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format
-    smax->kernels["useful_spmm"]->register_A(A_n_rows, A_n_cols, A_nnz, &A_col,
-                                             &A_row_ptr, &A_val);
+    smax->kernel("useful_spmm")
+        ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
     // X and Y are dense matrices
-    smax->kernels["useful_spmm"]->register_B(A_n_cols, N_VECTORS, &X);
-    smax->kernels["useful_spmm"]->register_C(A_n_rows, N_VECTORS, &Y);
+    smax->kernel("useful_spmm")->register_B(A_n_cols, N_VECTORS, &X);
+    smax->kernel("useful_spmm")->register_C(A_n_rows, N_VECTORS, &Y);
 
     // Execute all phases of this kernel
-    smax->kernels["useful_spmm"]->run();
+    smax->kernel("useful_spmm")->run();
 
     smax->print_timers();
 

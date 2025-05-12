@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     SMAX::Interface *smax = new SMAX::Interface();
     smax->register_kernel("my_spmv", SMAX::SPMV, SMAX::CPU);
     REGISTER_SPMV_DATA("my_spmv", crs_mat, x, y_smax);
-    smax->kernels["my_spmv"]->run();
+    smax->kernel("my_spmv")->run();
 
     // MKL SpMV
     sparse_matrix_t A;

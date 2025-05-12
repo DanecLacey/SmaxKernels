@@ -38,14 +38,14 @@ int main(void) {
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format
-    smax->kernels["solve_LX=B"]->register_A(A_n_rows, A_n_cols, A_nnz, &A_col,
-                                            &A_row_ptr, &A_val);
+    smax->kernel("solve_LX=B")
+        ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
     // X and B are dense vectors
-    smax->kernels["solve_LX=B"]->register_B(A_n_rows, N_VECTORS, &X);
-    smax->kernels["solve_LX=B"]->register_C(A_n_cols, N_VECTORS, &B);
+    smax->kernel("solve_LX=B")->register_B(A_n_rows, N_VECTORS, &X);
+    smax->kernel("solve_LX=B")->register_C(A_n_cols, N_VECTORS, &B);
 
     // Execute all phases of this kernel
-    smax->kernels["solve_LX=B"]->run();
+    smax->kernel("solve_LX=B")->run();
 
     smax->print_timers();
 

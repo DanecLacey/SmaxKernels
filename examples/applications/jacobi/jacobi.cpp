@@ -18,7 +18,7 @@
 double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
                       SMAX::Interface *smax) {
 
-    smax->kernels["tmp <- Ax"]->run();
+    smax->kernel("tmp <- Ax")->run();
 
     // residual <- (b - Ax)
     subtract_vectors(residual->val, b->val, tmp->val, b->n_rows);
@@ -30,7 +30,7 @@ double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
 void jacobi_iter(DenseMatrix *x_old, DenseMatrix *x_new, DenseMatrix *b,
                  DenseMatrix *D, SMAX::Interface *smax) {
 
-    smax->kernels["x_new <- Ax_old"]->run();
+    smax->kernel("x_new <- Ax_old")->run();
 
     normalize_x(x_new, x_old, D, b);
 }
@@ -43,7 +43,7 @@ void solve(DenseMatrix *x_old, DenseMatrix *x_new, DenseMatrix *b,
 
         jacobi_iter(x_old, x_new, b, D, smax);
 
-        smax->kernels["x_new <- Ax_old"]->swap_operands();
+        smax->kernel("x_new <- Ax_old")->swap_operands();
 
         ++n_iters;
 

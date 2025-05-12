@@ -32,14 +32,14 @@ int main(void) {
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format
-    smax->kernels["my_spmv"]->register_A(A_n_rows, A_n_cols, A_nnz, &A_col,
-                                         &A_row_ptr, &A_val);
+    smax->kernel("my_spmv")->register_A(A_n_rows, A_n_cols, A_nnz, &A_col,
+                                        &A_row_ptr, &A_val);
     // X and Y are dense matrices
-    smax->kernels["my_spmv"]->register_B(A_n_cols, &X);
-    smax->kernels["my_spmv"]->register_C(A_n_rows, &Y);
+    smax->kernel("my_spmv")->register_B(A_n_cols, &X);
+    smax->kernel("my_spmv")->register_C(A_n_rows, &Y);
 
     // Execute all phases of this kernel
-    smax->kernels["my_spmv"]->run();
+    smax->kernel("my_spmv")->run();
 
     smax->print_timers();
 

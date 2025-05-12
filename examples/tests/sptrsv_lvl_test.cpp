@@ -117,18 +117,18 @@ int main(void) {
 
     // Tell SMAX to expect a permuted matrix
     // This enables level-set scheduling for SpTRSV
-    smax->kernels["solve_perm_Lx=b"]->set_mat_perm(true);
+    smax->kernel("solve_perm_Lx=b")->set_mat_perm(true);
 
     // Register operands to this kernel tag
-    smax->kernels["solve_perm_Lx=b"]->register_A(L_n_rows, L_n_cols, L_nnz,
-                                                 &L_col, &L_row_ptr, &L_val);
+    smax->kernel("solve_perm_Lx=b")
+        ->register_A(L_n_rows, L_n_cols, L_nnz, &L_col, &L_row_ptr, &L_val);
 
     // x and b are dense vectors
-    smax->kernels["solve_perm_Lx=b"]->register_B(A_n_rows, &x_perm);
-    smax->kernels["solve_perm_Lx=b"]->register_C(A_n_cols, &b_perm);
+    smax->kernel("solve_perm_Lx=b")->register_B(A_n_rows, &x_perm);
+    smax->kernel("solve_perm_Lx=b")->register_C(A_n_cols, &b_perm);
 
     // Execute all phases of this kernel
-    smax->kernels["solve_perm_Lx=b"]->run();
+    smax->kernel("solve_perm_Lx=b")->run();
 
     // Unpermute solution vector
     smax->utils->apply_vec_perm<double>(A_n_cols, x_perm, x, inv_perm);

@@ -38,33 +38,13 @@ Interface::~Interface() {
     ErrorHandler::close_log();
 }
 
-// #ifdef DEBUG_MODE
-// Kernel *&Interface::operator[](const std::string &name) {
-//     auto it = kernels.find(name);
-//     if (it == kernels.end()) {
-//         // Log an error internally and prevent segmentation fault
-//         std::cout << "SMAX Error: Kernel \"" << name
-//                   << "\" not found. Returning null pointer." << std::endl;
-
-//         // Return a reference to a null pointer or a default Kernel pointer
-//         static Kernel *nullKernel = nullptr; // static ensures it stays valid
-//                                              // throughout program execution
-//         return nullKernel;
-//     }
-//     return it->second;
-// }
-// #endif
+Kernel *Interface::kernel(const std::string &kernel_name) {
+    return this->kernels.at(kernel_name); // Safe access with .at()
+}
 
 int Interface::register_kernel(const std::string &name, KernelType kernel_type,
                                PlatformType platform, IntType int_type,
                                FloatType float_type) {
-
-    // DL 07.05.2025 TODO: Kernel string validation
-    // IF_DEBUG(if (this->kernels.count(name)) {
-    //     std::cerr << "SMAX Warning: Kernel \"" << name
-    //               << "\" already exists. Overwriting.\n";
-    //     delete this->kernels[name];
-    // });
 
     this->kernels[name] =
         new Kernel(kernel_type, platform, int_type, float_type);

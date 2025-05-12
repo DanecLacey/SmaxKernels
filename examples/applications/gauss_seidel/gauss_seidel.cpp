@@ -17,7 +17,7 @@
 double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
                       SMAX::Interface *smax) {
 
-    smax->kernels["tmp <- Ax"]->run();
+    smax->kernel("tmp <- Ax")->run();
 
     // residual <- (b - Ax)
     subtract_vectors(residual->val, b->val, tmp->val, b->n_rows);
@@ -29,12 +29,12 @@ double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
 void gauss_seidel_iter(DenseMatrix *b, DenseMatrix *tmp,
                        SMAX::Interface *smax) {
 
-    smax->kernels["tmp <- Ux"]->run();
+    smax->kernel("tmp <- Ux")->run();
 
     // tmp <- (b - Ux)
     subtract_vectors(tmp->val, b->val, tmp->val, b->n_rows);
 
-    smax->kernels["solve x <- (D+L)^{-1}(b-Ux)"]->run();
+    smax->kernel("solve x <- (D+L)^{-1}(b-Ux)")->run();
 }
 
 void solve(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,

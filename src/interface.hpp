@@ -14,14 +14,13 @@
 namespace SMAX {
 
 class Interface {
-  protected:
+  private:
     // DL 09.05.2025 NOTE: Populated with Utils::generate_perm. When would we
     // need multiple lvl_ptrs in the same interface?
     UtilitiesContainer *uc;
-
-  public:
     std::unordered_map<std::string, Kernel *> kernels;
 
+  public:
     int register_kernel(const std::string &, KernelType, PlatformType,
                         IntType = UINT32, FloatType = FLOAT64);
 
@@ -30,6 +29,8 @@ class Interface {
 
     Interface();
     ~Interface();
+
+    Kernel *kernel(const std::string &kernel_name);
 
     void print_timers();
 };

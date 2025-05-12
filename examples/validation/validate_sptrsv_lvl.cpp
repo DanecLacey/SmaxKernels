@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     // Smax SpTRSV
     REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_perm_D_plus_L, x_smax_perm,
                          b_perm);
-    smax->kernels["my_lvl_sptrsv"]->run();
+    smax->kernel("my_lvl_sptrsv")->run();
 
     // MKL SpTRSV
     sparse_matrix_t A;
