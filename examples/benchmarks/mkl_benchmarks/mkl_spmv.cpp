@@ -15,21 +15,14 @@ int main(int argc, char *argv[]) {
     descr.type = SPARSE_MATRIX_TYPE_GENERAL;
 
     // Create the matrix handle from CSR data
-    sparse_status_t status = mkl_sparse_d_create_csr(
-        &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows, crs_mat->n_cols,
-        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to create MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
+                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows,
+                         crs_mat->n_cols, crs_mat->row_ptr,
+                         crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val),
+                     "mkl_sparse_d_create_csr");
 
     // Optimize the matrix for SpMV
-    status = mkl_sparse_optimize(A);
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to optimize MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "mkl_spmv";
@@ -67,7 +60,7 @@ int main(int argc, char *argv[]) {
     delete bench_harness;
     delete x;
     delete y;
-    mkl_sparse_destroy(A);
+    CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
 
     return 0;
 }

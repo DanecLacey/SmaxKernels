@@ -28,6 +28,12 @@
 
 #endif
 
+#define CHECK_MKL_STATUS(status, message)                                      \
+    if ((status) != SPARSE_STATUS_SUCCESS) {                                   \
+        fprintf(stderr, "ERROR: %s\n", (message));                             \
+        exit(EXIT_FAILURE);                                                    \
+    }
+
 #define DIFF_STATUS_MACRO(relative_diff, working_file)                         \
     do {                                                                       \
         if ((std::abs(relative_diff) > 0.01) || std::isinf(relative_diff)) {   \

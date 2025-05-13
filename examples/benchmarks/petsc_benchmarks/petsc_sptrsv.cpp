@@ -4,6 +4,7 @@
 #include "petsc_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
+    // Broken for now
     //     INIT_SPTRSV;
 
     //     PetscErrorCode ierr;

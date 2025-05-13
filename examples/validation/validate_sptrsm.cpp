@@ -23,32 +23,21 @@ int main(int argc, char *argv[]) {
     descr.diag = SPARSE_DIAG_NON_UNIT;   // Non-unit diagonal
 
     // Create the matrix handle from CSR data
-    sparse_status_t status = mkl_sparse_d_create_csr(
-        &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
-        crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
-        crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
-        crs_mat_D_plus_L->val);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to create MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
+                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
+                         crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
+                         crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
+                         crs_mat_D_plus_L->val),
+                     "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
-    status = mkl_sparse_optimize(A);
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to optimize MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
-    status = mkl_sparse_d_trsm(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr,
-                               SPARSE_LAYOUT_COLUMN_MAJOR, B->val, n_vectors,
-                               crs_mat->n_rows, X_mkl->val, crs_mat->n_rows);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "MKL sparse triangular solve failed.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_trsm(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A,
+                                       descr, SPARSE_LAYOUT_COLUMN_MAJOR,
+                                       B->val, n_vectors, crs_mat->n_rows,
+                                       X_mkl->val, crs_mat->n_rows),
+                     "mkl_sparse_d_trsm");
 
     // Compare
     compare_sptrsm(crs_mat->n_rows, n_vectors, X_smax->val, X_mkl->val,
@@ -57,6 +46,6 @@ int main(int argc, char *argv[]) {
     delete X_smax;
     delete X_mkl;
     delete B;
-    mkl_sparse_destroy(A);
+    CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
     FINALIZE_SPTRSM;
 }

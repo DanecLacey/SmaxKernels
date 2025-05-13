@@ -21,36 +21,25 @@ int main(int argc, char *argv[]) {
     descr.type = SPARSE_MATRIX_TYPE_GENERAL;
 
     // Create the matrix handle from CSR data
-    sparse_status_t status = mkl_sparse_d_create_csr(
-        &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows, crs_mat->n_cols,
-        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to create MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
+                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows,
+                         crs_mat->n_cols, crs_mat->row_ptr,
+                         crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val),
+                     "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
-    status = mkl_sparse_optimize(A);
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to optimize MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
-    status =
-        mkl_sparse_d_mm(SPARSE_OPERATION_NON_TRANSPOSE,
-                        1.0, // alpha
-                        A, descr, SPARSE_LAYOUT_COLUMN_MAJOR, X->val, n_vectors,
-                        crs_mat->n_cols, // leading dimension of X
-                        0.0,             // beta
-                        Y_mkl->val,
-                        crs_mat->n_rows // leading dimension of Y
-        );
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "MKL sparse matrix-block vector multiply failed.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_mm(SPARSE_OPERATION_NON_TRANSPOSE,
+                                     1.0, // alpha
+                                     A, descr, SPARSE_LAYOUT_COLUMN_MAJOR,
+                                     X->val, n_vectors,
+                                     crs_mat->n_cols, // leading dimension of X
+                                     0.0,             // beta
+                                     Y_mkl->val,
+                                     crs_mat->n_rows // leading dimension of Y
+                                     ),
+                     "mkl_sparse_d_mm");
 
     // Compare
     compare_spmm(crs_mat->n_rows, n_vectors, Y_smax->val, Y_mkl->val,
@@ -59,6 +48,6 @@ int main(int argc, char *argv[]) {
     delete X;
     delete Y_smax;
     delete Y_mkl;
-    mkl_sparse_destroy(A);
+    CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
     FINALIZE_SPMM;
 }

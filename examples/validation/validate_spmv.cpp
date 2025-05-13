@@ -20,29 +20,18 @@ int main(int argc, char *argv[]) {
     descr.type = SPARSE_MATRIX_TYPE_GENERAL;
 
     // Create the matrix handle from CSR data
-    sparse_status_t status = mkl_sparse_d_create_csr(
-        &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows, crs_mat->n_cols,
-        crs_mat->row_ptr, crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to create MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
+                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows,
+                         crs_mat->n_cols, crs_mat->row_ptr,
+                         crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val),
+                     "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
-    status = mkl_sparse_optimize(A);
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to optimize MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
-    status = mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr,
-                             x->val, 0.0, y_mkl->val);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "MKL sparse matrix-vector multiply failed.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A,
+                                     descr, x->val, 0.0, y_mkl->val),
+                     "mkl_sparse_d_mv");
 
     // Compare
     compare_spmv(crs_mat->n_rows, y_smax->val, y_mkl->val,
@@ -51,6 +40,6 @@ int main(int argc, char *argv[]) {
     delete x;
     delete y_smax;
     delete y_mkl;
-    mkl_sparse_destroy(A);
+    CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
     FINALIZE_SPMV;
 }

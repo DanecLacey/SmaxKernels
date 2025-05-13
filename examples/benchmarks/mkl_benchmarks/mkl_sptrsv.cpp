@@ -17,23 +17,15 @@ int main(int argc, char *argv[]) {
     descr.diag = SPARSE_DIAG_NON_UNIT;   // Non-unit diagonal
 
     // Create the matrix handle from CSR data
-    sparse_status_t status = mkl_sparse_d_create_csr(
-        &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
-        crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
-        crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
-        crs_mat_D_plus_L->val);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to create MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
+                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
+                         crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
+                         crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
+                         crs_mat_D_plus_L->val),
+                     "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
-    status = mkl_sparse_optimize(A);
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to optimize MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "mkl_sptrsv";
@@ -73,7 +65,7 @@ int main(int argc, char *argv[]) {
     delete bench_harness;
     delete x;
     delete b;
-    mkl_sparse_destroy(A);
+    CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
 
     return 0;
 }

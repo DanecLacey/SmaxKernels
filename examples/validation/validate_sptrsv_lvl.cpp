@@ -53,31 +53,19 @@ int main(int argc, char *argv[]) {
     descr.diag = SPARSE_DIAG_NON_UNIT;   // Non-unit diagonal
 
     // Create the matrix handle from CSR data
-    sparse_status_t status = mkl_sparse_d_create_csr(
-        &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
-        crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
-        crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
-        crs_mat_D_plus_L->val);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to create MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
+                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
+                         crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
+                         crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
+                         crs_mat_D_plus_L->val),
+                     "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
-    status = mkl_sparse_optimize(A);
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "Failed to optimize MKL sparse matrix.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
-    status = mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr,
-                               b->val, x_mkl->val);
-
-    if (status != SPARSE_STATUS_SUCCESS) {
-        std::cerr << "MKL sparse triangular solve failed.\n";
-        return 1;
-    }
+    CHECK_MKL_STATUS(mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A,
+                                       descr, b->val, x_mkl->val),
+                     "mkl_sparse_d_trsv");
 
     // Unpermute and compare
     smax->utils->apply_vec_perm<double>(n_rows, x_smax_perm->val, x_smax->val,
@@ -88,6 +76,6 @@ int main(int argc, char *argv[]) {
     delete x_smax;
     delete x_mkl;
     delete b;
-    mkl_sparse_destroy(A);
+    CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
     FINALIZE_SPTRSV;
 }
