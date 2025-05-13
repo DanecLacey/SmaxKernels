@@ -4,8 +4,6 @@
 #include "petsc_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    // DL 05.05.25 TODO: Not working
-
     //     INIT_SPTRSV;
 
     //     PetscErrorCode ierr;
@@ -14,7 +12,7 @@ int main(int argc, char *argv[]) {
 
     //     // Create PETSc vectors for b and x
     //     Vec b, x;
-    //     ierr = VecCreate(PETSC_COMM_WORLD, &b);
+    //     ierr = VecCreate(PETSC_COMM_SELF, &b);
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
     //     ierr = VecSetSizes(b, PETSC_DECIDE, crs_mat->n_cols);
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
@@ -23,7 +21,7 @@ int main(int argc, char *argv[]) {
     //     ierr = VecSet(b, 1.0); // Set b to 1.0 for all entries
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
-    //     ierr = VecCreate(PETSC_COMM_WORLD, &x);
+    //     ierr = VecCreate(PETSC_COMM_SELF, &x);
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
     //     ierr = VecSetSizes(x, PETSC_DECIDE, crs_mat->n_rows);
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
@@ -32,16 +30,66 @@ int main(int argc, char *argv[]) {
     //     ierr = VecSet(x, 0.0); // Initialize x to 0.0
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
-    //     // Wrap the CRS matrix in PETSc
-    //     Mat A;
-    //     ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF, crs_mat->n_rows,
-    //                                      crs_mat->n_cols, crs_mat->row_ptr,
-    //                                      crs_mat->col, crs_mat->val, &A);
+    //     // Wrap the CRS matrix in a PETSc matrix
+    //     Mat D_plus_L;
+    //     ierr = MatCreateSeqAIJWithArrays(
+    //         PETSC_COMM_SELF, crs_mat_D_plus_L->n_rows,
+    //         crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
+    //         crs_mat_D_plus_L->col, crs_mat_D_plus_L->val, &D_plus_L);
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
-    //     // Indicate that the matrix is lower triangular
-    //     ierr = MatSetOption(A, MAT_SYMMETRIC, PETSC_TRUE); // Optional for
-    //     symmetric CHKERRABORT(PETSC_COMM_SELF, ierr);
+    //     // // Create a factored version of A for triangular solve
+    //     // Mat A_fact;
+    //     // ierr = MatDuplicate(A, MAT_COPY_VALUES, &A_fact);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     // // Perform LU factorization (symbolic + numeric)
+    //     // MatFactorInfo factor_info;
+    //     // ierr = MatFactorInfoInitialize(&factor_info);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     // IS row_perm, col_perm;
+    //     // ierr = MatGetOrdering(A_fact, MATORDERINGNATURAL, &row_perm,
+    //     &col_perm);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     // ierr = MatLUFactor(A_fact, row_perm, col_perm, &factor_info);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     // ierr = ISDestroy(&row_perm);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+    //     // ierr = ISDestroy(&col_perm);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     ierr = MatSetOption(D_plus_L, MAT_STRUCTURALLY_SYMMETRIC,
+    //     PETSC_TRUE); CHKERRABORT(PETSC_COMM_SELF, ierr); ierr =
+    //     MatSetOption(D_plus_L, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE);
+    //     CHKERRABORT(PETSC_COMM_SELF, ierr);
+    //     ierr = MatSetOption(D_plus_L, MAT_FACTOR_LU, PETSC_FALSE);
+    //     CHKERRABORT(PETSC_COMM_SELF, ierr);
+    //     ierr = MatSetOption(D_plus_L, MAT_FACTOR_SHIFT_TYPE, MAT_SHIFT_NONE);
+    //     CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     MatFactorInfo info;
+    //     ierr = MatFactorInfoInitialize(&info);
+    //     CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     // IS row_perm, col_perm;
+    //     // ierr = MatGetOrdering(A, MATORDERINGNATURAL, &row_perm,
+    //     &col_perm);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     // // This performs only symbolic 'L' factor, assuming A is D+L
+    //     // ierr =
+    //     //     MatILUFactor(A, row_perm, col_perm, &info); // or MatLUFactor
+    //     if
+    //     //     needed
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+
+    //     // ierr = ISDestroy(&row_perm);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
+    //     // ierr = ISDestroy(&col_perm);
+    //     // CHKERRABORT(PETSC_COMM_SELF, ierr);
 
     //     // Benchmark Setup
     //     std::string bench_name = "petsc_sptrsv";
@@ -67,13 +115,13 @@ int main(int argc, char *argv[]) {
     //     init_pin();
 
     //     // Lambda for benchmarking lower triangular solve
-    //     std::function<void(bool)> lambda = [bench_name, A, b, x](bool warmup)
-    //     {
+    //     std::function<void(bool)> lambda = [bench_name, D_plus_L, b,
+    //                                         x](bool warmup) {
     //         IF_USE_LIKWID(if (!warmup)
     //         LIKWID_MARKER_START(bench_name.c_str());)
 
-    //         // Perform forward substitution on the lower triangular part of A
-    //         MatSolve(A, b, x); // Use MatSolve to handle the triangular solve
+    //         // Solve A * x = b, using factored matrix
+    //         MatSolve(D_plus_L, b, x);
 
     //         IF_USE_LIKWID(if (!warmup)
     //         LIKWID_MARKER_STOP(bench_name.c_str());)
@@ -85,7 +133,7 @@ int main(int argc, char *argv[]) {
     //     delete bench_harness;
 
     //     // Cleanup PETSc objects
-    //     ierr = MatDestroy(&A);
+    //     ierr = MatDestroy(&D_plus_L);
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);
     //     ierr = VecDestroy(&b);
     //     CHKERRABORT(PETSC_COMM_SELF, ierr);

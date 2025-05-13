@@ -1,15 +1,17 @@
 #include "../../examples_common.hpp"
-#include "../../sptrsv_helpers.hpp"
+#include "../../sptrsm_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "eigen_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_SPTRSV;
+    INIT_SPTRSM;
 
-    Eigen::VectorXd b = Eigen::VectorXd::Constant(crs_mat->n_cols, 1.0);
-    Eigen::VectorXd x = Eigen::VectorXd::Zero(crs_mat->n_rows);
+    Eigen::MatrixXd X =
+        Eigen::MatrixXd::Constant(crs_mat->n_cols, n_vectors, 1.0);
+    Eigen::MatrixXd B =
+        Eigen::MatrixXd::Constant(crs_mat->n_rows, n_vectors, 0.0);
 
-    // Convert to Eigen SparseMatrix
+    // Wrap your CRS data into an Eigen SparseMatrix
     Eigen::SparseMatrix<double> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
     std::vector<Eigen::Triplet<double>> triplets;
     triplets.reserve(crs_mat->nnz);
@@ -24,7 +26,8 @@ int main(int argc, char *argv[]) {
     }
     eigen_mat.setFromTriplets(triplets.begin(), triplets.end());
 
-    std::string bench_name = "eigen_sptrsv";
+    // Setup benchmark metadata
+    std::string bench_name = "eigen_sptrsm";
     double runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -44,19 +47,18 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    init_pin();
+    init_pin(); // Remove pinning overhead from benchmark timing
 
-    std::function<void(bool)> lambda = [bench_name, &eigen_mat, &x,
-                                        &b](bool warmup) {
+    std::function<void(bool)> lambda = [bench_name, &eigen_mat, &X,
+                                        &B](bool warmup) {
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
-        x.noalias() = eigen_mat.triangularView<Eigen::Lower>().solve(b);
+        X.noalias() = eigen_mat.triangularView<Eigen::Lower>().solve(B);
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
     };
 
     RUN_BENCH;
-    PRINT_SPTRSV_BENCH;
-    FINALIZE_SPTRSV;
-
+    PRINT_SPTRSM_BENCH;
+    FINALIZE_SPTRSM;
     delete bench_harness;
 
 #ifdef USE_LIKWID

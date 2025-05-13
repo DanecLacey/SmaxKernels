@@ -42,8 +42,9 @@
     std::cout << "Runtime: " << runtime << std::endl;                          \
     std::cout << "Iterations: " << n_iter << std::endl;                        \
                                                                                \
-    long flops_per_iter = (crs_mat_D_plus_L->nnz * SPTRSM_FLOPS_PER_NZ +       \
-                           crs_mat_D_plus_L->n_rows * SPTRSM_FLOPS_PER_ROW);   \
+    long flops_per_iter =                                                      \
+        n_vectors * (crs_mat_D_plus_L->nnz * SPTRSM_FLOPS_PER_NZ +             \
+                     crs_mat_D_plus_L->n_rows * SPTRSM_FLOPS_PER_ROW);         \
     long iter_per_second = static_cast<long>(n_iter / runtime);                \
                                                                                \
     std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
