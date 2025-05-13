@@ -11,12 +11,14 @@ namespace SPTRSM {
 struct Args {
 
     SparseMatrix *A;
+    DenseMatrix *D;
     DenseMatrix *X;
     DenseMatrix *Y;
     UtilitiesContainer *uc;
 
     Args(UtilitiesContainer *_uc) {
         A = new SparseMatrix();
+        D = new DenseMatrix();
         X = new DenseMatrix();
         Y = new DenseMatrix();
         uc = _uc;
@@ -25,6 +27,7 @@ struct Args {
     // Destructor
     ~Args() {
         delete A;
+        delete D;
         delete X;
         delete Y;
     }
@@ -43,14 +46,21 @@ struct Flags {
 
 class SpTRSMErrorHandler : public KernelErrorHandler {
   public:
-    static void zero_diag() {
-        const std::string message = "Zero detected on diagonal.";
-        kernel_fatal("[SpTRSM] " + message);
+    static void zero_diag(int row_idx) {
+        std::ostringstream oss;
+        oss << "Zero detected on diagonal at row index" << row_idx;
+        kernel_fatal("[SpTRSM] " + oss.str());
     }
 
-    static void super_diag() {
-        const std::string message = "Nonzero above diagonal detected.";
-        kernel_fatal("[SpTRSM] " + message);
+    static void no_diag(int row_idx) {
+        std::ostringstream oss;
+        oss << "No diagonal to extract at row index" << row_idx;
+        kernel_fatal("[SpTRSM] " + oss.str());
+    }
+
+    template <typename IT, typename VT>
+    static void super_diag(int row_idx, IT col, VT val) {
+        KernelErrorHandler::super_diag<IT>(row_idx, col, val, "SpTRSM");
     }
 
     template <typename IT>
