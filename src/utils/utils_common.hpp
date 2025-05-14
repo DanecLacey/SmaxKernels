@@ -1,5 +1,4 @@
-#ifndef SMAX_UTILS_COMMON_HPP
-#define SMAX_UTILS_COMMON_HPP
+#pragma once
 
 #include "../common.hpp"
 
@@ -54,5 +53,3 @@ void print_matrix(int n_rows, int n_cols, int nnz, IT *col, IT *row_ptr) {
 }
 
 } // namespace SMAX
-
-#endif // SMAX_UTILS_COMMON_HPP

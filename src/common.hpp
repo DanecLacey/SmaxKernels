@@ -1,5 +1,4 @@
-#ifndef SMAX_COMMON_HPP
-#define SMAX_COMMON_HPP
+#pragma once
 
 #include "error_handler.hpp"
 #include "macros.hpp"
@@ -9,30 +8,30 @@
 namespace SMAX {
 
 // Available kernels
-enum KernelType { SPMV, SPMM, SPGEMV, SPGEMM, SPTRSV, SPTRSM };
+enum class KernelType { SPMV, SPMM, SPGEMV, SPGEMM, SPTRSV, SPTRSM };
 
 // Available platforms
-enum PlatformType { CPU };
+enum class PlatformType { CPU };
 
 // Available integer types
-enum IntType { UINT16, UINT32, UINT64 };
+enum class IntType { UINT16, UINT32, UINT64 };
 
 // Available floating point types
-enum FloatType { FLOAT32, FLOAT64 };
+enum class FloatType { FLOAT32, FLOAT64 };
 
 struct FlagType {
     bool is_lvl_ptr_collected = false;
     bool is_mat_permuted = false;
 };
 
-// Make base class. All child classes will be created for each kernel
-// wasteful, but should work for now
 struct KernelContext {
     KernelType kernel_type;
     PlatformType platform_type;
     IntType int_type;
     FloatType float_type;
-    FlagType flags;
+
+    KernelContext(KernelType kt, PlatformType pt, IntType it, FloatType ft)
+        : kernel_type(kt), platform_type(pt), int_type(it), float_type(ft) {}
 };
 
 // For simplicity, assume all matrices are in CSR format
@@ -124,5 +123,3 @@ struct UtilitiesContainer {
 };
 
 } // namespace SMAX
-
-#endif // SMAX_COMMON_HPP

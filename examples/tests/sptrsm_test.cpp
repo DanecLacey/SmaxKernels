@@ -33,8 +33,9 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("solve_LX=B", SMAX::SPTRSM, SMAX::CPU, SMAX::UINT32,
-                          SMAX::FLOAT32);
+    smax->register_kernel("solve_LX=B", SMAX::KernelType::SPTRSM,
+                          SMAX::PlatformType::CPU, SMAX::IntType::UINT32,
+                          SMAX::FloatType::FLOAT32);
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format

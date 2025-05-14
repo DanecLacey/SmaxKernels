@@ -1,5 +1,4 @@
-#ifndef SMAX_STOPWATCH_HPP
-#define SMAX_STOPWATCH_HPP
+#pragma once
 
 #include <sys/time.h>
 
@@ -72,5 +71,3 @@ void init_timers(Timers *timers) {
 }
 
 } // namespace SMAX
-
-#endif // SMAX_STOPWATCH_HPP

@@ -82,10 +82,10 @@ int main(void) {
     peel_diag_crs(A_perm, D);
 
     // Register necessary sparse kernels to SMAX
-    smax->register_kernel("tmp <- Ax", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("tmp <- Ax", SMAX::KernelType::SPMV);
     REGISTER_SPMV_DATA("tmp <- Ax", A_perm, x_new, tmp);
 
-    smax->register_kernel("x_new <- Ax_old", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("x_new <- Ax_old", SMAX::KernelType::SPMV);
     REGISTER_SPMV_DATA("x_new <- Ax_old", A_perm, x_old, x_new);
 
     // Compute initial residual norm

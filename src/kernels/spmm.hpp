@@ -1,102 +1,58 @@
-#ifndef SMAX_SPMM_HPP
-#define SMAX_SPMM_HPP
+#pragma once
 
 #include "../common.hpp"
+#include "../kernel.hpp"
 #include "../macros.hpp"
 #include "spmm/spmm_cpu.hpp"
 
-#include <cstdarg>
-#include <functional>
+namespace SMAX::KERNELS {
 
-namespace SMAX {
-namespace KERNELS {
+class SpMMKernel : public Kernel {
+  public:
+    using CpuFunc = int (*)(KernelContext *, SPMM::Args *, SPMM::Flags *, int,
+                            int, int);
 
-int spmm_register_A(SparseMatrix *A, va_list args) {
-    A->n_rows = va_arg(args, int);
-    A->n_cols = va_arg(args, int);
-    A->nnz = va_arg(args, int);
-    A->col = va_arg(args, void **);
-    A->row_ptr = va_arg(args, void **);
-    A->val = va_arg(args, void **);
+    SpMMKernel(std::unique_ptr<KernelContext> k_ctx)
+        : Kernel(std::move(k_ctx)) {}
 
-    return 0;
-}
+    int dispatch(CpuFunc cpu_func, const char *label, int A_offset,
+                 int X_offset, int Y_offset) {
+        IF_DEBUG(if (!k_ctx || !spmm_args || !spmm_flags) {
+            std::cerr << "Error: Null kernel state in " << label << "\n";
+            return 1;
+        });
 
-int spmm_register_B(DenseMatrix *X, va_list args) {
-    X->n_rows = va_arg(args, int);
-    X->n_cols = va_arg(args, int);
-    X->val = va_arg(args, void **);
-
-    return 0;
-}
-
-int spmm_register_C(DenseMatrix *Y, va_list args) {
-    Y->n_rows = va_arg(args, int);
-    Y->n_cols = va_arg(args, int);
-    Y->val = va_arg(args, void **);
-
-    return 0;
-}
-
-int spmm_dispatch(KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
-                  int A_offset, int X_offset, int Y_offset,
-                  std::function<int(KernelContext, SPMM::Args *, SPMM::Flags *,
-                                    int, int, int)>
-                      cpu_func,
-                  const char *label) {
-    switch (context.platform_type) {
-    case CPU:
-        CHECK_ERROR(
-            cpu_func(context, args, flags, A_offset, X_offset, Y_offset),
-            label);
-        break;
-    default:
-        std::cerr << "Error: Platform not supported\n";
-        return 1;
+        switch (k_ctx->platform_type) {
+        case PlatformType::CPU: {
+            return cpu_func(k_ctx.get(), spmm_args.get(), spmm_flags.get(),
+                            A_offset, X_offset, Y_offset);
+            break;
+        }
+        default:
+            std::cerr << "Error: Platform not supported\n";
+            return 1;
+        }
     }
-    return 0;
-}
 
-int spmm_initialize(KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
-                    int A_offset, int X_offset, int Y_offset) {
+    int initialize(int A_offset, int X_offset, int Y_offset) override {
+        return dispatch(SPMM::initialize_cpu, "spmm_initialize", A_offset,
+                        X_offset, Y_offset);
+    }
 
-    return spmm_dispatch(
-        context, args, flags, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
-           int A_offset, int X_offset, int Y_offset) {
-            return SPMM::spmm_initialize_cpu(context, args, flags, A_offset,
-                                             X_offset, Y_offset);
-        },
-        "spmm_initialize");
-}
+    int apply(int A_offset, int X_offset, int Y_offset) override {
+        return dispatch(SPMM::apply_cpu, "spmm_apply", A_offset, X_offset,
+                        Y_offset);
+    }
 
-int spmm_apply(KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
-               int A_offset, int X_offset, int Y_offset) {
+    int finalize(int A_offset, int X_offset, int Y_offset) override {
+        return dispatch(SPMM::finalize_cpu, "spmm_finalize", A_offset, X_offset,
+                        Y_offset);
+    }
 
-    return spmm_dispatch(
-        context, args, flags, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
-           int A_offset, int X_offset, int Y_offset) {
-            return SPMM::spmm_apply_cpu(context, args, flags, A_offset,
-                                        X_offset, Y_offset);
-        },
-        "spmm_apply");
-}
+    int swap_operands(void) override {
+        std::swap(*spmm_args->X->val, *spmm_args->Y->val);
+        return 0;
+    }
+};
 
-int spmm_finalize(KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
-                  int A_offset, int X_offset, int Y_offset) {
-
-    return spmm_dispatch(
-        context, args, flags, A_offset, X_offset, Y_offset,
-        [](KernelContext context, SPMM::Args *args, SPMM::Flags *flags,
-           int A_offset, int X_offset, int Y_offset) {
-            return SPMM::spmm_finalize_cpu(context, args, flags, A_offset,
-                                           X_offset, Y_offset);
-        },
-        "spmm_finalize");
-}
-
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPMM_HPP
+} // namespace SMAX::KERNELS

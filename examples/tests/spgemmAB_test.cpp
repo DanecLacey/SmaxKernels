@@ -32,8 +32,9 @@ int main(void) {
 
     SMAX::Interface *smax = new SMAX::Interface();
 
-    smax->register_kernel("my_spgemm_AB", SMAX::SPGEMM, SMAX::CPU, SMAX::UINT16,
-                          SMAX::FLOAT32);
+    smax->register_kernel("my_spgemm_AB", SMAX::KernelType::SPGEMM,
+                          SMAX::PlatformType::CPU, SMAX::IntType::UINT16,
+                          SMAX::FloatType::FLOAT32);
 
     smax->kernel("my_spgemm_AB")
         ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);

@@ -113,7 +113,7 @@ int main(void) {
                          U_col, U_val);
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("solve_perm_Lx=b", SMAX::SPTRSV, SMAX::CPU);
+    smax->register_kernel("solve_perm_Lx=b", SMAX::KernelType::SPTRSV);
 
     // Tell SMAX to expect a permuted matrix
     // This enables level-set scheduling for SpTRSV

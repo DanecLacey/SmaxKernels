@@ -1,17 +1,13 @@
-#ifndef SMAx_SPMV_CPU_CORE_HPP
-#define SMAx_SPMV_CPU_CORE_HPP
+#pragma once
 
 #include "../../../common.hpp"
 #include "spmv_cpu_crs_impl.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPMV {
-namespace SPMV_CPU {
+namespace SMAX::KERNELS::SPMV::SPMV_CPU {
 
 template <typename IT, typename VT>
-int spmv_initialize_cpu_core(KernelContext context, Args *args, Flags *flags,
-                             int A_offset, int x_offset, int y_offset) {
+int initialize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags,
+                        int A_offset, int x_offset, int y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_initialize_cpu_core"));
     // TODO
     IF_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cpu_core"));
@@ -19,8 +15,8 @@ int spmv_initialize_cpu_core(KernelContext context, Args *args, Flags *flags,
 };
 
 template <typename IT, typename VT>
-int spmv_apply_cpu_core(KernelContext context, Args *args, Flags *flags,
-                        int A_offset, int x_offset, int y_offset) {
+int apply_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags, int A_offset,
+                   int x_offset, int y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_apply_cpu_core"));
 
     // Cast void pointers to the correct types with "as"
@@ -44,17 +40,12 @@ int spmv_apply_cpu_core(KernelContext context, Args *args, Flags *flags,
 }
 
 template <typename IT, typename VT>
-int spmv_finalize_cpu_core(KernelContext context, Args *args, Flags *flags,
-                           int A_offset, int x_offset, int y_offset) {
+int finalize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags,
+                      int A_offset, int x_offset, int y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_finalize_cpu_core"));
     // TODO
     IF_DEBUG(ErrorHandler::log("Exiting spmv_finalize_cpu_core"));
     return 0;
 }
 
-} // namespace SPMV_CPU
-} // namespace SPMV
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAx_SPMV_CPU_CORE_HPP
+} // namespace SMAX::KERNELS::SPMV::SPMV_CPU

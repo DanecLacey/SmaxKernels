@@ -1,14 +1,10 @@
-#ifndef SMAX_SPTRSV_CPU_IMPL_HPP
-#define SMAX_SPTRSV_CPU_IMPL_HPP
+#pragma once
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
 #include "../sptrsv_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPTRSV {
-namespace SPTRSV_CPU {
+namespace SMAX::KERNELS::SPTRSV::SPTRSV_CPU {
 
 // TODO: JH
 
@@ -84,9 +80,4 @@ inline void naive_crs_sputrsv(int A_n_rows, int A_n_cols, int A_nnz,
     }
 }
 
-} // namespace SPTRSV_CPU
-} // namespace SPTRSV
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPTRSV_CPU_IMPL_HPP
+} // namespace SMAX::KERNELS::SPTRSV::SPTRSV_CPU

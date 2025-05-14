@@ -1,8 +1,8 @@
-#ifndef SMAX_MEMORY_UTILS_HPP
-#define SMAX_MEMORY_UTILS_HPP
+#pragma once
 
 #include <cstddef>
 #include <errno.h>
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -21,5 +21,3 @@ template <typename T> inline T *&as_ptr_ref(void **slot) {
 }
 
 } // namespace SMAX
-
-#endif // SMAX_MEMORY_UTILS_HPP

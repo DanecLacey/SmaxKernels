@@ -1,5 +1,4 @@
-#ifndef SMAX_PERMUTATION_IMPL_HPP
-#define SMAX_PERMUTATION_IMPL_HPP
+#pragma once
 
 #include "../common.hpp"
 #include "utils_common.hpp"
@@ -315,5 +314,3 @@ void Utils::apply_vec_perm(int n_rows, VT *vec, VT *vec_perm, int *perm) {
 };
 
 } // namespace SMAX
-
-#endif // SMAX_PERMUTATION_IMPL_HPP

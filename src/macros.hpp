@@ -1,5 +1,4 @@
-#ifndef SMAX_MACROS_HPP
-#define SMAX_MACROS_HPP
+#pragma once
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -38,5 +37,3 @@ namespace SMAX {
 #endif
 
 } // namespace SMAX
-
-#endif // SMAX_MACROS_HPP

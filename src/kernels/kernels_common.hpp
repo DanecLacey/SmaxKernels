@@ -1,11 +1,10 @@
-#ifndef SMAX_KERNELS_COMMON_HPP
-#define SMAX_KERNELS_COMMON_HPP
+#pragma once
 
 #include "../common.hpp"
+#include <cstdarg>
 #include <sstream>
 
-namespace SMAX {
-namespace KERNELS {
+namespace SMAX::KERNELS {
 
 #define RESTRICT __restrict__
 
@@ -62,7 +61,4 @@ class KernelErrorHandler : public ErrorHandler {
     }
 };
 
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_KERNELS_COMMON_HPP
+} // namespace SMAX::KERNELS

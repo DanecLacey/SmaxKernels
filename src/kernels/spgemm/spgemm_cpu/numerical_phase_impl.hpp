@@ -1,14 +1,10 @@
-#ifndef SMAX_SPGEMM_NUMERICAL_CPU_IMPL_HPP
-#define SMAX_SPGEMM_NUMERICAL_CPU_IMPL_HPP
+#pragma once
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
 #include "../spgemm_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPGEMM {
-namespace SPGEMM_CPU {
+namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU {
 
 template <typename IT, typename VT>
 inline void
@@ -64,9 +60,4 @@ basic_numerical_phase(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
     }
 }
 
-} // namespace SPGEMM_CPU
-} // namespace SPGEMM
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPGEMM_NUMERICAL_CPU_IMPL_HPP
+} // namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU

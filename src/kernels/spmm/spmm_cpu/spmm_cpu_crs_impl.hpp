@@ -1,14 +1,10 @@
-#ifndef SMAX_SPMM_CPU_IMPL_HPP
-#define SMAX_SPMM_CPU_IMPL_HPP
+#pragma once
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
 #include "../spmm_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPMM {
-namespace SPMM_CPU {
+namespace SMAX::KERNELS::SPMM::SPMM_CPU {
 
 template <typename IT, typename VT>
 inline void naive_crs_spmm(int A_n_rows, int A_n_cols, int A_nnz,
@@ -51,9 +47,4 @@ inline void naive_crs_spmm(int A_n_rows, int A_n_cols, int A_nnz,
     }
 }
 
-} // namespace SPMM_CPU
-} // namespace SPMM
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPMM_CPU_IMPL_HPP
+} // namespace SMAX::KERNELS::SPMM::SPMM_CPU
