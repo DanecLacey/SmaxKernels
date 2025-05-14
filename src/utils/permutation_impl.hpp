@@ -110,7 +110,6 @@ void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     int A_sym_nnz = 0;
     build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
                         A_sym_nnz);
-    print_matrix<IT>(A_n_rows, A_n_rows, A_sym_nnz, A_sym_col, A_sym_row_ptr);
 
     int max_level = 0;
 
@@ -127,6 +126,28 @@ void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
             }
         }
     }
+
+    // Step 2.5: Submit level information to uc
+    IF_DEBUG(
+        ErrorHandler::log("%d levels detected in generate_perm", max_level));
+    uc->lvl_ptr = new int[max_level + 1];
+
+    // Count nodes per level
+    int *count = new int[max_level];
+    for (int i = 0; i < max_level; ++i) {
+        count[i] = 0;
+    }
+    for (int i = 0; i < A_n_rows; ++i) {
+        ++count[levels[i]];
+    }
+
+    // Build the prefix‐sum pointer array (size = max_level+1)
+    uc->lvl_ptr[0] = 0;
+    for (int L = 0; L < max_level; ++L) {
+        uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
+    }
+
+    uc->n_levels= max_level;
 
     // Step 3: Create range vector and use sorting function to permute into
     // final permutation
