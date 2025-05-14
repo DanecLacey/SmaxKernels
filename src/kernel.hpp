@@ -26,9 +26,17 @@ class Kernel {
     std::unique_ptr<KERNELS::SPTRSM::Flags> sptrsm_flags;
 
     std::unique_ptr<KernelContext> k_ctx;
+    Timers *timers;
 
-    Kernel(std::unique_ptr<KernelContext> _k_ctx) : k_ctx(std::move(_k_ctx)) {}
-    virtual ~Kernel() = default;
+    Kernel(std::unique_ptr<KernelContext> _k_ctx) : k_ctx(std::move(_k_ctx)) {
+        this->timers = new Timers;
+#ifdef USE_TIMERS
+        CREATE_STOPWATCH(initialize)
+        CREATE_STOPWATCH(apply)
+        CREATE_STOPWATCH(finalize)
+#endif
+    }
+    virtual ~Kernel() { delete this->timers; };
 
     // Methods to override
     virtual int initialize(int A_offset, int B_offset, int C_offset) = 0;
@@ -66,9 +74,9 @@ class Kernel {
         return 1;
     }
 
+    // clang-format off
     // C-style variadic function arg list
     int register_A(...) {
-        // this->timers->register_A_time->start();
 
         va_list user_args;
         va_start(user_args, this);
@@ -77,34 +85,26 @@ class Kernel {
         case KernelType::SPMV: {
             int ret = KERNELS::SPMV::register_A(this->spmv_args->A, user_args);
             va_end(user_args);
-            // this->timers->register_A_time->stop();
             return ret;
         }
         case KernelType::SPMM: {
             int ret = KERNELS::SPMM::register_A(this->spmm_args->A, user_args);
             va_end(user_args);
-            // this->timers->register_A_time->stop();
             return ret;
         }
         case KernelType::SPGEMM: {
-            int ret =
-                KERNELS::SPGEMM::register_A(this->spgemm_args->A, user_args);
+            int ret = KERNELS::SPGEMM::register_A(this->spgemm_args->A, user_args);
             va_end(user_args);
-            // this->timers->register_A_time->stop();
             return ret;
         }
         case KernelType::SPTRSV: {
-            int ret =
-                KERNELS::SPTRSV::register_A(this->sptrsv_args->A, user_args);
+            int ret = KERNELS::SPTRSV::register_A(this->sptrsv_args->A, user_args);
             va_end(user_args);
-            // this->timers->register_A_time->stop();
             return ret;
         }
         case KernelType::SPTRSM: {
-            int ret =
-                KERNELS::SPTRSM::register_A(this->sptrsm_args->A, user_args);
+            int ret = KERNELS::SPTRSM::register_A(this->sptrsm_args->A, user_args);
             va_end(user_args);
-            // this->timers->register_A_time->stop();
             return ret;
         }
         default:
@@ -112,13 +112,11 @@ class Kernel {
             return 1;
         }
 
-        // this->timers->register_A_time->stop();
         return 0;
     };
 
     // C-style variadic function arg list
     int register_B(...) {
-        // this->timers->register_B_time->start();
         va_list user_args;
         va_start(user_args, this);
 
@@ -126,34 +124,26 @@ class Kernel {
         case KernelType::SPMV: {
             int ret = KERNELS::SPMV::register_B(this->spmv_args->x, user_args);
             va_end(user_args);
-            // this->timers->register_B_time->stop();
             return ret;
         }
         case KernelType::SPMM: {
             int ret = KERNELS::SPMM::register_B(this->spmm_args->X, user_args);
             va_end(user_args);
-            // this->timers->register_B_time->stop();
             return ret;
         }
         case KernelType::SPGEMM: {
-            int ret =
-                KERNELS::SPGEMM::register_B(this->spgemm_args->B, user_args);
+            int ret = KERNELS::SPGEMM::register_B(this->spgemm_args->B, user_args);
             va_end(user_args);
-            // this->timers->register_B_time->stop();
             return ret;
         }
         case KernelType::SPTRSV: {
-            int ret =
-                KERNELS::SPTRSV::register_B(this->sptrsv_args->x, user_args);
+            int ret = KERNELS::SPTRSV::register_B(this->sptrsv_args->x, user_args);
             va_end(user_args);
-            // this->timers->register_B_time->stop();
             return ret;
         }
         case KernelType::SPTRSM: {
-            int ret =
-                KERNELS::SPTRSM::register_B(this->sptrsm_args->X, user_args);
+            int ret = KERNELS::SPTRSM::register_B(this->sptrsm_args->X, user_args);
             va_end(user_args);
-            // this->timers->register_B_time->stop();
             return ret;
         }
         default:
@@ -161,13 +151,11 @@ class Kernel {
             return 1;
         }
 
-        // this->timers->register_B_time->stop();
         return 0;
     };
 
     // C-style variadic function arg list
     int register_C(...) {
-        // this->timers->register_C_time->start();
         va_list user_args;
         va_start(user_args, this);
 
@@ -175,34 +163,26 @@ class Kernel {
         case KernelType::SPMV: {
             int ret = KERNELS::SPMV::register_C(this->spmv_args->y, user_args);
             va_end(user_args);
-            // this->timers->register_C_time->stop();
             return ret;
         }
         case KernelType::SPMM: {
             int ret = KERNELS::SPMM::register_C(this->spmm_args->Y, user_args);
             va_end(user_args);
-            // this->timers->register_C_time->stop();
             return ret;
         }
         case KernelType::SPGEMM: {
-            int ret =
-                KERNELS::SPGEMM::register_C(this->spgemm_args->C, user_args);
+            int ret = KERNELS::SPGEMM::register_C(this->spgemm_args->C, user_args);
             va_end(user_args);
-            // this->timers->register_C_time->stop();
             return ret;
         }
         case KernelType::SPTRSV: {
-            int ret =
-                KERNELS::SPTRSV::register_C(this->sptrsv_args->y, user_args);
+            int ret = KERNELS::SPTRSV::register_C(this->sptrsv_args->y, user_args);
             va_end(user_args);
-            // this->timers->register_C_time->stop();
             return ret;
         }
         case KernelType::SPTRSM: {
-            int ret =
-                KERNELS::SPTRSM::register_C(this->sptrsm_args->Y, user_args);
+            int ret = KERNELS::SPTRSM::register_C(this->sptrsm_args->Y, user_args);
             va_end(user_args);
-            // this->timers->register_C_time->stop();
             return ret;
         }
         default:
@@ -210,58 +190,9 @@ class Kernel {
             return 1;
         }
 
-        // this->timers->register_C_time->stop();
         return 0;
     };
+    // clang-format on
 };
-
-//     // TODO: each kernel should have it's own timers
-//     // void print_timers()
-//     // {
-//     //     this->timers->total_time->stop();
-
-//     //     long double total_time = this->timers->total_time->get_wtime();
-//     //     long double register_A_time =
-//     //     this->timers->register_A_time->get_wtime(); long double
-//     //     register_B_time = this->timers->register_B_time->get_wtime();
-//     //     long double register_C_time =
-//     //     this->timers->register_C_time->get_wtime(); long double
-//     //     initialize_time = this->timers->initialize_time->get_wtime();
-//     //     long double apply_time = this->timers->apply_time->get_wtime();
-//     //     long double finalize_time =
-//     //     this->timers->finalize_time->get_wtime();
-
-//     //     int right_flush_width = 30;
-//     //     int left_flush_width = 25;
-
-//     //     std::cout << std::endl;
-//     //     std::cout << std::scientific;
-//     //     std::cout << std::setprecision(3);
-
-//     //     std::cout <<
-//     //     "+---------------------------------------------------------+" <<
-//     //     std::endl; std::cout << std::left << std::setw(left_flush_width)
-//     //     << "Total elapsed time: " << std::right <<
-//     //     std::setw(right_flush_width); std::cout << total_time << "[s]" <<
-//     //     std::endl; std::cout << std::left << std::setw(left_flush_width)
-//     //     << "| Register Structs time: " << std::right <<
-//     //     std::setw(right_flush_width); std::cout << register_A_time +
-//     //     register_A_time + register_B_time + register_C_time << "[s]" <<
-//     //     std::endl; std::cout << std::left << std::setw(left_flush_width)
-//     //     << "| Initialize time: " << std::right <<
-//     //     std::setw(right_flush_width); std::cout << initialize_time <<
-//     //     "[s]"
-//     //     << std::endl; std::cout << std::left <<
-//     //     std::setw(left_flush_width)
-//     //     << "| Apply time: " << std::right <<
-//     //     std::setw(right_flush_width); std::cout << apply_time << "[s]" <<
-//     //     std::endl; std::cout << std::left << std::setw(left_flush_width)
-//     //     << "| Finalize time: " << std::right <<
-//     //     std::setw(right_flush_width); std::cout << finalize_time << "[s]"
-//     //     << std::endl; std::cout <<
-//     //     "+---------------------------------------------------------+" <<
-//     //     std::endl; std::cout << std::endl;
-//     // }
-// };
 
 } // namespace SMAX

@@ -43,7 +43,7 @@ int main(void) {
     // Execute all phases of this kernel
     smax->kernel("solve_Lx=b")->run();
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_vector<double>(x, A_n_cols);
 

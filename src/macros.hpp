@@ -36,4 +36,15 @@ namespace SMAX {
     } while (0)
 #endif
 
+#ifdef USE_TIMERS
+#define IF_TIME(code)                                                          \
+    do {                                                                       \
+        code;                                                                  \
+    } while (0)
+#else
+#define IF_TIME(code)                                                          \
+    do {                                                                       \
+    } while (0)
+#endif
+
 } // namespace SMAX

@@ -9,7 +9,8 @@ namespace SMAX::KERNELS {
 
 class SpTRSMKernel : public Kernel {
   public:
-    using CpuFunc = int (*)(KernelContext *, SPTRSM::Args *, SPTRSM::Flags *);
+    using CpuFunc = int (*)(Timers *, KernelContext *, SPTRSM::Args *,
+                            SPTRSM::Flags *);
 
     SpTRSMKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
@@ -22,7 +23,8 @@ class SpTRSMKernel : public Kernel {
 
         switch (k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(k_ctx.get(), sptrsm_args.get(), sptrsm_flags.get());
+            return cpu_func(timers, k_ctx.get(), sptrsm_args.get(),
+                            sptrsm_flags.get());
             break;
         }
         default:

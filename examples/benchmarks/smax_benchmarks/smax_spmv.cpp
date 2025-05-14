@@ -44,6 +44,9 @@ int main(int argc, char *argv[]) {
 
     RUN_BENCH;
     PRINT_SPMV_BENCH;
+
+    smax->utils->print_timers();
+
     FINALIZE_SPMV;
     delete bench_harness;
     delete x;

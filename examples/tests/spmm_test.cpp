@@ -42,7 +42,7 @@ int main(void) {
     // Execute all phases of this kernel
     smax->kernel("useful_spmm")->run();
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_vector<double>(Y, A_n_cols * N_VECTORS);
 

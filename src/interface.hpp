@@ -38,8 +38,6 @@ class Interface {
     ~Interface();
 
     Kernel *kernel(const std::string &kernel_name);
-
-    void print_timers();
 };
 
 } // namespace SMAX

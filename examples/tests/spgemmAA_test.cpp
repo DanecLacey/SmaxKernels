@@ -37,7 +37,7 @@ int main(void) {
 
     smax->kernel("my_spgemm_AA")->run();
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_matrix<u_int16_t, float>(C_n_rows, C_n_cols, C_nnz, C_col, C_row_ptr,
                                    C_val);

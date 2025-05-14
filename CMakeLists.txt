@@ -78,6 +78,9 @@ else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
+# Define the shared library
+add_library(${LIBRARY_NAME} SHARED ${SOURCES})
+
 # Options
 option(USE_TIMERS "Enable Timers support" ON)
 option(USE_OPENMP "Enable OpenMP support" ON)
@@ -85,7 +88,8 @@ option(USE_LIKWID "Enable LIKWID support" OFF)
 
 # Enable timers support if option is set
 if(USE_TIMERS)
-    add_compile_definitions(USE_TIMERS)
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC USE_TIMERS)
+    message(STATUS "Enabling Timers support.")
 endif()
 
 # === OpenMP Support ===
@@ -109,7 +113,7 @@ if(USE_LIKWID)
     find_package(likwid REQUIRED)
     if(likwid_FOUND)
         message(STATUS "LIKWID found, enabling LIKWID support.")
-        add_compile_definitions(USE_LIKWID LIKWID_PERFMON)
+        target_compile_definitions(${LIBRARY_NAME} PUBLIC USE_LIKWID LIKWID_PERFMON)
         include_directories(${LIKWID_INCLUDES})
         set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES})
     else()
@@ -118,9 +122,6 @@ if(USE_LIKWID)
 else()
     message(STATUS "LIKWID support is disabled.")
 endif()
-
-# Define the shared library
-add_library(${LIBRARY_NAME} SHARED ${SOURCES})
 
 # Include directories for the library
 include(GNUInstallDirs)

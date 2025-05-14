@@ -9,10 +9,14 @@ namespace SMAX::KERNELS {
 
 class SpGEMMKernel : public Kernel {
   public:
-    using CpuFunc = int (*)(KernelContext *, SPGEMM::Args *, SPGEMM::Flags *);
+    using CpuFunc = int (*)(Timers *, KernelContext *, SPGEMM::Args *,
+                            SPGEMM::Flags *);
 
     SpGEMMKernel(std::unique_ptr<KernelContext> k_ctx)
-        : Kernel(std::move(k_ctx)) {}
+        : Kernel(std::move(k_ctx)) {
+        CREATE_STOPWATCH(symbolic_phase)
+        CREATE_STOPWATCH(numerical_phase)
+    }
 
     int dispatch(CpuFunc cpu_func, const char *label) {
         IF_DEBUG(if (!k_ctx || !spgemm_args || !spgemm_flags) {
@@ -22,7 +26,8 @@ class SpGEMMKernel : public Kernel {
 
         switch (k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(k_ctx.get(), spgemm_args.get(), spgemm_flags.get());
+            return cpu_func(timers, k_ctx.get(), spgemm_args.get(),
+                            spgemm_flags.get());
             break;
         }
         default:

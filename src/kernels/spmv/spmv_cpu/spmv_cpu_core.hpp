@@ -6,18 +6,24 @@
 namespace SMAX::KERNELS::SPMV::SPMV_CPU {
 
 template <typename IT, typename VT>
-int initialize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags,
-                        int A_offset, int x_offset, int y_offset) {
+int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
+                        Flags *flags, int A_offset, int x_offset,
+                        int y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_initialize_cpu_core"));
+    IF_TIME(timers->get("initialize")->start());
+
     // TODO
+
+    IF_TIME(timers->get("initialize")->stop());
     IF_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cpu_core"));
     return 0;
 };
 
 template <typename IT, typename VT>
-int apply_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags, int A_offset,
-                   int x_offset, int y_offset) {
+int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
+                   Flags *flags, int A_offset, int x_offset, int y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_apply_cpu_core"));
+    IF_TIME(timers->get("apply")->start());
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
@@ -35,15 +41,20 @@ int apply_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags, int A_offset,
                            x + x_offset, y + y_offset);
 #endif
 
+    IF_TIME(timers->get("apply")->stop());
     IF_DEBUG(ErrorHandler::log("Exiting spmv_apply_cpu_core"));
     return 0;
 }
 
 template <typename IT, typename VT>
-int finalize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags,
-                      int A_offset, int x_offset, int y_offset) {
+int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
+                      Flags *flags, int A_offset, int x_offset, int y_offset) {
     IF_DEBUG(ErrorHandler::log("Entering spmv_finalize_cpu_core"));
+    IF_TIME(timers->get("finalize")->start());
+
     // TODO
+
+    IF_TIME(timers->get("finalize")->stop());
     IF_DEBUG(ErrorHandler::log("Exiting spmv_finalize_cpu_core"));
     return 0;
 }

@@ -104,6 +104,8 @@ int main(void) {
     }
     std::cout << "Final residual norm: " << residual_norm << std::endl;
 
+    smax->utils->print_timers();
+
     delete A_perm;
     delete x_new;
     delete x_old;

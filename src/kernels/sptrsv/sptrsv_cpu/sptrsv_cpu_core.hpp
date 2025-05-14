@@ -12,9 +12,11 @@
 namespace SMAX::KERNELS::SPTRSV::SPTRSV_CPU {
 
 template <typename IT, typename VT>
-int initialize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags) {
+int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
+                        Flags *flags) {
 
     IF_DEBUG(ErrorHandler::log("Entering sptrsv_initialize_cpu_core"));
+    IF_TIME(timers->get("initialize")->start());
 
     if (!flags->diag_collected) {
         // Cast void pointers to the correct types with "as"
@@ -39,13 +41,16 @@ int initialize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags) {
         flags->diag_collected = true;
     }
 
+    IF_TIME(timers->get("initialize")->stop());
     IF_DEBUG(ErrorHandler::log("Exiting sptrsv_initialize_cpu_core"));
     return 0;
 };
 
 template <typename IT, typename VT>
-int apply_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags) {
+int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
+                   Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering sptrsv_apply_cpu_core"));
+    IF_TIME(timers->get("apply")->start());
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
@@ -82,14 +87,20 @@ int apply_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags) {
         }
     }
 
+    IF_TIME(timers->get("apply")->stop());
     IF_DEBUG(ErrorHandler::log("Exiting sptrsv_apply_cpu_core"));
     return 0;
 }
 
 template <typename IT, typename VT>
-int finalize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags) {
+int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
+                      Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering sptrsv_finalize_cpu_core"));
+    IF_TIME(timers->get("finalize")->start());
+
     // TODO
+
+    IF_TIME(timers->get("finalize")->stop());
     IF_DEBUG(ErrorHandler::log("Exiting sptrsv_finalize_cpu_core"));
     return 0;
 }

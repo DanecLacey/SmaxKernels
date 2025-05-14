@@ -9,12 +9,15 @@ namespace SMAX::KERNELS {
 
 class SpMVKernel : public Kernel {
   public:
-    using CpuFunc = int (*)(KernelContext *, SPMV::Args *, SPMV::Flags *, int,
-                            int, int);
+    using CpuFunc = int (*)(Timers *, KernelContext *, SPMV::Args *,
+                            SPMV::Flags *, int, int, int);
 
     SpMVKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
 
+    ~SpMVKernel() {}
+
+    // Dispatch kernel based on platform
     int dispatch(CpuFunc cpu_func, const char *label, int A_offset,
                  int x_offset, int y_offset) {
         IF_DEBUG(if (!k_ctx || !spmv_args || !spmv_flags) {
@@ -24,8 +27,8 @@ class SpMVKernel : public Kernel {
 
         switch (k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(k_ctx.get(), spmv_args.get(), spmv_flags.get(),
-                            A_offset, x_offset, y_offset);
+            return cpu_func(timers, k_ctx.get(), spmv_args.get(),
+                            spmv_flags.get(), A_offset, x_offset, y_offset);
             break;
         }
         default:

@@ -18,17 +18,15 @@ namespace SMAX {
 
 Interface::Interface() {
 
-    // Initialize interface timers
+    // Initialize timers
     this->timers = new Timers{};
-    init_timers(this->timers);
-    this->timers->total_time->start();
 
     // Initialize logging
     ErrorHandler::initialize_log(".smax_log");
 
     // Initialize utils with modifiable Interface data
     this->uc = new UtilitiesContainer();
-    this->utils = new Utils(this->uc);
+    this->utils = new Utils(this->kernels, this->uc);
 }
 
 Interface::~Interface() {
@@ -97,66 +95,5 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
 
     return 0;
 }
-
-void Interface::print_timers() {};
-// TODO: Move to utils
-
-//     this->timers->total_time->stop();
-
-//     // TODO: Accumulate time from each registered kernel
-//     long double total_time = this->timers->total_time->get_wtime();
-//     // long double register_A_time =
-//     this->timers->register_A_time->get_wtime();
-//     // long double register_B_time =
-//     this->timers->register_B_time->get_wtime();
-//     // long double register_C_time =
-//     this->timers->register_C_time->get_wtime();
-//     // long double initialize_time =
-//     this->timers->initialize_time->get_wtime();
-//     // long double apply_time = this->timers->apply_time->get_wtime();
-//     // long double finalize_time =
-//     this->timers->finalize_time->get_wtime();
-
-//     int right_flush_width = 30;
-//     int left_flush_width = 25;
-
-//     std::cout << std::endl;
-//     std::cout << std::scientific;
-//     std::cout << std::setprecision(3);
-
-//     std::cout <<
-//     "+---------------------------------------------------------+"
-//               << std::endl;
-//     std::cout << std::left << std::setw(left_flush_width)
-//               << "Total elapsed time: " << std::right
-//               << std::setw(right_flush_width);
-//     std::cout << total_time << "[s]" << std::endl;
-//     // std::cout << std::left << std::setw(left_flush_width) << "|
-//     Register
-//     // Structs time: " << std::right << std::setw(right_flush_width);
-//     std::cout
-//     // << register_A_time + register_A_time + register_B_time +
-//     register_C_time
-//     // << "[s]" << std::endl; std::cout << std::left <<
-//     // std::setw(left_flush_width) << "| Initialize time: " << std::right
-//     <<
-//     // std::setw(right_flush_width); std::cout << initialize_time <<
-//     "[s]" <<
-//     // std::endl; std::cout << std::left << std::setw(left_flush_width)
-//     << "|
-//     // Apply time: " << std::right << std::setw(right_flush_width);
-//     std::cout
-//     <<
-//     // apply_time << "[s]" << std::endl; std::cout << std::left <<
-//     // std::setw(left_flush_width) << "| Finalize time: " << std::right
-//     <<
-//     // std::setw(right_flush_width); std::cout << finalize_time << "[s]"
-//     <<
-//     // std::endl;
-//     std::cout <<
-//     "+---------------------------------------------------------+"
-//               << std::endl;
-//     std::cout << std::endl;
-// }
 
 } // namespace SMAX

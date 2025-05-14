@@ -1,18 +1,26 @@
 #pragma once
 
+// #include <unordered_map>
+
 #include "common.hpp"
 #include "error_handler.hpp"
+#include "kernel.hpp"
 
 namespace SMAX {
 
 class Utils {
   private:
     UtilitiesContainer *uc = nullptr;
+    std::unordered_map<std::string, std::unique_ptr<Kernel>> &kernels;
 
   public:
-    Utils(UtilitiesContainer *_uc) : uc(_uc) {}
+    Utils(std::unordered_map<std::string, std::unique_ptr<Kernel>> &_kernels,
+          UtilitiesContainer *_uc)
+        : kernels(_kernels), uc(_uc) {}
 
     ~Utils() {}
+
+    void print_timers();
 
     template <typename IT>
     void generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,

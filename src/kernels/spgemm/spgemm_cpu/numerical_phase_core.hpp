@@ -6,8 +6,10 @@
 namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU {
 
 template <typename IT, typename VT>
-int numerical_phase_cpu(KernelContext *k_ctx, Args *args, Flags *flags) {
+int numerical_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
+                        Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering numerical_phase_cpu"));
+    IF_TIME(timers->get("numerical_phase")->start());
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
@@ -38,6 +40,7 @@ int numerical_phase_cpu(KernelContext *k_ctx, Args *args, Flags *flags) {
                           C_n_rows, C_n_cols, C_nnz, C_col, C_row_ptr, C_val);
 #endif
 
+    IF_TIME(timers->get("numerical_phase")->stop());
     IF_DEBUG(ErrorHandler::log("Exiting numerical_phase_cpu"));
     return 0;
 }

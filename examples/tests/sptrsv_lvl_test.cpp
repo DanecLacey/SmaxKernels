@@ -133,7 +133,7 @@ int main(void) {
     // Unpermute solution vector
     smax->utils->apply_vec_perm<double>(A_n_cols, x_perm, x, inv_perm);
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_vector<double>(x, A_n_cols);
 

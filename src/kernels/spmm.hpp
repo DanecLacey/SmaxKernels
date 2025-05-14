@@ -9,8 +9,8 @@ namespace SMAX::KERNELS {
 
 class SpMMKernel : public Kernel {
   public:
-    using CpuFunc = int (*)(KernelContext *, SPMM::Args *, SPMM::Flags *, int,
-                            int, int);
+    using CpuFunc = int (*)(Timers *, KernelContext *, SPMM::Args *,
+                            SPMM::Flags *, int, int, int);
 
     SpMMKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
@@ -24,8 +24,8 @@ class SpMMKernel : public Kernel {
 
         switch (k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(k_ctx.get(), spmm_args.get(), spmm_flags.get(),
-                            A_offset, X_offset, Y_offset);
+            return cpu_func(timers, k_ctx.get(), spmm_args.get(),
+                            spmm_flags.get(), A_offset, X_offset, Y_offset);
             break;
         }
         default:
