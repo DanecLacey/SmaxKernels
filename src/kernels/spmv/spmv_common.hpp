@@ -1,12 +1,34 @@
-#ifndef SMAX_SPMV_COMMON_HPP
-#define SMAX_SPMV_COMMON_HPP
+#pragma once
 
 #include "../../common.hpp"
 #include "../kernels_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPMV {
+namespace SMAX::KERNELS::SPMV {
+
+int register_A(SparseMatrix *A, va_list args) {
+    A->n_rows = va_arg(args, int);
+    A->n_cols = va_arg(args, int);
+    A->nnz = va_arg(args, int);
+    A->col = va_arg(args, void **);
+    A->row_ptr = va_arg(args, void **);
+    A->val = va_arg(args, void **);
+
+    return 0;
+}
+
+int register_B(DenseMatrix *x, va_list args) {
+    x->n_rows = va_arg(args, int);
+    x->val = va_arg(args, void **);
+
+    return 0;
+}
+
+int register_C(DenseMatrix *y, va_list args) {
+    y->n_rows = va_arg(args, int);
+    y->val = va_arg(args, void **);
+
+    return 0;
+}
 
 struct Args {
 
@@ -44,8 +66,4 @@ class SpMVErrorHandler : public KernelErrorHandler {
     }
 };
 
-} // namespace SPMV
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPMV_COMMON_HPP
+} // namespace SMAX::KERNELS::SPMV

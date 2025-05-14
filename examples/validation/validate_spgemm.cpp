@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
 
     // Smax SpGEMM
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_spgemm", SMAX::SPGEMM, SMAX::CPU);
+    smax->register_kernel("my_spgemm", SMAX::KernelType::SPGEMM);
     REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_B, crs_mat_C_smax);
     smax->kernel("my_spgemm")->run();
 

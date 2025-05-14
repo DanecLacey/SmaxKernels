@@ -1,5 +1,4 @@
-#ifndef SMAX_UTILS_HPP
-#define SMAX_UTILS_HPP
+#pragma once
 
 #include "common.hpp"
 #include "error_handler.hpp"
@@ -17,7 +16,7 @@ class Utils {
 
     template <typename IT>
     void generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                       int *inv_perm);
+                          int *inv_perm);
 
     template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
@@ -37,5 +36,3 @@ class Utils {
 // DL 06.05.2025 NOTE: Don't love forward declaring the class.. Works for now
 #include "utils/permutation_impl.hpp"
 #include "utils/timers.hpp"
-
-#endif // SMAX_UTILS_HPP

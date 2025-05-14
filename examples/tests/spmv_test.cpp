@@ -28,7 +28,7 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("my_spmv", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("my_spmv", SMAX::KernelType::SPMV);
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format

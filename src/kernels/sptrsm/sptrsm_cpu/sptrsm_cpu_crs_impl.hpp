@@ -1,14 +1,10 @@
-#ifndef SMAX_SPTRSM_CPU_IMPL_HPP
-#define SMAX_SPTRSM_CPU_IMPL_HPP
+#pragma once
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
 #include "../sptrsm_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPTRSM {
-namespace SPTRSM_CPU {
+namespace SMAX::KERNELS::SPTRSM::SPTRSM_CPU {
 
 template <typename IT, typename VT>
 inline void naive_crs_spltrsm(int A_n_rows, int A_n_cols, int A_nnz,
@@ -76,9 +72,4 @@ inline void naive_crs_sputrsm(int A_n_rows, int A_n_cols, int A_nnz,
     }
 }
 
-} // namespace SPTRSM_CPU
-} // namespace SPTRSM
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPTRSM_CPU_IMPL_HPP
+} // namespace SMAX::KERNELS::SPTRSM::SPTRSM_CPU

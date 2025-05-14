@@ -1,5 +1,4 @@
-#ifndef SMAX_SPTRSV_CPU_CORE_HPP
-#define SMAX_SPTRSV_CPU_CORE_HPP
+#pragma once
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
@@ -10,14 +9,10 @@
 #include "sptrsv_cpu_crs_impl.hpp"
 #include "sptrsv_lvl_cpu_crs_impl.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPTRSV {
-namespace SPTRSV_CPU {
+namespace SMAX::KERNELS::SPTRSV::SPTRSV_CPU {
 
 template <typename IT, typename VT>
-int sptrsv_initialize_cpu_core(KernelContext context, Args *args,
-                               Flags *flags) {
+int initialize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags) {
 
     IF_DEBUG(ErrorHandler::log("Entering sptrsv_initialize_cpu_core"));
 
@@ -49,7 +44,7 @@ int sptrsv_initialize_cpu_core(KernelContext context, Args *args,
 };
 
 template <typename IT, typename VT>
-int sptrsv_apply_cpu_core(KernelContext context, Args *args, Flags *flags) {
+int apply_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering sptrsv_apply_cpu_core"));
 
     // Cast void pointers to the correct types with "as"
@@ -92,16 +87,11 @@ int sptrsv_apply_cpu_core(KernelContext context, Args *args, Flags *flags) {
 }
 
 template <typename IT, typename VT>
-int sptrsv_finalize_cpu_core(KernelContext context, Args *args, Flags *flags) {
+int finalize_cpu_core(KernelContext *k_ctx, Args *args, Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering sptrsv_finalize_cpu_core"));
     // TODO
     IF_DEBUG(ErrorHandler::log("Exiting sptrsv_finalize_cpu_core"));
     return 0;
 }
 
-} // namespace SPTRSV_CPU
-} // namespace SPTRSV
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPTRSV_CPU_CORE_HPP
+} // namespace SMAX::KERNELS::SPTRSV::SPTRSV_CPU

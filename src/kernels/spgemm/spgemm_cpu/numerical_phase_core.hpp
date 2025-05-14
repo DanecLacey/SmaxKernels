@@ -1,16 +1,12 @@
-#ifndef SMAX_NUMERICAL_PHASE_HPP
-#define SMAX_NUMERICAL_PHASE_HPP
+#pragma once
 
 #include "../spgemm_common.hpp"
 #include "numerical_phase_impl.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPGEMM {
-namespace SPGEMM_CPU {
+namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU {
 
 template <typename IT, typename VT>
-int numerical_phase_cpu(KernelContext context, Args *args, Flags *flags) {
+int numerical_phase_cpu(KernelContext *k_ctx, Args *args, Flags *flags) {
     IF_DEBUG(ErrorHandler::log("Entering numerical_phase_cpu"));
 
     // Cast void pointers to the correct types with "as"
@@ -46,9 +42,4 @@ int numerical_phase_cpu(KernelContext context, Args *args, Flags *flags) {
     return 0;
 }
 
-} // namespace SPGEMM_CPU
-} // namespace SPGEMM
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_NUMERICAL_PHASE_HPP
+} // namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU

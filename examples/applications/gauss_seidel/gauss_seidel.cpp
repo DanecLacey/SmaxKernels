@@ -67,14 +67,14 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register necessary sparse kernels to SMAX
-    smax->register_kernel("tmp <- Ax", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("tmp <- Ax", SMAX::KernelType::SPMV);
     REGISTER_SPMV_DATA("tmp <- Ax", A, x, tmp);
 
-    smax->register_kernel("tmp <- Ux", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("tmp <- Ux", SMAX::KernelType::SPMV);
     REGISTER_SPMV_DATA("tmp <- Ux", U, x, tmp);
 
-    smax->register_kernel("solve x <- (D+L)^{-1}(b-Ux)", SMAX::SPTRSV,
-                          SMAX::CPU);
+    smax->register_kernel("solve x <- (D+L)^{-1}(b-Ux)",
+                          SMAX::KernelType::SPTRSV);
     REGISTER_SPTRSV_DATA("solve x <- (D+L)^{-1}(b-Ux)", D_plus_L, x, tmp);
 
     // Compute initial residual norm

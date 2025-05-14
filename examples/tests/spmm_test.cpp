@@ -29,7 +29,7 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("useful_spmm", SMAX::SPMM, SMAX::CPU);
+    smax->register_kernel("useful_spmm", SMAX::KernelType::SPMM);
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format

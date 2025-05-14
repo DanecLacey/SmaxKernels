@@ -1,14 +1,10 @@
-#ifndef SMAX_SPTRSM_CPU_CRS_HELPERS_HPP
-#define SMAX_SPTRSM_CPU_CRS_HELPERS_HPP
+#pragma once
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
 #include "../sptrsm_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPTRSM {
-namespace SPTRSM_CPU {
+namespace SMAX::KERNELS::SPTRSM::SPTRSM_CPU {
 
 template <typename IT, typename VT>
 inline void peel_diag_crs(int A_n_rows, int A_n_cols, int A_nnz, IT *A_col,
@@ -41,9 +37,4 @@ inline void peel_diag_crs(int A_n_rows, int A_n_cols, int A_nnz, IT *A_col,
     };
 }
 
-} // namespace SPTRSM_CPU
-} // namespace SPTRSM
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPTRSM_CPU_CRS_HELPERS_HPP
+} // namespace SMAX::KERNELS::SPTRSM::SPTRSM_CPU
