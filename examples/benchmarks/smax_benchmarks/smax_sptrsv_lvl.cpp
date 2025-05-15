@@ -15,16 +15,20 @@ int main(int argc, char *argv[]) {
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_sptrsv_lvl", SMAX::SPTRSV, SMAX::CPU);
-    smax->utils->generate_perm_jh<int>(crs_mat->n_rows, crs_mat->row_ptr, crs_mat->col, perm, inv_perm);
+    smax->register_kernel("my_sptrsv_lvl", SMAX::KernelType::SPTRSV);
+    smax->utils->generate_perm_jh<int>(crs_mat->n_rows, crs_mat->row_ptr,
+                                       crs_mat->col, perm, inv_perm);
     smax->kernel("my_sptrsv_lvl")->set_mat_perm(true);
-    smax->utils->apply_mat_perm<int, double>(crs_mat->n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
-                                             A_perm_row_ptr, A_perm_col,
-                                             A_perm_val, perm, inv_perm);
-    extract_D_L_U_arrays(crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, A_perm_row_ptr, A_perm_col,
-                         A_perm_val, crs_mat_D_plus_L->n_rows, crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->nnz, crs_mat_D_plus_L->row_ptr,
-                         crs_mat_D_plus_L->col, crs_mat_D_plus_L->val, crs_mat_U->n_rows, crs_mat_U->n_cols, crs_mat_U->nnz, crs_mat_U->row_ptr,
-                         crs_mat_U->col, crs_mat_U->val);
+    smax->utils->apply_mat_perm<int, double>(
+        crs_mat->n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
+        A_perm_row_ptr, A_perm_col, A_perm_val, perm, inv_perm);
+    extract_D_L_U_arrays(crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz,
+                         A_perm_row_ptr, A_perm_col, A_perm_val,
+                         crs_mat_D_plus_L->n_rows, crs_mat_D_plus_L->n_cols,
+                         crs_mat_D_plus_L->nnz, crs_mat_D_plus_L->row_ptr,
+                         crs_mat_D_plus_L->col, crs_mat_D_plus_L->val,
+                         crs_mat_U->n_rows, crs_mat_U->n_cols, crs_mat_U->nnz,
+                         crs_mat_U->row_ptr, crs_mat_U->col, crs_mat_U->val);
     REGISTER_SPTRSV_DATA("my_sptrsv_lvl", crs_mat_D_plus_L, x, b);
 
     // Make lambda, and pass to the benchmarking harness
