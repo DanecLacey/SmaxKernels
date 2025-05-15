@@ -3,6 +3,7 @@
 #include "../common.hpp"
 #include "utils_common.hpp"
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <queue>
 
@@ -97,6 +98,7 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
 template <typename IT>
 void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                              int *inv_perm) {
+    IF_DEBUG(ErrorHandler::log("Entering generate_perm"));
 
     int *levels = (int *)malloc(sizeof(int) * A_n_rows);
     if (levels == nullptr) {
@@ -127,6 +129,7 @@ void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     }
 
     // Step 2.5: Submit level information to uc
+    max_level++; // increase by one since levels are 0 indexed
     IF_DEBUG(
         ErrorHandler::log("%d levels detected in generate_perm", max_level));
     uc->lvl_ptr = new int[max_level + 1];
@@ -162,8 +165,114 @@ void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         inv_perm[perm[i]] = i;
     }
 
+    IF_DEBUG(ErrorHandler::log("Exiting generate_perm"));
+
     free(levels);
 }
+
+template <typename IT>
+void Utils::generate_perm_DFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                          int *inv_perm) {
+    IF_DEBUG(ErrorHandler::log("Entering generate_perm"));
+
+    printf("Using DFS to generate permutations will not work currently. There are known bugs...\n");
+
+    int *lvl = new int[A_n_rows];
+    for (int i = 0; i < A_n_rows; ++i) {
+        lvl[i] = -1;
+    }
+
+    // Step 1: Build symmetric structure of A + A^T
+    IT *A_sym_row_ptr, *A_sym_col;
+    int A_sym_nnz = 0;
+    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
+                        A_sym_nnz);
+
+    // Step 2: Simulate a DFS traversal and collect levels
+    std::vector<bool> visited(A_n_rows, false);
+    int global_max_level = 0;
+
+    // Start queueing the island roots
+    std::deque<int> q; // Queue for DFS
+    for (int start = 0; start < A_n_rows; ++start) {
+        bool is_root = true;
+        for (int nnz = A_sym_row_ptr[start]; nnz < A_sym_row_ptr[start + 1]; ++nnz) {
+            if (A_sym_col[nnz] < start){
+                is_root = false;
+                break;
+            }
+        }
+        if (is_root) {
+            q.push_back(start);
+            lvl[start] = 0;
+            visited[start] = true;
+        }
+    }
+
+    // TODO: JH fix DFS
+    while (!q.empty()){
+
+        int u = q.front();
+        q.pop_front();
+
+        // Enqueue all unvisited neighbors
+        // for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1];
+        for (int jj = A_sym_row_ptr[u + 1] - 1; jj >= A_sym_row_ptr[u];
+             --jj) {
+            int v = A_sym_col[jj];
+            if (!visited[v] && (v > u)) {
+                visited[v] = true;
+                q.push_front(v);
+                lvl[v] = lvl[u] + 1;
+                global_max_level = std::max(global_max_level, lvl[v]);
+            }
+            else if (visited[v] && (v < u)){
+                lvl[v] = lvl[u] + 1;
+                global_max_level = std::max(global_max_level, lvl[v]);
+            }
+        }
+    }
+
+    int max_level = global_max_level + 1;
+    IF_DEBUG(
+        ErrorHandler::log("%d levels detected in generate_perm", max_level));
+
+    uc->lvl_ptr = new int[max_level + 1];
+
+    // Count nodes per level
+    int *count = new int[max_level];
+    for (int i = 0; i < max_level; ++i) {
+        count[i] = 0;
+    }
+    for (int i = 0; i < A_n_rows; ++i) {
+        ++count[lvl[i]];
+    }
+
+    // Build the prefix‐sum pointer array (size = max_level+1)
+    uc->lvl_ptr[0] = 0;
+    for (int L = 0; L < max_level; ++L) {
+        uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
+    }
+
+    uc->n_levels= max_level;
+
+    // Step 3: Create range vector and use sorting function to permute into
+    // final permutation
+    for (int i = 0; i < A_n_rows; i++) {
+        perm[i] = i;
+    }
+    std::stable_sort(perm, perm + A_n_rows, [&](const int &a, const int &b) {
+        return (lvl[a] < lvl[b]);
+    });
+
+    // Step 4: Compute inverse perm
+    for (int i = 0; i < A_n_rows; ++i) {
+        inv_perm[perm[i]] = i;
+    }
+
+    IF_DEBUG(ErrorHandler::log("Exiting generate_perm"));
+}
+
 
 template <typename IT>
 void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
@@ -172,6 +281,9 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     IF_DEBUG(ErrorHandler::log("Entering generate_perm"));
 
     int *lvl = new int[A_n_rows];
+    for (int i = 0; i < A_n_rows; ++i) {
+        lvl[i] = -1;
+    }
 
     // Step 1: Build symmetric structure of A + A^T
     IT *A_sym_row_ptr, *A_sym_col;
@@ -184,44 +296,56 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     int perm_index = 0;
     int global_max_level = 0;
 
-    // DL 07.05.25 TODO: How to account for islands?
+    // Start queueing the island roots
+    std::queue<int> q; // Queue for BFS
     for (int start = 0; start < A_n_rows; ++start) {
-        if (visited[start])
-            continue; // Skip already visited nodes
+        bool is_root = true;
+        for (int nnz = A_sym_row_ptr[start]; nnz < A_sym_row_ptr[start + 1]; ++nnz) {
+            if (A_sym_col[nnz] < start){
+                is_root = false;
+                break;
+            }
+        }
+        if (is_root) {
+            q.push(start);
+            visited[start] = true;
+        }
+    }
+    int current_level = 0;
 
-        std::queue<int> q; // Queue for BFS
-        q.push(start);
-        visited[start] = true;
+    // Perform BFS
+    while (!q.empty()) {
+        int level_size = int(q.size());
 
-        int current_level = 0;
+        for (int i = 0; i < level_size; ++i) {
+            int u = q.front();
+            q.pop();
 
-        // Perform BFS
-        while (!q.empty()) {
-            int level_size = int(q.size());
+            // Record in perm & level
+            perm[perm_index++] = u;
+            lvl[u] = current_level;
+            global_max_level = std::max(global_max_level, current_level);
 
-            for (int i = 0; i < level_size; ++i) {
-                int u = q.front();
-                q.pop();
-
-                // Record in perm & level
-                perm[perm_index++] = u;
-                lvl[u] = current_level;
-                global_max_level = std::max(global_max_level, current_level);
-
-                // Enqueue all unvisited neighbors
-                for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1];
-                     ++jj) {
-                    int v = A_sym_col[jj];
-                    if (!visited[v]) {
-                        visited[v] = true;
-                        q.push(v);
+            // Enqueue all unvisited neighbors
+            for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1];
+                 ++jj) {
+                int v = A_sym_col[jj];
+                bool has_dependecy = false;
+                for (int jjj = A_sym_row_ptr[v]; jjj < A_sym_row_ptr[v + 1]; ++jjj){
+                    if ( (A_sym_col[jjj] < v) && (lvl[A_sym_col[jjj]] == -1) ) {
+                        has_dependecy = true;
+                        break;
                     }
                 }
+                if (!visited[v] && !has_dependecy) {
+                    visited[v] = true;
+                    q.push(v);
+                }
             }
-
-            // Done one whole level
-            ++current_level;
         }
+
+        // Done one whole level
+        ++current_level;
     }
 
     // Compute inverse permutation
