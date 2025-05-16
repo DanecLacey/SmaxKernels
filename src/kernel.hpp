@@ -72,128 +72,124 @@ class Kernel {
         return 1;
     }
 
-    template <typename... Args> int register_A(Args &&...args) {
-        std::vector<std::unique_ptr<char[]>> storage;
-        std::vector<void *> ptrs = {
-            to_void_ptr(std::forward<Args>(args), storage)...};
-        return validate_A(ptrs);
-    }
-    template <typename... Args> int register_B(Args &&...args) {
-        std::vector<std::unique_ptr<char[]>> storage;
-        std::vector<void *> ptrs = {
-            to_void_ptr(std::forward<Args>(args), storage)...};
-        return validate_B(ptrs);
-    }
-    template <typename... Args> int register_C(Args &&...args) {
-        std::vector<std::unique_ptr<char[]>> storage;
-        std::vector<void *> ptrs = {
-            to_void_ptr(std::forward<Args>(args), storage)...};
-        return validate_C(ptrs);
-    }
+    // clang-format off
+    // C-style variadic function arg list
+    int register_A(...) {
 
-    // Abstract dispatcher to be implemented by kernel subclasses
-    virtual int validate_A(const std::vector<void *> &args) = 0;
-    virtual int validate_B(const std::vector<void *> &args) = 0;
-    virtual int validate_C(const std::vector<void *> &args) = 0;
+        va_list user_args;
+        va_start(user_args, this);
 
-    // // clang-format off
-    // template<typename... Args>
-    // int register_A(Args&&... data) {
+        switch (this->k_ctx->kernel_type) {
+        case KernelType::SPMV: {
+            int ret = KERNELS::SPMV::register_A(this->spmv_args->A, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPMM: {
+            int ret = KERNELS::SPMM::register_A(this->spmm_args->A, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPGEMM: {
+            int ret = KERNELS::SPGEMM::register_A(this->spgemm_args->A, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPTRSV: {
+            int ret = KERNELS::SPTRSV::register_A(this->sptrsv_args->A, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPTRSM: {
+            int ret = KERNELS::SPTRSM::register_A(this->sptrsm_args->A, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        default:
+            std::cerr << "Error: Kernel not supported\n";
+            return 1;
+        }
 
-    //     switch (this->k_ctx->kernel_type) {
-    //     case KernelType::SPMV: {
-    //         return KERNELS::SPMV::register_A(this->spmv_args->A,
-    //         std::forward<Args>(data));
-    //     }
-    //     case KernelType::SPMM: {
-    //         return KERNELS::SPMM::register_A(this->spmm_args->A,
-    //         std::forward<Args>(data));
-    //     }
-    //     case KernelType::SPGEMM: {
-    //         return KERNELS::SPGEMM::register_A(this->spgemm_args->A,
-    //         std::forward<Args>(data));
-    //     }
-    //     case KernelType::SPTRSV: {
-    //         return KERNELS::SPTRSV::register_A(this->sptrsv_args->A,
-    //         std::forward<Args>(data));
-    //     }
-    //     case KernelType::SPTRSM: {
-    //         return KERNELS::SPTRSM::register_A(this->sptrsm_args->A,
-    //         std::forward<Args>(data));
-    //     }
-    //     default:
-    //         std::cerr << "Error: Kernel not supported\n";
-    //         return 1;
-    //     }
+        return 0;
+    };
 
-    //     return 0;
-    // };
+    // C-style variadic function arg list
+    int register_B(...) {
+        va_list user_args;
+        va_start(user_args, this);
 
-    // template<typename... Args>
-    // int register_B(Args&&... data) {
+        switch (this->k_ctx->kernel_type) {
+        case KernelType::SPMV: {
+            int ret = KERNELS::SPMV::register_B(this->spmv_args->x, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPMM: {
+            int ret = KERNELS::SPMM::register_B(this->spmm_args->X, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPGEMM: {
+            int ret = KERNELS::SPGEMM::register_B(this->spgemm_args->B, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPTRSV: {
+            int ret = KERNELS::SPTRSV::register_B(this->sptrsv_args->x, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPTRSM: {
+            int ret = KERNELS::SPTRSM::register_B(this->sptrsm_args->X, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        default:
+            std::cerr << "Error: Kernel not supported\n";
+            return 1;
+        }
 
-    //     switch (this->k_ctx->kernel_type) {
-    //     case KernelType::SPMV: {
-    //         return KERNELS::SPMV::register_B(this->spmv_args->x,
-    //         std::forward<Args>(data));
-    //     }
-    //     case KernelType::SPMM: {
-    //         return KERNELS::SPMM::register_B(this->spmm_args->X,
-    //         std::forward<Args>(data));
-    //     }
-    //     case KernelType::SPGEMM: {
-    //         return KERNELS::SPGEMM::register_B(this->spgemm_args->B,
-    //         std::forward<Args>(data));
-    //     }
-    //     case KernelType::SPTRSV: {
-    //         int ret = KERNELS::SPTRSV::register_B(this->sptrsv_args->x,
-    //         user_args); va_end(user_args); return ret;
-    //     }
-    //     case KernelType::SPTRSM: {
-    //         int ret = KERNELS::SPTRSM::register_B(this->sptrsm_args->X,
-    //         user_args); va_end(user_args); return ret;
-    //     }
-    //     default:
-    //         std::cerr << "Error: Kernel not supported\n";
-    //         return 1;
-    //     }
+        return 0;
+    };
 
-    //     return 0;
-    // };
+    // C-style variadic function arg list
+    int register_C(...) {
+        va_list user_args;
+        va_start(user_args, this);
 
-    // // C-style variadic function arg list
-    // int register_C(...) {
-    //     va_list user_args;
-    //     va_start(user_args, this);
+        switch (this->k_ctx->kernel_type) {
+        case KernelType::SPMV: {
+            int ret = KERNELS::SPMV::register_C(this->spmv_args->y, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPMM: {
+            int ret = KERNELS::SPMM::register_C(this->spmm_args->Y, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPGEMM: {
+            int ret = KERNELS::SPGEMM::register_C(this->spgemm_args->C, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPTRSV: {
+            int ret = KERNELS::SPTRSV::register_C(this->sptrsv_args->y, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        case KernelType::SPTRSM: {
+            int ret = KERNELS::SPTRSM::register_C(this->sptrsm_args->Y, user_args);
+            va_end(user_args);
+            return ret;
+        }
+        default:
+            std::cerr << "Error: Kernel not supported\n";
+            return 1;
+        }
 
-    //     switch (this->k_ctx->kernel_type) {
-    //     case KernelType::SPMV: {
-    //         int ret = KERNELS::SPMV::register_C(this->spmv_args->y,
-    //         user_args); va_end(user_args); return ret;
-    //     }
-    //     case KernelType::SPMM: {
-    //         int ret = KERNELS::SPMM::register_C(this->spmm_args->Y,
-    //         user_args); va_end(user_args); return ret;
-    //     }
-    //     case KernelType::SPGEMM: {
-    //         int ret = KERNELS::SPGEMM::register_C(this->spgemm_args->C,
-    //         user_args); va_end(user_args); return ret;
-    //     }
-    //     case KernelType::SPTRSV: {
-    //         int ret = KERNELS::SPTRSV::register_C(this->sptrsv_args->y,
-    //         user_args); va_end(user_args); return ret;
-    //     }
-    //     case KernelType::SPTRSM: {
-    //         int ret = KERNELS::SPTRSM::register_C(this->sptrsm_args->Y,
-    //         user_args); va_end(user_args); return ret;
-    //     }
-    //     default:
-    //         std::cerr << "Error: Kernel not supported\n";
-    //         return 1;
-    //     }
-
-    //     return 0;
-    // };
+        return 0;
+    };
     // clang-format on
 };
 

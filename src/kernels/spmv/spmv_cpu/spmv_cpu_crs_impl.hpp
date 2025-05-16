@@ -33,6 +33,7 @@ inline void naive_crs_spmv(int A_n_rows, int A_n_cols, IT *RESTRICT A_col,
         }
         y[row] = sum;
     }
+    IF_SMAX_DEBUG_3(printf("Finish SpMV\n"));
     // clang-format on
 }
 

@@ -17,53 +17,6 @@ class SpMVKernel : public Kernel {
 
     ~SpMVKernel() {}
 
-    int validate_A(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        spmv_args->A->n_rows = *reinterpret_cast<int *>(args[0]);
-        spmv_args->A->n_cols = *reinterpret_cast<int *>(args[1]);
-        spmv_args->A->nnz = *reinterpret_cast<int *>(args[2]);
-
-        spmv_args->A->col = reinterpret_cast<void **>(args[3]);
-        spmv_args->A->row_ptr = reinterpret_cast<void **>(args[4]);
-        spmv_args->A->val = reinterpret_cast<void **>(args[5]);
-
-        return 0;
-    }
-
-    int validate_B(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        spmv_args->x->n_rows = *reinterpret_cast<int *>(args[0]);
-        spmv_args->x->val = reinterpret_cast<void **>(args[1]);
-
-        return 0;
-    }
-
-    int validate_C(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        spmv_args->y->n_rows = *reinterpret_cast<int *>(args[0]);
-        spmv_args->y->val = reinterpret_cast<void **>(args[1]);
-
-        return 0;
-    }
-
     // Dispatch kernel based on platform
     int dispatch(CpuFunc cpu_func, const char *label, int A_offset,
                  int x_offset, int y_offset) {

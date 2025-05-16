@@ -15,55 +15,6 @@ class SpTRSMKernel : public Kernel {
     SpTRSMKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
 
-    int validate_A(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        sptrsm_args->A->n_rows = *reinterpret_cast<int *>(args[0]);
-        sptrsm_args->A->n_cols = *reinterpret_cast<int *>(args[1]);
-        sptrsm_args->A->nnz = *reinterpret_cast<int *>(args[2]);
-
-        sptrsm_args->A->col = reinterpret_cast<void **>(args[3]);
-        sptrsm_args->A->row_ptr = reinterpret_cast<void **>(args[4]);
-        sptrsm_args->A->val = reinterpret_cast<void **>(args[5]);
-
-        return 0;
-    }
-
-    int validate_B(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        sptrsm_args->X->n_rows = *reinterpret_cast<int *>(args[0]);
-        sptrsm_args->X->n_cols = *reinterpret_cast<int *>(args[1]);
-        sptrsm_args->X->val = reinterpret_cast<void **>(args[2]);
-
-        return 0;
-    }
-
-    int validate_C(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        sptrsm_args->Y->n_rows = *reinterpret_cast<int *>(args[0]);
-        sptrsm_args->Y->n_cols = *reinterpret_cast<int *>(args[1]);
-        sptrsm_args->Y->val = reinterpret_cast<void **>(args[2]);
-
-        return 0;
-    }
-
     int dispatch(CpuFunc cpu_func, const char *label) {
         IF_SMAX_DEBUG(if (!k_ctx || !sptrsm_args || !sptrsm_flags) {
             std::cerr << "Error: Null kernel state in " << label << "\n";

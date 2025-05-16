@@ -17,10 +17,9 @@
 ```bash
 git clone https://github.com/DanecLacey/SmaxKernels.git
 cd SmaxKernels
-export INSTALL_PATH=<install path>
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
-make install
+cmake .. -DCMAKE_CXX_COMPILER=<CXX> -DCMAKE_INSTALL_PREFIX=<INSTALL_PATH>
+make install -j
 ```
 
 ## Usage Examples ##
@@ -28,8 +27,8 @@ Basic usage examples are provided in the `/examples` directory.
 ```bash
 cd ../examples
 mkdir build && cd build
-cmake .. -DCMAKE_PREFIX_PATH=$INSTALL_PATH
-make
+cmake .. -DCMAKE_CXX_COMPILER=<CXX> -DCMAKE_PREFIX_PATH=<INSTALL_PATH> 
+make -j
 ```
 * Very basic examples are provided in `/examples/tests`.
 * More realistic examples can be found in `/examples/applications`.
@@ -38,7 +37,8 @@ make
 
 ## Notice ##
 This project is very much still in development, and many features may be unfinished, broken, or subject to change.
-* As of 2025.05.05, Only CPU-OpenMP implementations of SpMV/M, SpGEMV/M, and SpTRSV/M are publicly available
+* This project requires C++17 features
+* As of 16.05.25, only OpenMP parallel CPU implementations are publicly available 
 <!-- * MPK, SpADD, SpTRSP kernels are in progress, as well as GPU and MPI functionality -->
 * It is assumed that all optional third party libraries are installed in `$INSTALL_PATH`
 * The PETSc library is found via. the PkgConfig module. So if benchmarking PETSc kernels, you should configure PETSc with `--with-pkg-config=1` when building.

@@ -15,53 +15,6 @@ class SpTRSVKernel : public Kernel {
     SpTRSVKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
 
-    int validate_A(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        sptrsv_args->A->n_rows = *reinterpret_cast<int *>(args[0]);
-        sptrsv_args->A->n_cols = *reinterpret_cast<int *>(args[1]);
-        sptrsv_args->A->nnz = *reinterpret_cast<int *>(args[2]);
-
-        sptrsv_args->A->col = reinterpret_cast<void **>(args[3]);
-        sptrsv_args->A->row_ptr = reinterpret_cast<void **>(args[4]);
-        sptrsv_args->A->val = reinterpret_cast<void **>(args[5]);
-
-        return 0;
-    }
-
-    int validate_B(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        sptrsv_args->x->n_rows = *reinterpret_cast<int *>(args[0]);
-        sptrsv_args->x->val = reinterpret_cast<void **>(args[1]);
-
-        return 0;
-    }
-
-    int validate_C(const std::vector<void *> &args) override {
-        if (args.size() != 6) {
-            // TODO: throw error
-            // std::cerr << "SPMV::register_A requires exactly 6 arguments\n";
-            // return 1;
-        }
-
-        // Manually cast from void* to expected types at runtime
-        sptrsv_args->y->n_rows = *reinterpret_cast<int *>(args[0]);
-        sptrsv_args->y->val = reinterpret_cast<void **>(args[1]);
-
-        return 0;
-    }
-
     // Flag setters
     int set_mat_perm(bool flag) override {
         this->sptrsv_flags->mat_permuted = flag;

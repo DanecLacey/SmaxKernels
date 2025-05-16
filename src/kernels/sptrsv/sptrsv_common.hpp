@@ -5,6 +5,31 @@
 
 namespace SMAX::KERNELS::SPTRSV {
 
+int register_A(SparseMatrix *A, va_list args) {
+    A->n_rows = va_arg(args, int);
+    A->n_cols = va_arg(args, int);
+    A->nnz = va_arg(args, int);
+    A->col = va_arg(args, void **);
+    A->row_ptr = va_arg(args, void **);
+    A->val = va_arg(args, void **);
+
+    return 0;
+}
+
+int register_B(DenseMatrix *X, va_list args) {
+    X->n_rows = va_arg(args, int);
+    X->val = va_arg(args, void **);
+
+    return 0;
+}
+
+int register_C(DenseMatrix *Y, va_list args) {
+    Y->n_rows = va_arg(args, int);
+    Y->val = va_arg(args, void **);
+
+    return 0;
+}
+
 struct Args {
 
     SparseMatrix *A;

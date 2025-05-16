@@ -6,6 +6,10 @@ project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
 find_package(SmaxKernels REQUIRED)
 
+set(CPP_VERSION c++17 CACHE STRING "C++ version")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+message(STATUS "C++ version: ${CPP_VERSION}")
+
 # Set default build type if not defined
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
@@ -30,8 +34,8 @@ endif()
 # If the user didn't specify a compiler, default to g++
 if(NOT DEFINED CMAKE_CXX_COMPILER)
     set(CMAKE_CXX_COMPILER "g++" CACHE STRING "Default compiler" FORCE)
+    message(STATUS "No compiler selected, using default: ${CMAKE_CXX_COMPILER}")
 endif()
-set(CPP_VERSION c++17 CACHE STRING "C++ version")
 
 # Display the selected compiler
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")

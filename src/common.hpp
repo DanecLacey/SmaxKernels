@@ -65,17 +65,6 @@ struct SparseMatrixRef {
           row_ptr(nullptr), val(nullptr) {}
 };
 
-// DL 5.5.25 TODO: Wrap up as a special case of SparseMatrixCOO
-struct SparseVector {
-    int n_rows; // total number of entries (implied zero + nonzero)
-    int nnz;    // number of nonzeros
-    void **idx; // [nnz] index of each nonzero
-    void **val; // [nnz] value of each nonzero
-
-    // Default constructor
-    SparseVector() : n_rows(0), nnz(0), idx(nullptr), val(nullptr) {}
-};
-
 // TODO
 // // Available sparse matrix storage formats
 // enum SparseMatrixStorageFormat
