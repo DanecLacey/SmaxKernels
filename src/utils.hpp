@@ -10,8 +10,8 @@ namespace SMAX {
 
 class Utils {
   private:
-    UtilitiesContainer *uc = nullptr;
     std::unordered_map<std::string, std::unique_ptr<Kernel>> &kernels;
+    UtilitiesContainer *uc = nullptr;
 
   public:
     Utils(std::unordered_map<std::string, std::unique_ptr<Kernel>> &_kernels,

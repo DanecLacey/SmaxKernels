@@ -1,5 +1,4 @@
-#ifndef SMAX_SPMV_HELPERS
-#define SMAX_SPMV_HELPERS
+#pragma once
 
 #include "examples_common.hpp"
 
@@ -168,5 +167,3 @@ void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
     working_file << "\n";
     working_file.close();
 }
-
-#endif // SMAX_SPMV_HELPERS

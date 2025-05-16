@@ -1,5 +1,4 @@
-#ifndef BENCHMARKS_COMMON_HPP
-#define BENCHMARKS_COMMON_HPP
+#pragma once
 
 #include "timing.hpp"
 
@@ -131,5 +130,3 @@ void init_pin() {
     printf("Warmup complete\n");                                               \
     bench_harness->bench();                                                    \
     printf("Bench complete\n")
-
-#endif // BENCHMARKS_COMMON_HPP

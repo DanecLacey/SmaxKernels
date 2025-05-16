@@ -5,6 +5,9 @@ set(LIBRARY_NAME "smaxkernels")
 
 project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
+set(CPP_VERSION c++17 CACHE STRING "C++ version")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Source and header files for the library
 set(SOURCES
     src/interface.cpp
@@ -49,30 +52,42 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Debug Level: ${DEBUG_LEVEL}")
 endif()
 
-# Set default C++ compiler if not specified
-if(NOT DEFINED CMAKE_CXX_COMPILER AND DEFINED ENV{CXX})
-    set(CMAKE_CXX_COMPILER $ENV{CXX})
+# If the user didn't specify a compiler, default to g++
+if(NOT DEFINED CMAKE_CXX_COMPILER)
+    set(CMAKE_CXX_COMPILER "g++" CACHE STRING "Default compiler" FORCE)
 endif()
 
 # Display the selected compiler
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 
-# Set architecture flags for all builds
-add_compile_options(-march=native -std=c++17)
+# Normalize compiler ID for consistent matching
+string(TOUPPER "${CMAKE_CXX_COMPILER_ID}" COMPILER_ID)
 
-# Compiler-specific flags for GNU and Intel(LLVM) compilers
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+# Compiler-specific flags
+if(COMPILER_ID STREQUAL "GNU")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstrict-aliasing -O3")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fstrict-aliasing -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_MODE -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
     endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" OR CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+elseif(COMPILER_ID STREQUAL "INTEL")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fno-alias -O3")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_MODE -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
+    endif()
+elseif(COMPILER_ID STREQUAL "INTELLLVM")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost -O3")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_MODE -g -O0 -Wall -Wextra -fno-omit-frame-pointer -fp-model=precise")
+    endif()
+elseif(COMPILER_ID STREQUAL "CLANG")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-alias -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_MODE -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
     endif()
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")

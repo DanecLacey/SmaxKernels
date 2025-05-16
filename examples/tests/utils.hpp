@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 
 template <typename VT> void print_vector(VT *vec, int n_rows) {

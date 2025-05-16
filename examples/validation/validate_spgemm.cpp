@@ -67,9 +67,14 @@ int main(int argc, char *argv[]) {
         crs_mat_C_mkl->val[i] = mkl_val[i];
     }
 
+    // printf("MKL: \n");
+    // crs_mat_C_mkl->print();
+    // printf("SMAX: \n");
+    // crs_mat_C_smax->print();
+
     // Compare
-    compare_spgemm(crs_mat_A, crs_mat_B, crs_mat_C_smax, crs_mat_C_mkl,
-                   cli_args->matrix_file_name_A, cli_args->matrix_file_name_B);
+    compare_spgemm(crs_mat_C_smax, crs_mat_C_mkl, cli_args->matrix_file_name_A,
+                   cli_args->matrix_file_name_B);
 
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
     CHECK_MKL_STATUS(mkl_sparse_destroy(B), "mkl_sparse_destroy");

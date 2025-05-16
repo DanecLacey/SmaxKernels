@@ -9,27 +9,38 @@ template <typename IT, typename VT>
 int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
                         Flags *flags, int A_offset, int x_offset,
                         int y_offset) {
-    IF_DEBUG(ErrorHandler::log("Entering spmv_initialize_cpu_core"));
-    IF_TIME(timers->get("initialize")->start());
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_initialize_cpu_core"));
+    IF_SMAX_TIME(timers->get("initialize")->start());
 
-    // TODO
+    // suppress unused warnings
+    (void)timers;
+    (void)k_ctx;
+    (void)args;
+    (void)flags;
+    (void)A_offset;
+    (void)x_offset;
+    (void)y_offset;
 
-    IF_TIME(timers->get("initialize")->stop());
-    IF_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cpu_core"));
+    IF_SMAX_TIME(timers->get("initialize")->stop());
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cpu_core"));
     return 0;
 };
 
 template <typename IT, typename VT>
 int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags, int A_offset, int x_offset, int y_offset) {
-    IF_DEBUG(ErrorHandler::log("Entering spmv_apply_cpu_core"));
-    IF_TIME(timers->get("apply")->start());
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_apply_cpu_core"));
+    IF_SMAX_TIME(timers->get("apply")->start());
+
+    // suppress unused warnings
+    (void)flags;
+    (void)k_ctx;
+    (void)A_offset;
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
     int A_n_rows = args->A->n_rows;
     int A_n_cols = args->A->n_cols;
-    int A_nnz = args->A->nnz;
     IT *A_col = as<IT *>(args->A->col);
     IT *A_row_ptr = as<IT *>(args->A->row_ptr);
     VT *A_val = as<VT *>(args->A->val);
@@ -37,25 +48,32 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     VT *y = as<VT *>(args->y->val);
 
 #if 1
-    naive_crs_spmv<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val,
+    naive_crs_spmv<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr, A_val,
                            x + x_offset, y + y_offset);
 #endif
 
-    IF_TIME(timers->get("apply")->stop());
-    IF_DEBUG(ErrorHandler::log("Exiting spmv_apply_cpu_core"));
+    IF_SMAX_TIME(timers->get("apply")->stop());
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_apply_cpu_core"));
     return 0;
 }
 
 template <typename IT, typename VT>
 int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
                       Flags *flags, int A_offset, int x_offset, int y_offset) {
-    IF_DEBUG(ErrorHandler::log("Entering spmv_finalize_cpu_core"));
-    IF_TIME(timers->get("finalize")->start());
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_finalize_cpu_core"));
+    IF_SMAX_TIME(timers->get("finalize")->start());
 
-    // TODO
+    // suppress unused warnings
+    (void)timers;
+    (void)k_ctx;
+    (void)args;
+    (void)flags;
+    (void)A_offset;
+    (void)x_offset;
+    (void)y_offset;
 
-    IF_TIME(timers->get("finalize")->stop());
-    IF_DEBUG(ErrorHandler::log("Exiting spmv_finalize_cpu_core"));
+    IF_SMAX_TIME(timers->get("finalize")->stop());
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_finalize_cpu_core"));
     return 0;
 }
 

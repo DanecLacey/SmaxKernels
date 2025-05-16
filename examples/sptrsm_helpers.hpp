@@ -1,5 +1,4 @@
-#ifndef SMAX_SPTRSM_HELPERS
-#define SMAX_SPTRSM_HELPERS
+#pragma once
 
 #include "examples_common.hpp"
 
@@ -187,5 +186,3 @@ void compare_sptrsm(const int n_rows, const int n_vectors, const double *y_SMAX,
     working_file << "\n";
     working_file.close();
 }
-
-#endif // SMAX_SPTRSM_HELPERS

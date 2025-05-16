@@ -12,7 +12,7 @@ template <typename IT>
 void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
                          IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz) {
 
-    IF_DEBUG(ErrorHandler::log("Entering build_symmetric_csr"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering build_symmetric_csr"));
 
     A_sym_row_ptr = new IT[A_n_rows + 1];
     A_sym_row_ptr[0] = 0;
@@ -91,7 +91,7 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
     delete[] col_visited;
     delete[] sym_visited;
 
-    IF_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
 };
 
 template <typename IT>
@@ -127,7 +127,7 @@ void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     }
 
     // Step 2.5: Submit level information to uc
-    IF_DEBUG(
+    IF_SMAX_DEBUG(
         ErrorHandler::log("%d levels detected in generate_perm", max_level));
     uc->lvl_ptr = new int[max_level + 1];
 
@@ -146,7 +146,7 @@ void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
     }
 
-    uc->n_levels= max_level;
+    uc->n_levels = max_level;
 
     // Step 3: Create range vector and use sorting function to permute into
     // final permutation
@@ -169,7 +169,7 @@ template <typename IT>
 void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                           int *inv_perm) {
 
-    IF_DEBUG(ErrorHandler::log("Entering generate_perm"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering generate_perm"));
 
     int *lvl = new int[A_n_rows];
 
@@ -230,7 +230,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     }
 
     int n_levels = global_max_level + 1;
-    IF_DEBUG(
+    IF_SMAX_DEBUG(
         ErrorHandler::log("%d levels detected in generate_perm", n_levels));
     uc->lvl_ptr = new int[n_levels + 1];
 
@@ -254,7 +254,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     delete[] A_sym_col;
     delete[] lvl;
 
-    IF_DEBUG(ErrorHandler::log("Exiting generate_perm"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting generate_perm"));
 };
 
 template <typename IT, typename VT>
@@ -262,7 +262,7 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
                            IT *A_perm_row_ptr, IT *A_perm_col, VT *A_perm_val,
                            int *perm, int *inv_perm) {
 
-    IF_DEBUG(ErrorHandler::log("Entering apply_mat_perm"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering apply_mat_perm"));
 
     A_perm_row_ptr[0] = (IT)0;
     int perm_idx = 0;
@@ -286,7 +286,7 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
             A_perm_col[perm_idx] = inv_perm[A_col[idx]];
             A_perm_val[perm_idx] = A_val[idx];
 
-            IF_DEBUG(
+            IF_SMAX_DEBUG(
                 if (A_perm_col[perm_idx] >= A_n_rows) {
                     UtilsErrorHandler::col_ob(A_perm_col[perm_idx], perm_idx,
                                               A_n_rows, "apply_mat_perm");
@@ -297,20 +297,20 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
         }
     }
 
-    IF_DEBUG(ErrorHandler::log("Exiting apply_mat_perm"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting apply_mat_perm"));
 };
 
 template <typename VT>
 void Utils::apply_vec_perm(int n_rows, VT *vec, VT *vec_perm, int *perm) {
 
-    IF_DEBUG(ErrorHandler::log("Entering apply_vec_perm"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering apply_vec_perm"));
 
 #pragma omp parallel for
     for (int i = 0; i < n_rows; ++i) {
         vec_perm[i] = vec[perm[i]];
     }
 
-    IF_DEBUG(ErrorHandler::log("Exiting apply_vec_perm"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting apply_vec_perm"));
 };
 
 } // namespace SMAX

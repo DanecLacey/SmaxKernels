@@ -5,31 +5,6 @@
 
 namespace SMAX::KERNELS::SPMV {
 
-int register_A(SparseMatrix *A, va_list args) {
-    A->n_rows = va_arg(args, int);
-    A->n_cols = va_arg(args, int);
-    A->nnz = va_arg(args, int);
-    A->col = va_arg(args, void **);
-    A->row_ptr = va_arg(args, void **);
-    A->val = va_arg(args, void **);
-
-    return 0;
-}
-
-int register_B(DenseMatrix *x, va_list args) {
-    x->n_rows = va_arg(args, int);
-    x->val = va_arg(args, void **);
-
-    return 0;
-}
-
-int register_C(DenseMatrix *y, va_list args) {
-    y->n_rows = va_arg(args, int);
-    y->val = va_arg(args, void **);
-
-    return 0;
-}
-
 struct Args {
 
     SparseMatrix *A;
@@ -63,6 +38,13 @@ class SpMVErrorHandler : public KernelErrorHandler {
     template <typename IT>
     static void col_oob(IT col_value, int j, int A_n_cols) {
         KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SpMV");
+    }
+
+    template <typename IT, typename VT>
+    static void print_crs_elem(VT val, IT col, VT x, IT j) {
+        std::cout << "A_val[" << j << "] = " << val << std::endl;
+        std::cout << "A_col[" << j << "] = " << col << std::endl;
+        std::cout << "x[A_col[" << j << "] = " << x << std::endl;
     }
 };
 

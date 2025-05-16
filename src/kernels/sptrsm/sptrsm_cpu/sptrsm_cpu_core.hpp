@@ -15,15 +15,13 @@ template <typename IT, typename VT>
 int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
                         Flags *flags) {
 
-    IF_DEBUG(ErrorHandler::log("Entering sptrsm_initialize_cpu_core"));
-    IF_TIME(timers->get("initialize")->start());
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering sptrsm_initialize_cpu_core"));
+    IF_SMAX_TIME(timers->get("initialize")->start());
 
     if (!flags->diag_collected) {
         // Cast void pointers to the correct types with "as"
         // Dereference to get usable data
         int A_n_rows = args->A->n_rows;
-        int A_n_cols = args->A->n_cols;
-        int A_nnz = args->A->nnz;
         IT *A_col = as<IT *>(args->A->col);
         IT *A_row_ptr = as<IT *>(args->A->row_ptr);
         VT *A_val = as<VT *>(args->A->val);
@@ -35,28 +33,32 @@ int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
         D_n_cols = 1;
         D_val = new VT[D_n_rows];
 
-        peel_diag_crs<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
-                              A_val, D_val);
+        peel_diag_crs<IT, VT>(A_n_rows, A_col, A_row_ptr, A_val, D_val);
 
         flags->diag_collected = true;
     }
 
-    IF_TIME(timers->get("initialize")->stop());
-    IF_DEBUG(ErrorHandler::log("Exiting sptrsm_initialize_cpu_core"));
+    // suppress unused warnings
+    (void)k_ctx;
+
+    IF_SMAX_TIME(timers->get("initialize")->stop());
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting sptrsm_initialize_cpu_core"));
     return 0;
 };
 
 template <typename IT, typename VT>
 int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags) {
-    IF_DEBUG(ErrorHandler::log("Entering sptrsm_apply_cpu_core"));
-    IF_TIME(timers->get("apply")->start());
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering sptrsm_apply_cpu_core"));
+    IF_SMAX_TIME(timers->get("apply")->start());
+
+    // suppress unused warnings
+    (void)k_ctx;
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
     int A_n_rows = args->A->n_rows;
     int A_n_cols = args->A->n_cols;
-    int A_nnz = args->A->nnz;
     IT *A_col = as<IT *>(args->A->col);
     IT *A_row_ptr = as<IT *>(args->A->row_ptr);
     VT *A_val = as<VT *>(args->A->val);
@@ -81,30 +83,34 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     // } else {
     // Lower triangular matrix is the default case
     if (flags->mat_upper_triang) {
-        naive_crs_sputrsm<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
-                                  A_val, D_val, X, Y, block_vector_size);
+        naive_crs_sputrsm<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr, A_val,
+                                  D_val, X, Y, block_vector_size);
     } else {
         // Unpermuted matrix (e.g. no lvl-set sched) is the default case
-        naive_crs_spltrsm<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr,
-                                  A_val, D_val, X, Y, block_vector_size);
+        naive_crs_spltrsm<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr, A_val,
+                                  D_val, X, Y, block_vector_size);
     }
     // }
 
-    IF_TIME(timers->get("apply")->stop());
-    IF_DEBUG(ErrorHandler::log("Exiting sptrsm_apply_cpu_core"));
+    IF_SMAX_TIME(timers->get("apply")->stop());
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting sptrsm_apply_cpu_core"));
     return 0;
 }
 
 template <typename IT, typename VT>
 int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
                       Flags *flags) {
-    IF_DEBUG(ErrorHandler::log("Entering sptrsm_finalize_cpu_core"));
-    IF_TIME(timers->get("finalize")->start());
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering sptrsm_finalize_cpu_core"));
+    IF_SMAX_TIME(timers->get("finalize")->start());
 
-    // TODO
+    // suppress unused warnings
+    (void)timers;
+    (void)k_ctx;
+    (void)args;
+    (void)flags;
 
-    IF_TIME(timers->get("finalize")->stop());
-    IF_DEBUG(ErrorHandler::log("Exiting sptrsm_finalize_cpu_core"));
+    IF_SMAX_TIME(timers->get("finalize")->stop());
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting sptrsm_finalize_cpu_core"));
     return 0;
 }
 

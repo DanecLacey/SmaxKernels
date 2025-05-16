@@ -1,5 +1,4 @@
-#ifndef SMAX_APPLICATIONS_COMMON
-#define SMAX_APPLICATIONS_COMMON
+#pragma once
 
 #include "../spmv_helpers.hpp"
 #include "../sptrsv_helpers.hpp"
@@ -134,5 +133,3 @@ double infty_vec_norm(double *val, int n_rows) {
 
     return max_abs;
 };
-
-#endif // SMAX_APPLICATIONS_COMMON

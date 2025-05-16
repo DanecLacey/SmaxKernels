@@ -16,7 +16,7 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # Handle Debug build-specific settings
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(DEBUG_LEVEL 1 CACHE STRING "Set the debug level (1, 2, or 3)")
+    set(DEBUG_LEVEL 1 CACHE STRING "Set the debug verbosity level (1, 2, or 3)")
     # Validate debug level input
     if(NOT DEBUG_LEVEL MATCHES "^[123]$")
         message(FATAL_ERROR "DEBUG_LEVEL must be 1, 2, or 3 (got: ${DEBUG_LEVEL})")
@@ -27,34 +27,43 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Debug Level: ${DEBUG_LEVEL}")
 endif()
 
-# Set default C++ compiler if not specified
-if(NOT DEFINED CMAKE_CXX_COMPILER AND DEFINED ENV{CXX})
-    set(CMAKE_CXX_COMPILER $ENV{CXX})
+# If the user didn't specify a compiler, default to g++
+if(NOT DEFINED CMAKE_CXX_COMPILER)
+    set(CMAKE_CXX_COMPILER "g++" CACHE STRING "Default compiler" FORCE)
 endif()
+set(CPP_VERSION c++17 CACHE STRING "C++ version")
 
 # Display the selected compiler
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 
-# Set architecture flags for all builds
-add_compile_options(-march=native -std=c++17)
-add_compile_options(-mavx2 -mno-avx512f) # TODO: Needed for Eigen... Why?
-# Sort of an ugly workaround
-add_library(mmio STATIC mmio.cpp)
-target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# Normalize compiler ID for consistent matching
+string(TOUPPER "${CMAKE_CXX_COMPILER_ID}" COMPILER_ID)
 
-# Compiler-specific flags for GNU and Intel compilers
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+# Compiler-specific flags
+if(COMPILER_ID STREQUAL "GNU")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstrict-aliasing -O3")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fstrict-aliasing -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_MODE -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
     endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" OR CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+elseif(COMPILER_ID STREQUAL "INTEL")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fno-alias -O3")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_MODE -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
+    endif()
+elseif(COMPILER_ID STREQUAL "INTELLLVM")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost -O3")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_MODE -g -O0 -Wall -Wextra -fno-omit-frame-pointer -fp-model=precise")
+    endif()
+elseif(COMPILER_ID STREQUAL "CLANG")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-alias -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_MODE -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
     endif()
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
@@ -128,6 +137,7 @@ if(USE_EIGEN)
     find_package(Eigen3 REQUIRED)
     if(Eigen3_FOUND)
         message(STATUS "Eigen found, Eigen3::Eigen is now available for linking.")
+        add_compile_options(-mavx2 -mno-avx512f) # TODO: Needed for Eigen... Why?
     else()
         message(FATAL_ERROR "Eigen requested but not found.")
     endif()
@@ -182,6 +192,10 @@ if(USE_MKL)
 else()
     message(WARNING "Validation checks not built. MKL is required.")
 endif()
+
+# Sort of an ugly workaround
+add_library(mmio STATIC mmio.cpp)
+target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(tests)
 add_custom_target(tests DEPENDS ${test_targets})

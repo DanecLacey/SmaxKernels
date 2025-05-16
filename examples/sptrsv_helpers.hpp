@@ -1,5 +1,4 @@
-#ifndef SMAX_SPTRSV_HELPERS
-#define SMAX_SPTRSV_HELPERS
+#pragma once
 
 #include "examples_common.hpp"
 
@@ -175,5 +174,3 @@ void compare_sptrsv(const int n_rows, const double *y_SMAX, const double *y_MKL,
     working_file << "\n";
     working_file.close();
 }
-
-#endif // SMAX_SPTRSV_HELPERS

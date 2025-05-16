@@ -1,5 +1,4 @@
-#ifndef SMAX_SPMM_HELPERS
-#define SMAX_SPMM_HELPERS
+#pragma once
 
 #include "examples_common.hpp"
 
@@ -178,5 +177,3 @@ void compare_spmm(const int n_rows, const int n_vectors, const double *y_SMAX,
     working_file << "\n";
     working_file.close();
 }
-
-#endif // SMAX_SPMM_HELPERS

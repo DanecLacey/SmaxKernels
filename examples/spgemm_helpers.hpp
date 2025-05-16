@@ -1,5 +1,4 @@
-#ifndef SMAX_SPGEMM_HELPERS
-#define SMAX_SPGEMM_HELPERS
+#pragma once
 
 #include "examples_common.hpp"
 
@@ -79,8 +78,8 @@ class SpGEMMParser : public CliParser {
     SpGEMMArgs *args() const { return static_cast<SpGEMMArgs *>(args_); }
 };
 
-void compare_spgemm(CRSMatrix *A, CRSMatrix *B, CRSMatrix *C_smax,
-                    CRSMatrix *C_mkl, const std::string mtx_name_A,
+void compare_spgemm(CRSMatrix *C_smax, CRSMatrix *C_mkl,
+                    const std::string mtx_name_A,
                     const std::string mtx_name_B) {
 
     std::fstream working_file;
@@ -88,6 +87,9 @@ void compare_spgemm(CRSMatrix *A, CRSMatrix *B, CRSMatrix *C_smax,
                       std::fstream::in | std::fstream::out | std::fstream::app);
 
     GET_THREAD_COUNT;
+
+    working_file << mtx_name_A << " * " << mtx_name_B << " with " << n_threads
+                 << " thread(s)\n";
 
     // Basic sanity checks
     if (C_smax->n_rows != C_mkl->n_rows) {
@@ -144,84 +146,60 @@ void compare_spgemm(CRSMatrix *A, CRSMatrix *B, CRSMatrix *C_smax,
     // If so, print out all errors
     if (bad_idxs > 0) {
         working_file << "Possible errors detected:" << std::endl;
-        working_file << std::left << std::setw(nnz_digits + 8)
-                     << "Idx:" << std::left << std::setw(PRINT_WIDTH)
-                     << "C_smax.col - C_mkl.col:" << std::left
-                     << std::setw(PRINT_WIDTH) << "C_smax.val" << std::left
-                     << std::setw(PRINT_WIDTH) << "C_mkl.val:" << std::left
-                     << std::setw(PRINT_WIDTH)
-                     << "C_smax.val - C_mkl.val:" << std::left
-                     << std::setw(PRINT_WIDTH + 8)
-                     << "relative(C_smax.val - C_mkl.val):" << std::left
-                     << std::setw(PRINT_WIDTH + 8)
-                     << "C_smax.row_ptr - C_mkl.row_ptr:" << std::endl;
+        working_file << std::left << std::setw(8) << "Idx"
+                     << std::setw(PRINT_WIDTH + 4) << "C_smax.col-C_mkl.col"
+                     << std::setw(PRINT_WIDTH) << "C_smax.val"
+                     << std::setw(PRINT_WIDTH) << "C_mkl.val"
+                     << std::setw(PRINT_WIDTH) << "val_diff"
+                     << std::setw(PRINT_WIDTH) << "rel_diff (%)"
+                     << std::setw(PRINT_WIDTH) << "row_ptr_diff"
+                     << "\n";
 
-        working_file << std::left << std::setw(nnz_digits + 8) << "----"
-                     << std::left << std::setw(PRINT_WIDTH)
-                     << "------------------" << std::left
-                     << std::setw(PRINT_WIDTH) << "-----" << std::left
-                     << std::setw(PRINT_WIDTH) << "----------" << std::left
-                     << std::setw(PRINT_WIDTH) << "------------------"
-                     << std::left << std::setw(PRINT_WIDTH + 8)
-                     << "----------------------------" << std::left
-                     << std::setw(PRINT_WIDTH + 8)
-                     << "--------------------------" << std::endl;
+        working_file << std::left << std::setw(8) << "----"
+                     << std::setw(PRINT_WIDTH + 4) << "------------------"
+                     << std::setw(PRINT_WIDTH) << "----------"
+                     << std::setw(PRINT_WIDTH) << "---------"
+                     << std::setw(PRINT_WIDTH) << "--------"
+                     << std::setw(PRINT_WIDTH) << "------------"
+                     << std::setw(PRINT_WIDTH) << "------------"
+                     << "\n";
 
         int error_cut_off_counter = 0;
         for (int i = 0; i < C_smax->nnz; ++i) {
-
             col_diff = C_smax->col[i] - C_mkl->col[i];
             val_diff = C_smax->val[i] - C_mkl->val[i];
             relative_val_diff = val_diff / C_mkl->val[i];
-            if (i <= C_smax->n_rows)
+
+            bool is_row_ptr_valid = (i <= C_smax->n_rows);
+            if (is_row_ptr_valid) {
                 row_ptr_diff = C_smax->row_ptr[i] - C_mkl->row_ptr[i];
+            }
 
             if (std::abs(col_diff) > 0 ||
                 std::abs(relative_val_diff) > RELATIVE_VAL_ERROR_TOL ||
-                std::abs(row_ptr_diff) > 0) {
+                (is_row_ptr_valid && std::abs(row_ptr_diff) > 0)) {
+
                 working_file
                     << std::left << std::setw(nnz_digits + 8) << i << std::left
                     << std::setw(PRINT_WIDTH) << col_diff << std::left
-                    << std::setprecision(16) << std::scientific
-                    << std::setw(PRINT_WIDTH) << C_smax->val[i] << std::left
-                    << std::setprecision(16) << std::scientific
-                    << std::setw(PRINT_WIDTH) << C_mkl->val[i] << std::left
-                    << std::setprecision(16) << std::scientific
-                    << std::setw(PRINT_WIDTH) << val_diff << std::left
-                    << std::fixed << "%" << std::setw(PRINT_WIDTH + 8)
-                    << 100 * relative_val_diff;
-                if (i <= C_smax->n_rows) {
-                    working_file << std::left << std::setw(PRINT_WIDTH + 8)
-                                 << row_ptr_diff;
-                } else {
-                    working_file << std::left << std::setw(PRINT_WIDTH + 8)
-                                 << "n/a";
+                    << std::setw(PRINT_WIDTH) << std::setprecision(8)
+                    << std::scientific << C_smax->val[i] << std::left
+                    << std::setw(PRINT_WIDTH) << std::setprecision(8)
+                    << std::scientific << C_mkl->val[i] << std::left
+                    << std::setw(PRINT_WIDTH) << std::setprecision(8)
+                    << std::scientific << val_diff << std::left
+                    << std::setw(PRINT_WIDTH + 8) << std::setprecision(8)
+                    << std::scientific << (100.0 * relative_val_diff) << "%"
+                    << std::left << std::setw(PRINT_WIDTH + 4)
+                    << (is_row_ptr_valid ? std::to_string(row_ptr_diff) : "n/a")
+                    << std::endl;
+
+                if (++error_cut_off_counter == ERROR_CUT_OFF) {
+                    working_file
+                        << "... (cutoff reached: " << (bad_idxs - ERROR_CUT_OFF)
+                        << " more possible errors)" << std::endl;
+                    break;
                 }
-                working_file << std::endl;
-            }
-            ++error_cut_off_counter;
-            if (error_cut_off_counter == ERROR_CUT_OFF) {
-                working_file << std::left << std::setw(nnz_digits + 8) << "..."
-                             << std::left << std::setw(PRINT_WIDTH) << "..."
-                             << std::left << std::setprecision(16)
-                             << std::scientific << std::setw(PRINT_WIDTH)
-                             << "..." << std::left << std::setprecision(16)
-                             << std::scientific << std::setw(PRINT_WIDTH)
-                             << "..." << std::left << std::setprecision(16)
-                             << std::scientific << std::setw(PRINT_WIDTH)
-                             << "..." << std::left << std::fixed << "%"
-                             << std::setw(PRINT_WIDTH + 8) << "...";
-                if (i <= C_smax->n_rows) {
-                    working_file << std::left << std::setw(PRINT_WIDTH + 8)
-                                 << row_ptr_diff;
-                } else {
-                    working_file << std::left << std::setw(PRINT_WIDTH + 8)
-                                 << "n/a";
-                }
-                working_file << std::endl;
-                working_file << "With: " << bad_idxs - ERROR_CUT_OFF
-                             << " other possible errors detected." << std::endl;
-                break;
             }
         }
     } else {
@@ -229,5 +207,3 @@ void compare_spgemm(CRSMatrix *A, CRSMatrix *B, CRSMatrix *C_smax,
     }
     working_file << std::endl;
 }
-
-#endif // SMAX_SPGEMM_HELPERS

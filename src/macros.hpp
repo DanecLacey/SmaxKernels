@@ -26,23 +26,51 @@ namespace SMAX {
 #endif
 
 #ifdef DEBUG_MODE
-#define IF_DEBUG(code)                                                         \
+#define IF_SMAX_DEBUG(code)                                                    \
     do {                                                                       \
         code;                                                                  \
     } while (0)
+
 #else
-#define IF_DEBUG(code)                                                         \
+#define IF_SMAX_DEBUG(code)                                                    \
     do {                                                                       \
     } while (0)
 #endif
 
+#if defined(DEBUG_MODE) && (DEBUG_LEVEL == 1)
+#define IF_SMAX_DEBUG_1(...)                                                   \
+    do {                                                                       \
+        __VA_ARGS__;                                                           \
+    } while (0)
+#else
+#define IF_SMAX_DEBUG_1(...)
+#endif
+
+#if defined(DEBUG_MODE) && (DEBUG_LEVEL == 2)
+#define IF_SMAX_DEBUG_2(...)                                                   \
+    do {                                                                       \
+        __VA_ARGS__;                                                           \
+    } while (0)
+#else
+#define IF_SMAX_DEBUG_2(...)
+#endif
+
+#if defined(DEBUG_MODE) && (DEBUG_LEVEL == 3)
+#define IF_SMAX_DEBUG_3(...)                                                   \
+    do {                                                                       \
+        __VA_ARGS__;                                                           \
+    } while (0)
+#else
+#define IF_SMAX_DEBUG_3(...)
+#endif
+
 #ifdef USE_TIMERS
-#define IF_TIME(code)                                                          \
+#define IF_SMAX_TIME(code)                                                     \
     do {                                                                       \
         code;                                                                  \
     } while (0)
 #else
-#define IF_TIME(code)                                                          \
+#define IF_SMAX_TIME(code)                                                     \
     do {                                                                       \
     } while (0)
 #endif

@@ -7,13 +7,12 @@
 namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU {
 
 template <typename IT, typename VT>
-inline void
-basic_numerical_phase(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
-                      IT *RESTRICT A_row_ptr, VT *RESTRICT A_val, int B_n_rows,
-                      int B_n_cols, int B_nnz, IT *RESTRICT B_col,
-                      IT *RESTRICT B_row_ptr, VT *RESTRICT B_val, int C_n_rows,
-                      int C_n_cols, int C_nnz, IT *RESTRICT C_col,
-                      IT *RESTRICT C_row_ptr, VT *RESTRICT C_val) {
+inline void basic_numerical_phase(int A_n_rows, IT *RESTRICT A_col,
+                                  IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
+                                  IT *RESTRICT B_col, IT *RESTRICT B_row_ptr,
+                                  VT *RESTRICT B_val, int C_n_cols,
+                                  IT *RESTRICT C_col, IT *RESTRICT C_row_ptr,
+                                  VT *RESTRICT C_val) {
 
     GET_THREAD_COUNT(int, num_threads)
 
@@ -50,9 +49,14 @@ basic_numerical_phase(int A_n_rows, int A_n_cols, int A_nnz, IT *RESTRICT A_col,
             }
             // Write row-local accumulators to C
             for (IT j = C_row_ptr[i]; j < C_row_ptr[i + 1]; ++j) {
-                IF_DEBUG(if (C_col[j] < 0 || C_col[j] >= C_n_cols)
-                             SpGEMMErrorHandler::col_oob<IT>(C_col[j], j,
-                                                             C_n_cols););
+
+                // clang-format off
+                IF_SMAX_DEBUG(
+                    if (C_col[j] < (IT)0 || C_col[j] >= (IT)C_n_cols)
+                        SpGEMMErrorHandler::col_oob<IT>(C_col[j], j, C_n_cols);
+                );
+                // clang-format on
+
                 C_val[j] = dense_accumulators[tid][C_col[j]];
                 dense_accumulators[tid][C_col[j]] = (VT)0.0;
             }

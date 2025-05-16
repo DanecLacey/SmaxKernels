@@ -51,10 +51,11 @@ class Timers {
     }
 };
 
-#define CREATE_STOPWATCH(timer_name)                                           \
+#define CREATE_SMAX_STOPWATCH(timer_name)                                      \
     timeval *timer_name##_time_start = new timeval;                            \
     timeval *timer_name##_time_end = new timeval;                              \
     Stopwatch *timer_name##_time =                                             \
         new Stopwatch(timer_name##_time_start, timer_name##_time_end);         \
     this->timers->add(#timer_name, timer_name##_time);
+
 } // namespace SMAX

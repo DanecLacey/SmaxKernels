@@ -1,8 +1,5 @@
-#ifndef EIGEN_BENCHMARKS_COMMON_HPP
-#define EIGEN_BENCHMARKS_COMMON_HPP
+#pragma once
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
-
-#endif // EIGEN_BENCHMARKS_COMMON_HPP

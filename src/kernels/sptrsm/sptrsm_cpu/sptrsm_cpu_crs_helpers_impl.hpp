@@ -7,8 +7,8 @@
 namespace SMAX::KERNELS::SPTRSM::SPTRSM_CPU {
 
 template <typename IT, typename VT>
-inline void peel_diag_crs(int A_n_rows, int A_n_cols, int A_nnz, IT *A_col,
-                          IT *A_row_ptr, VT *A_val, VT *D_val) {
+inline void peel_diag_crs(int A_n_rows, IT *A_col, IT *A_row_ptr, VT *A_val,
+                          VT *D_val) {
 
     for (int row_idx = 0; row_idx < A_n_rows; ++row_idx) {
         int row_start = A_row_ptr[row_idx];
@@ -17,7 +17,7 @@ inline void peel_diag_crs(int A_n_rows, int A_n_cols, int A_nnz, IT *A_col,
 
         // find the diag in this row_idx (since row need not be col sorted)
         for (int j = row_start; j <= row_end; ++j) {
-            if (A_col[j] == row_idx) {
+            if (A_col[j] == (IT)row_idx) {
                 diag_j = j;
                 D_val[row_idx] = A_val[j]; // extract
                 if (std::abs(D_val[row_idx]) < 1e-16) {

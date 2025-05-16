@@ -1,5 +1,4 @@
-#ifndef TIMING_H
-#define TIMING_H
+#pragma once
 
 #if !defined(_POSIX_C_SOURCE)
 #define _POSIX_C_SOURCE 199309L
@@ -12,5 +11,3 @@ double getTimeStamp();
 double getTimeResolution();
 
 double getTimeStamp_();
-
-#endif
