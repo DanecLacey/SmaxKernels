@@ -27,6 +27,10 @@ class Utils {
                           int *inv_perm);
 
     template <typename IT>
+    void generate_perm_DFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                          int *inv_perm);
+
+    template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                        int *inv_perm);
 
