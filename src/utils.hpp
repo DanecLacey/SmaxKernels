@@ -1,7 +1,5 @@
 #pragma once
 
-// #include <unordered_map>
-
 #include "common.hpp"
 #include "error_handler.hpp"
 #include "kernel.hpp"
@@ -28,7 +26,7 @@ class Utils {
 
     template <typename IT>
     void generate_perm_DFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                          int *inv_perm);
+                           int *inv_perm);
 
     template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
