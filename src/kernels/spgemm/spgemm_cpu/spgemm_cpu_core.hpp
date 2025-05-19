@@ -13,7 +13,9 @@ int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("initialize")->start());
 
     // suppress unused warnings
+#ifndef USE_TIMERS
     (void)timers;
+#endif
     (void)k_ctx;
     (void)args;
     (void)flags;
@@ -46,7 +48,9 @@ int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("finalize")->start());
 
     // suppress unused warnings
+#ifndef USE_TIMERS
     (void)timers;
+#endif
     (void)k_ctx;
     (void)args;
     (void)flags;

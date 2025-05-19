@@ -29,9 +29,9 @@ int main(void) {
                           SMAX::FloatType::FLOAT32);
 
     smax->kernel("my_spgemm_AA")
-        ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
+        ->register_A(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
     smax->kernel("my_spgemm_AA")
-        ->register_B(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
+        ->register_B(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
     smax->kernel("my_spgemm_AA")
         ->register_C(&C_n_rows, &C_n_cols, &C_nnz, &C_col, &C_row_ptr, &C_val);
 

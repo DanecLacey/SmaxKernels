@@ -13,17 +13,15 @@ int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("initialize")->start());
 
     // suppress unused warnings
+#ifndef USE_TIMERS
     (void)timers;
+#endif
     (void)k_ctx;
     (void)args;
     (void)flags;
     (void)A_offset;
     (void)x_offset;
     (void)y_offset;
-
-    // IF_SMAX_DEBUG_3(std::cout << "A->col: " << args->A->col << std::endl);
-    // IF_SMAX_DEBUG_3(std::cout << "x->val: " << args->x->val << std::endl);
-    // IF_SMAX_DEBUG_3(std::cout << "y->val: " << args->y->val << std::endl);
 
     IF_SMAX_TIME(timers->get("initialize")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cpu_core"));
@@ -37,8 +35,11 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("apply")->start());
 
     // suppress unused warnings
-    (void)flags;
+#ifndef USE_TIMERS
+    (void)timers;
+#endif
     (void)k_ctx;
+    (void)flags;
     (void)A_offset;
 
     IF_SMAX_DEBUG_3(std::cout << "A_col pointer before deref: " << args->A->col
@@ -76,7 +77,9 @@ int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("finalize")->start());
 
     // suppress unused warnings
+#ifndef USE_TIMERS
     (void)timers;
+#endif
     (void)k_ctx;
     (void)args;
     (void)flags;

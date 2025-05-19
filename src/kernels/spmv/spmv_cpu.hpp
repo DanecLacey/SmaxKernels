@@ -41,6 +41,15 @@ int dispatch_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
     switch (k_ctx->float_type) {
     case FloatType::FLOAT32:
         switch (k_ctx->int_type) {
+        case IntType::INT16:
+            return Func<int16_t, float>()(timers, k_ctx, args, flags, A_offset,
+                                          x_offset, y_offset);
+        case IntType::INT32:
+            return Func<int32_t, float>()(timers, k_ctx, args, flags, A_offset,
+                                          x_offset, y_offset);
+        case IntType::INT64:
+            return Func<int64_t, float>()(timers, k_ctx, args, flags, A_offset,
+                                          x_offset, y_offset);
         case IntType::UINT16:
             return Func<uint16_t, float>()(timers, k_ctx, args, flags, A_offset,
                                            x_offset, y_offset);
@@ -56,6 +65,15 @@ int dispatch_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
         }
     case FloatType::FLOAT64:
         switch (k_ctx->int_type) {
+        case IntType::INT16:
+            return Func<int16_t, double>()(timers, k_ctx, args, flags, A_offset,
+                                           x_offset, y_offset);
+        case IntType::INT32:
+            return Func<int32_t, double>()(timers, k_ctx, args, flags, A_offset,
+                                           x_offset, y_offset);
+        case IntType::INT64:
+            return Func<int64_t, double>()(timers, k_ctx, args, flags, A_offset,
+                                           x_offset, y_offset);
         case IntType::UINT16:
             return Func<uint16_t, double>()(timers, k_ctx, args, flags,
                                             A_offset, x_offset, y_offset);

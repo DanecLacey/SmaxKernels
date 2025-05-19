@@ -317,34 +317,29 @@ struct CRSMatrix {
         delete[] row_ptr;
     }
 
-    void write_to_mtx_file(std::string file_out_name)
-    {
-        //Convert csr back to coo for mtx format printing
+    void write_to_mtx_file(std::string file_out_name) {
+        // Convert csr back to coo for mtx format printing
         std::vector<int> temp_rows(nnz);
         std::vector<int> temp_cols(nnz);
         std::vector<double> temp_values(nnz);
 
         int elem_num = 0;
-        for(int row = 0; row < n_rows; ++row){
-            for(int idx = row_ptr[row]; idx < row_ptr[row + 1]; ++idx){
-                temp_rows[elem_num] = row + 1; // +1 to adjust for 1 based indexing in mm-format
+        for (int row = 0; row < n_rows; ++row) {
+            for (int idx = row_ptr[row]; idx < row_ptr[row + 1]; ++idx) {
+                temp_rows[elem_num] =
+                    row + 1; // +1 to adjust for 1 based indexing in mm-format
                 temp_cols[elem_num] = col[idx] + 1;
                 temp_values[elem_num] = val[idx];
                 ++elem_num;
             }
         }
 
-        std::string file_name = file_out_name + "_out_matrix.mtx"; 
+        std::string file_name = file_out_name + "_out_matrix.mtx";
 
         mm_write_mtx_crd(
-            &file_name[0], 
-            n_rows, 
-            n_cols, 
-            nnz, 
-            &(temp_rows)[0], 
-            &(temp_cols)[0], 
-            &(temp_values)[0], 
-            "MCRG" // TODO: <- make more general, i.e. flexible based on the matrix. Read from original mtx?
+            &file_name[0], n_rows, n_cols, nnz, &(temp_rows)[0],
+            &(temp_cols)[0], &(temp_values)[0],
+            const_cast<char *>("MCRG") // TODO: <- make more general
         );
     }
 

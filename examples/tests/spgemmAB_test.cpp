@@ -37,9 +37,9 @@ int main(void) {
                           SMAX::FloatType::FLOAT32);
 
     smax->kernel("my_spgemm_AB")
-        ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
+        ->register_A(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
     smax->kernel("my_spgemm_AB")
-        ->register_B(B_n_rows, B_n_cols, B_nnz, &B_col, &B_row_ptr, &B_val);
+        ->register_B(B_n_rows, B_n_cols, B_nnz, B_col, B_row_ptr, B_val);
     smax->kernel("my_spgemm_AB")
         ->register_C(&C_n_rows, &C_n_cols, &C_nnz, &C_col, &C_row_ptr, &C_val);
     // NOTE: Since C matrix is to be generated, we need pointers to metadata,

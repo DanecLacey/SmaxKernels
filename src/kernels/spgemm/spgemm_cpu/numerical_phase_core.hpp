@@ -12,6 +12,9 @@ int numerical_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("numerical_phase")->start());
 
     // suppress unused warnings
+#ifndef USE_TIMERS
+    (void)timers;
+#endif
     (void)k_ctx;
     (void)flags;
 
@@ -26,10 +29,10 @@ int numerical_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
     IT *B_row_ptr = as<IT *>(args->B->row_ptr);
     VT *B_val = as<VT *>(args->B->val);
 
-    int C_n_cols = *args->C->n_cols;
-    IT *C_col = as<IT *>(args->C->col);
-    IT *C_row_ptr = as<IT *>(args->C->row_ptr);
-    VT *C_val = as<VT *>(args->C->val);
+    int C_n_cols = *static_cast<int *>(args->C->n_cols);
+    IT *&C_col = as_ptr_ref<IT>(args->C->col);
+    IT *&C_row_ptr = as_ptr_ref<IT>(args->C->row_ptr);
+    VT *&C_val = as_ptr_ref<VT>(args->C->val);
 
 #if 1
     basic_numerical_phase(A_n_rows, A_col, A_row_ptr, A_val, B_col, B_row_ptr,

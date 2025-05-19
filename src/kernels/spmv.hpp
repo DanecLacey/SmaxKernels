@@ -3,12 +3,16 @@
 #include "../common.hpp"
 #include "../kernel.hpp"
 #include "../macros.hpp"
+#include "spmv/spmv_common.hpp"
 #include "spmv/spmv_cpu.hpp"
 
 namespace SMAX::KERNELS {
 
 class SpMVKernel : public Kernel {
   public:
+    std::unique_ptr<SPMV::Args> args;
+    std::unique_ptr<SPMV::Flags> flags;
+
     using CpuFunc = int (*)(Timers *, KernelContext *, SPMV::Args *,
                             SPMV::Flags *, int, int, int);
 
@@ -17,18 +21,53 @@ class SpMVKernel : public Kernel {
 
     ~SpMVKernel() {}
 
+    int _register_A(const std::vector<Variant> &args) override {
+        if (args.size() != 6)
+            throw std::runtime_error("SpMVKernel register_A expects 6 args");
+
+        this->args->A->n_rows = std::get<int>(args[0]);
+        this->args->A->n_cols = std::get<int>(args[1]);
+        this->args->A->nnz = std::get<int>(args[2]);
+
+        this->args->A->col = std::get<void *>(args[3]);
+        this->args->A->row_ptr = std::get<void *>(args[4]);
+        this->args->A->val = std::get<void *>(args[5]);
+
+        return 0;
+    };
+
+    int _register_B(const std::vector<Variant> &args) {
+        if (args.size() != 2)
+            throw std::runtime_error("SpMVKernel register_B expects 2 args");
+
+        this->args->x->n_rows = std::get<int>(args[0]);
+        this->args->x->val = std::get<void *>(args[1]);
+
+        return 0;
+    }
+
+    int _register_C(const std::vector<Variant> &args) {
+        if (args.size() != 2)
+            throw std::runtime_error("SpMVKernel register_C expects 2 args");
+
+        this->args->y->n_rows = std::get<int>(args[0]);
+        this->args->y->val = std::get<void *>(args[1]);
+
+        return 0;
+    }
+
     // Dispatch kernel based on platform
     int dispatch(CpuFunc cpu_func, const char *label, int A_offset,
                  int x_offset, int y_offset) {
-        IF_SMAX_DEBUG(if (!k_ctx || !spmv_args || !spmv_flags) {
+        IF_SMAX_DEBUG(if (!k_ctx || !args || !flags) {
             std::cerr << "Error: Null kernel state in " << label << "\n";
             return 1;
         });
 
         switch (k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(timers, k_ctx.get(), spmv_args.get(),
-                            spmv_flags.get(), A_offset, x_offset, y_offset);
+            return cpu_func(timers, k_ctx.get(), args.get(), flags.get(),
+                            A_offset, x_offset, y_offset);
             break;
         }
         default:
@@ -53,7 +92,7 @@ class SpMVKernel : public Kernel {
     }
 
     int swap_operands(void) override {
-        std::swap(*spmv_args->x->val, *spmv_args->y->val);
+        std::swap(args->x, args->y);
         return 0;
     }
 };

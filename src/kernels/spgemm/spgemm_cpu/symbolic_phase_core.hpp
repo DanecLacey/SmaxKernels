@@ -12,6 +12,9 @@ int symbolic_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("symbolic_phase")->start());
 
     // suppress unused warnings
+#ifndef USE_TIMERS
+    (void)timers;
+#endif
     (void)k_ctx;
     (void)flags;
 
@@ -28,9 +31,9 @@ int symbolic_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
 
     // Since we want to reallocate the data pointed to by _C,
     // we need references to each of the pointers
-    int &C_n_rows = *args->C->n_rows;
-    int &C_n_cols = *args->C->n_cols;
-    int &C_nnz = *args->C->nnz;
+    int &C_n_rows = *static_cast<int *>(args->C->n_rows);
+    int &C_n_cols = *static_cast<int *>(args->C->n_cols);
+    int &C_nnz = *static_cast<int *>(args->C->nnz);
     IT *&C_col = as_ptr_ref<IT>(args->C->col);
     IT *&C_row_ptr = as_ptr_ref<IT>(args->C->row_ptr);
     VT *&C_val = as_ptr_ref<VT>(args->C->val);

@@ -121,11 +121,11 @@ int main(void) {
 
     // Register operands to this kernel tag
     smax->kernel("solve_perm_Lx=b")
-        ->register_A(L_n_rows, L_n_cols, L_nnz, &L_col, &L_row_ptr, &L_val);
+        ->register_A(L_n_rows, L_n_cols, L_nnz, L_col, L_row_ptr, L_val);
 
     // x and b are dense vectors
-    smax->kernel("solve_perm_Lx=b")->register_B(A_n_rows, &x_perm);
-    smax->kernel("solve_perm_Lx=b")->register_C(A_n_cols, &b_perm);
+    smax->kernel("solve_perm_Lx=b")->register_B(A_n_rows, x_perm);
+    smax->kernel("solve_perm_Lx=b")->register_C(A_n_cols, b_perm);
 
     // Execute all phases of this kernel
     smax->kernel("solve_perm_Lx=b")->run();

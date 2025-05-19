@@ -59,32 +59,38 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
     switch (kernel_type) {
     case KernelType::SPMV: {
         this->kernels[name] = std::make_unique<KERNELS::SpMVKernel>(std::move(k_ctx));
-        this->kernels[name]->spmv_args = std::make_unique<KERNELS::SPMV::Args>(this->uc);
-        this->kernels[name]->spmv_flags = std::make_unique<KERNELS::SPMV::Flags>();
+        auto* spmv = dynamic_cast<KERNELS::SpMVKernel*>(this->kernels[name].get());
+        spmv->args = std::make_unique<KERNELS::SPMV::Args>(this->uc);
+        spmv->flags = std::make_unique<KERNELS::SPMV::Flags>();
         break;
     }
     case KernelType::SPMM: {
         this->kernels[name] = std::make_unique<KERNELS::SpMMKernel>(std::move(k_ctx));
-        this->kernels[name]->spmm_args = std::make_unique<KERNELS::SPMM::Args>(this->uc);
-        this->kernels[name]->spmm_flags = std::make_unique<KERNELS::SPMM::Flags>();
+        auto* spmm = dynamic_cast<KERNELS::SpMMKernel*>(this->kernels[name].get());
+        spmm->args = std::make_unique<KERNELS::SPMM::Args>(this->uc);
+        spmm->flags = std::make_unique<KERNELS::SPMM::Flags>();
         break;
     }
     case KernelType::SPGEMM: {
         this->kernels[name] = std::make_unique<KERNELS::SpGEMMKernel>(std::move(k_ctx));
-        this->kernels[name]->spgemm_args = std::make_unique<KERNELS::SPGEMM::Args>(this->uc);
-        this->kernels[name]->spgemm_flags = std::make_unique<KERNELS::SPGEMM::Flags>();
+        auto* spgemm = dynamic_cast<KERNELS::SpGEMMKernel*>(this->kernels[name].get());
+        spgemm->args = std::make_unique<KERNELS::SPGEMM::Args>(this->uc);
+        spgemm->flags = std::make_unique<KERNELS::SPGEMM::Flags>();
         break;
+
     }
     case KernelType::SPTRSV: {
         this->kernels[name] = std::make_unique<KERNELS::SpTRSVKernel>(std::move(k_ctx));
-        this->kernels[name]->sptrsv_args = std::make_unique<KERNELS::SPTRSV::Args>(this->uc);
-        this->kernels[name]->sptrsv_flags = std::make_unique<KERNELS::SPTRSV::Flags>();
+        auto* sptrsv = dynamic_cast<KERNELS::SpTRSVKernel*>(this->kernels[name].get());
+        sptrsv->args = std::make_unique<KERNELS::SPTRSV::Args>(this->uc);
+        sptrsv->flags = std::make_unique<KERNELS::SPTRSV::Flags>();
         break;
     }
     case KernelType::SPTRSM: {
         this->kernels[name] = std::make_unique<KERNELS::SpTRSMKernel>(std::move(k_ctx));
-        this->kernels[name]->sptrsm_args = std::make_unique<KERNELS::SPTRSM::Args>(this->uc);
-        this->kernels[name]->sptrsm_flags = std::make_unique<KERNELS::SPTRSM::Flags>();
+        auto* sptrsm = dynamic_cast<KERNELS::SpTRSMKernel*>(this->kernels[name].get());
+        sptrsm->args = std::make_unique<KERNELS::SPTRSM::Args>(this->uc);
+        sptrsm->flags = std::make_unique<KERNELS::SPTRSM::Flags>();
         break;
     }
     default:

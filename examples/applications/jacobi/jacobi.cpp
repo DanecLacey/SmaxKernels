@@ -43,7 +43,11 @@ void solve(DenseMatrix *x_old, DenseMatrix *x_new, DenseMatrix *b,
 
         jacobi_iter(x_old, x_new, b, D, smax);
 
+        // Swap library pointers and application pointers to keep in-sync
+        // This is because SMAX does not own the memory at x_old and x_new,
+        // it merely points to the same memory locations
         smax->kernel("x_new <- Ax_old")->swap_operands();
+        std::swap(x_old, x_new);
 
         ++n_iters;
 

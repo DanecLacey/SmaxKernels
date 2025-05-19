@@ -1,28 +1,26 @@
 #pragma once
 
 #include "common.hpp"
-#include "kernels/spgemm/spgemm_common.hpp"
-#include "kernels/spmm/spmm_common.hpp"
-#include "kernels/spmv/spmv_common.hpp"
-#include "kernels/sptrsm/sptrsm_common.hpp"
-#include "kernels/sptrsv/sptrsv_common.hpp"
+#include <variant>
+
+using Variant = std::variant<int, void *, void **>;
 
 namespace SMAX {
 
 class Kernel {
-    // TODO: Probably don't all need to be public
-  public:
-    std::unique_ptr<KERNELS::SPMV::Args> spmv_args;
-    std::unique_ptr<KERNELS::SPMV::Flags> spmv_flags;
-    std::unique_ptr<KERNELS::SPMM::Args> spmm_args;
-    std::unique_ptr<KERNELS::SPMM::Flags> spmm_flags;
-    std::unique_ptr<KERNELS::SPGEMM::Args> spgemm_args;
-    std::unique_ptr<KERNELS::SPGEMM::Flags> spgemm_flags;
-    std::unique_ptr<KERNELS::SPTRSV::Args> sptrsv_args;
-    std::unique_ptr<KERNELS::SPTRSV::Flags> sptrsv_flags;
-    std::unique_ptr<KERNELS::SPTRSM::Args> sptrsm_args;
-    std::unique_ptr<KERNELS::SPTRSM::Flags> sptrsm_flags;
+  private:
+    // Type erasure helpers
+    template <typename T> Variant wrap_arg(T **ptr) {
+        return reinterpret_cast<void **>(ptr);
+    }
 
+    template <typename T> Variant wrap_arg(T *ptr) {
+        return static_cast<void *>(ptr);
+    }
+
+    Variant wrap_arg(int val) { return val; }
+
+  public:
     std::unique_ptr<KernelContext> k_ctx;
     Timers *timers;
 
@@ -40,17 +38,9 @@ class Kernel {
     virtual int initialize(int A_offset, int B_offset, int C_offset) = 0;
     virtual int apply(int A_offset, int B_offset, int C_offset) = 0;
     virtual int finalize(int A_offset, int B_offset, int C_offset) = 0;
-
-    int run(int A_offset = 0, int B_offset = 0, int C_offset = 0) {
-        // DL 09.05.2025 NOTE: Since only a single memory address is
-        // registered, the offsets are to access other parts of memory at
-        // runtime (e.g. register A to kernel, but A[i*n_rows] needed)
-        CHECK_ERROR(initialize(A_offset, B_offset, C_offset), "initialize");
-        CHECK_ERROR(apply(A_offset, B_offset, C_offset), "apply");
-        CHECK_ERROR(finalize(A_offset, B_offset, C_offset), "finalize");
-
-        return 0;
-    }
+    virtual int _register_A(const std::vector<Variant> &args) = 0;
+    virtual int _register_B(const std::vector<Variant> &args) = 0;
+    virtual int _register_C(const std::vector<Variant> &args) = 0;
 
     // Flag setters to override
     virtual int set_mat_perm(bool) {
@@ -72,125 +62,32 @@ class Kernel {
         return 1;
     }
 
-    // clang-format off
-    // C-style variadic function arg list
-    int register_A(...) {
-
-        va_list user_args;
-        va_start(user_args, this);
-
-        switch (this->k_ctx->kernel_type) {
-        case KernelType::SPMV: {
-            int ret = KERNELS::SPMV::register_A(this->spmv_args->A, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPMM: {
-            int ret = KERNELS::SPMM::register_A(this->spmm_args->A, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPGEMM: {
-            int ret = KERNELS::SPGEMM::register_A(this->spgemm_args->A, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPTRSV: {
-            int ret = KERNELS::SPTRSV::register_A(this->sptrsv_args->A, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPTRSM: {
-            int ret = KERNELS::SPTRSM::register_A(this->sptrsm_args->A, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        default:
-            std::cerr << "Error: Kernel not supported\n";
-            return 1;
-        }
+    // User-facing helpers
+    int run(int A_offset = 0, int B_offset = 0, int C_offset = 0) {
+        // DL 09.05.2025 NOTE: Since only a single memory address is
+        // registered, the offsets are to access other parts of memory at
+        // runtime (e.g. register A to kernel, but A[i*n_rows] needed)
+        CHECK_ERROR(initialize(A_offset, B_offset, C_offset), "initialize");
+        CHECK_ERROR(apply(A_offset, B_offset, C_offset), "apply");
+        CHECK_ERROR(finalize(A_offset, B_offset, C_offset), "finalize");
 
         return 0;
-    };
+    }
 
-    // C-style variadic function arg list
-    int register_B(...) {
-        va_list user_args;
-        va_start(user_args, this);
+    template <typename... Args> int register_A(Args &&...args) {
+        std::vector<Variant> packed_args{wrap_arg(std::forward<Args>(args))...};
+        return _register_A(packed_args);
+    }
 
-        switch (this->k_ctx->kernel_type) {
-        case KernelType::SPMV: {
-            int ret = KERNELS::SPMV::register_B(this->spmv_args->x, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPMM: {
-            int ret = KERNELS::SPMM::register_B(this->spmm_args->X, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPGEMM: {
-            int ret = KERNELS::SPGEMM::register_B(this->spgemm_args->B, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPTRSV: {
-            int ret = KERNELS::SPTRSV::register_B(this->sptrsv_args->x, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPTRSM: {
-            int ret = KERNELS::SPTRSM::register_B(this->sptrsm_args->X, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        default:
-            std::cerr << "Error: Kernel not supported\n";
-            return 1;
-        }
+    template <typename... Args> int register_B(Args &&...args) {
+        std::vector<Variant> packed_args{wrap_arg(std::forward<Args>(args))...};
+        return _register_B(packed_args);
+    }
 
-        return 0;
-    };
-
-    // C-style variadic function arg list
-    int register_C(...) {
-        va_list user_args;
-        va_start(user_args, this);
-
-        switch (this->k_ctx->kernel_type) {
-        case KernelType::SPMV: {
-            int ret = KERNELS::SPMV::register_C(this->spmv_args->y, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPMM: {
-            int ret = KERNELS::SPMM::register_C(this->spmm_args->Y, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPGEMM: {
-            int ret = KERNELS::SPGEMM::register_C(this->spgemm_args->C, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPTRSV: {
-            int ret = KERNELS::SPTRSV::register_C(this->sptrsv_args->y, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        case KernelType::SPTRSM: {
-            int ret = KERNELS::SPTRSM::register_C(this->sptrsm_args->Y, user_args);
-            va_end(user_args);
-            return ret;
-        }
-        default:
-            std::cerr << "Error: Kernel not supported\n";
-            return 1;
-        }
-
-        return 0;
-    };
-    // clang-format on
+    template <typename... Args> int register_C(Args &&...args) {
+        std::vector<Variant> packed_args{wrap_arg(std::forward<Args>(args))...};
+        return _register_C(packed_args);
+    }
 };
 
 } // namespace SMAX

@@ -26,10 +26,10 @@
 
 #define REGISTER_SPTRSV_DATA(kernel_name, mat, X, B)                           \
     smax->kernel(kernel_name)                                                  \
-        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, &mat->col,            \
-                     &mat->row_ptr, &mat->val);                                \
-    smax->kernel(kernel_name)->register_B(mat->n_cols, &X->val);               \
-    smax->kernel(kernel_name)->register_C(mat->n_rows, &B->val);
+        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, mat->col,             \
+                     mat->row_ptr, mat->val);                                  \
+    smax->kernel(kernel_name)->register_B(mat->n_cols, X->val);                \
+    smax->kernel(kernel_name)->register_C(mat->n_rows, B->val);
 
 #define PRINT_SPTRSV_BENCH                                                     \
     std::cout << "----------------" << std::endl;                              \

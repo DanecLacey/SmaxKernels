@@ -28,11 +28,11 @@
 
 #define REGISTER_SPGEMM_DATA(kernel_name, matA, matB, matC)                    \
     smax->kernel(kernel_name)                                                  \
-        ->register_A(matA->n_rows, matA->n_cols, matA->nnz, &matA->col,        \
-                     &matA->row_ptr, &matA->val);                              \
+        ->register_A(matA->n_rows, matA->n_cols, matA->nnz, matA->col,         \
+                     matA->row_ptr, matA->val);                                \
     smax->kernel(kernel_name)                                                  \
-        ->register_B(matB->n_rows, matB->n_cols, matB->nnz, &matB->col,        \
-                     &matB->row_ptr, &matB->val);                              \
+        ->register_B(matB->n_rows, matB->n_cols, matB->nnz, matB->col,         \
+                     matB->row_ptr, matB->val);                                \
     smax->kernel(kernel_name)                                                  \
         ->register_C(&matC->n_rows, &matC->n_cols, &matC->nnz, &matC->col,     \
                      &matC->row_ptr, &matC->val);

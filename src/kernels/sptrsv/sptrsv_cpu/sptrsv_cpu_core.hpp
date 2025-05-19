@@ -26,12 +26,11 @@ int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
         IT *A_row_ptr = as<IT *>(args->A->row_ptr);
         VT *A_val = as<VT *>(args->A->val);
 
-        int &D_n_rows = args->D->n_rows;
-        int &D_n_cols = args->D->n_cols;
-        VT *&D_val = as_ptr_ref<VT>(args->D->val);
-        D_n_rows = A_n_rows;
-        D_n_cols = 1;
-        D_val = new VT[D_n_rows];
+        // Resize D to match A_n_rows x 1
+        args->D->allocate_internal(A_n_rows, 1, sizeof(VT));
+
+        // Get typed pointer to internal data
+        VT *D_val = as<VT *>(args->D->val);
 
         peel_diag_crs<IT, VT>(A_n_rows, A_col, A_row_ptr, A_val, D_val);
 
@@ -39,7 +38,9 @@ int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     }
 
     // suppress unused warnings
+#ifndef USE_TIMERS
     (void)timers;
+#endif
     (void)k_ctx;
 
     IF_SMAX_TIME(timers->get("initialize")->stop());
@@ -54,6 +55,9 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("apply")->start());
 
     // suppress unused warnings
+#ifndef USE_TIMERS
+    (void)timers;
+#endif
     (void)k_ctx;
 
     // Cast void pointers to the correct types with "as"
@@ -102,7 +106,9 @@ int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("finalize")->start());
 
     // suppress unused warnings
+#ifndef USE_TIMERS
     (void)timers;
+#endif
     (void)k_ctx;
     (void)args;
     (void)flags;

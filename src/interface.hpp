@@ -28,7 +28,7 @@ class Interface {
   public:
     int register_kernel(const std::string &, KernelType,
                         PlatformType = PlatformType::CPU,
-                        IntType = IntType::UINT32,
+                        IntType = IntType::INT32,
                         FloatType = FloatType::FLOAT64);
 
     Timers *timers;

@@ -20,10 +20,10 @@
 
 #define REGISTER_SPMV_DATA(kernel_name, mat, X, Y)                             \
     smax->kernel(kernel_name)                                                  \
-        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, &mat->col,            \
-                     &mat->row_ptr, &mat->val);                                \
-    smax->kernel(kernel_name)->register_B(mat->n_cols, &X->val);               \
-    smax->kernel(kernel_name)->register_C(mat->n_rows, &Y->val);
+        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, mat->col,             \
+                     mat->row_ptr, mat->val);                                  \
+    smax->kernel(kernel_name)->register_B(mat->n_cols, X->val);                \
+    smax->kernel(kernel_name)->register_C(mat->n_rows, Y->val);
 
 #define PRINT_SPMV_BENCH                                                       \
     std::cout << "----------------" << std::endl;                              \

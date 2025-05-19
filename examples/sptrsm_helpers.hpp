@@ -27,10 +27,10 @@
 
 #define REGISTER_SPTRSM_DATA(kernel_name, mat, X, B)                           \
     smax->kernel(kernel_name)                                                  \
-        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, &mat->col,            \
-                     &mat->row_ptr, &mat->val);                                \
-    smax->kernel(kernel_name)->register_B(mat->n_cols, n_vectors, &X->val);    \
-    smax->kernel(kernel_name)->register_C(mat->n_rows, n_vectors, &B->val);
+        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, mat->col,             \
+                     mat->row_ptr, mat->val);                                  \
+    smax->kernel(kernel_name)->register_B(mat->n_cols, n_vectors, X->val);     \
+    smax->kernel(kernel_name)->register_C(mat->n_rows, n_vectors, B->val);
 
 // TODO
 #define PRINT_SPTRSM_BENCH                                                     \
