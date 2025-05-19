@@ -96,100 +96,37 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
 };
 
 template <typename IT>
-void Utils::generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                             int *inv_perm) {
-    IF_SMAX_DEBUG(ErrorHandler::log("Entering generate_perm"));
-
-    int *levels = (int *)malloc(sizeof(int) * A_n_rows);
-    if (levels == nullptr) {
-        fprintf(stderr, "Malloc not succesfull in generate_perm.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    // Step 1: Build symmetric structure of A + A^T
-    IT *A_sym_row_ptr, *A_sym_col;
-    int A_sym_nnz = 0;
-    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
-                        A_sym_nnz);
+int Utils::generate_perm_jh(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col, int *perm,
+                             int *inv_perm, int *lvl) {
 
     int max_level = 0;
 
-    // Step 2: Compute levels for each row in A + A^T
+    // Compute levels for each row in A + A^T
     for (int row_idx = 0; row_idx < A_n_rows; row_idx++) {
-        levels[row_idx] = 0;
+        lvl[row_idx] = 0;
         for (int nz = A_sym_row_ptr[row_idx]; nz < A_sym_row_ptr[row_idx + 1];
              nz++) {
             if (A_sym_col[nz] < row_idx) {
-                levels[row_idx] =
-                    std::max(levels[row_idx], levels[A_sym_col[nz]] + 1);
+                lvl[row_idx] =
+                    std::max(lvl[row_idx], lvl[A_sym_col[nz]] + 1);
                 max_level =
-                    max_level < levels[row_idx] ? levels[row_idx] : max_level;
+                    max_level < lvl[row_idx] ? lvl[row_idx] : max_level;
             }
         }
     }
 
     // Step 2.5: Submit level information to uc
-    max_level++; // increase by one since levels are 0 indexed
-    IF_SMAX_DEBUG(
-        ErrorHandler::log("%d levels detected in generate_perm", max_level));
-    uc->lvl_ptr = new int[max_level + 1];
-
-    // Count nodes per level
-    int *count = new int[max_level];
-    for (int i = 0; i < max_level; ++i) {
-        count[i] = 0;
-    }
-    for (int i = 0; i < A_n_rows; ++i) {
-        ++count[levels[i]];
-    }
-
-    // Build the prefix‐sum pointer array (size = max_level+1)
-    uc->lvl_ptr[0] = 0;
-    for (int L = 0; L < max_level; ++L) {
-        uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
-    }
-
-    uc->n_levels = max_level;
-
-    // Step 3: Create range vector and use sorting function to permute into
-    // final permutation
-    for (int i = 0; i < A_n_rows; i++) {
-        perm[i] = i;
-    }
-    std::stable_sort(perm, perm + A_n_rows, [&](const int &a, const int &b) {
-        return (levels[a] < levels[b]);
-    });
-
-    // Step 4: Compute inverse perm
-    for (int i = 0; i < A_n_rows; ++i) {
-        inv_perm[perm[i]] = i;
-    }
-
-    IF_SMAX_DEBUG(ErrorHandler::log("Exiting generate_perm"));
-
-    free(levels);
+    return ++max_level; // increase by one since levels are 0 indexed
 }
 
 template <typename IT>
-void Utils::generate_perm_DFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                              int *inv_perm) {
-    IF_SMAX_DEBUG(ErrorHandler::log("Entering generate_perm"));
+int Utils::generate_perm_DFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col, int *perm,
+                              int *inv_perm, int *lvl) {
 
     printf("Using DFS to generate permutations will not work currently. There "
            "are known bugs...\n");
 
-    int *lvl = new int[A_n_rows];
-    for (int i = 0; i < A_n_rows; ++i) {
-        lvl[i] = -1;
-    }
-
-    // Step 1: Build symmetric structure of A + A^T
-    IT *A_sym_row_ptr, *A_sym_col;
-    int A_sym_nnz = 0;
-    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
-                        A_sym_nnz);
-
-    // Step 2: Simulate a DFS traversal and collect levels
+    // Simulate a DFS traversal and collect levels
     std::vector<bool> visited(A_n_rows, false);
     int global_max_level = 0;
 
@@ -233,67 +170,14 @@ void Utils::generate_perm_DFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         }
     }
 
-    int max_level = global_max_level + 1;
-    IF_SMAX_DEBUG(
-        ErrorHandler::log("%d levels detected in generate_perm", max_level));
-
-    uc->lvl_ptr = new int[max_level + 1];
-
-    // Count nodes per level
-    int *count = new int[max_level];
-    for (int i = 0; i < max_level; ++i) {
-        count[i] = 0;
-    }
-    for (int i = 0; i < A_n_rows; ++i) {
-        ++count[lvl[i]];
-    }
-
-    // Build the prefix‐sum pointer array (size = max_level+1)
-    uc->lvl_ptr[0] = 0;
-    for (int L = 0; L < max_level; ++L) {
-        uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
-    }
-
-    uc->n_levels = max_level;
-
-    // Step 3: Create range vector and use sorting function to permute into
-    // final permutation
-    for (int i = 0; i < A_n_rows; i++) {
-        perm[i] = i;
-    }
-    std::stable_sort(perm, perm + A_n_rows, [&](const int &a, const int &b) {
-        return (lvl[a] < lvl[b]);
-    });
-
-    // Step 4: Compute inverse perm
-    for (int i = 0; i < A_n_rows; ++i) {
-        inv_perm[perm[i]] = i;
-    }
-
-    IF_SMAX_DEBUG(ErrorHandler::log("Exiting generate_perm"));
+    return  global_max_level + 1;
 }
 
 template <typename IT>
-void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                          int *inv_perm) {
+int Utils::generate_perm_BFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col, int *perm,
+                          int *inv_perm, int *lvl) {
 
-    IF_SMAX_DEBUG(ErrorHandler::log("Entering generate_perm"));
-
-    int *lvl = new int[A_n_rows];
-    for (int i = 0; i < A_n_rows; ++i) {
-        lvl[i] = -1;
-    }
-
-    // Step 1: Build symmetric structure of A + A^T
-    IT *A_sym_row_ptr, *A_sym_col;
-    int A_sym_nnz = 0;
-    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
-                        A_sym_nnz);
-
-    // Step 2: Simulate a level-order traversal (BFS) and collect levels
     std::vector<bool> visited(A_n_rows, false);
-    int perm_index = 0;
-    int global_max_level = 0;
 
     // Start queueing the island roots
     std::queue<int> q; // Queue for BFS
@@ -311,7 +195,10 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
             visited[start] = true;
         }
     }
+
     int current_level = 0;
+    int global_max_level = 0;
+    int perm_index = 0;
 
     // Perform BFS
     while (!q.empty()) {
@@ -348,12 +235,61 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         ++current_level;
     }
 
+    return global_max_level + 1;
+};
+
+template <typename IT>
+void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                          int *inv_perm, std::string type) {
+
+
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering generate_perm"));
+
+    // Step 0: Make array for level information
+    int *lvl = new int[A_n_rows];
+    for (int i = 0; i < A_n_rows; ++i) {
+        lvl[i] = -1;
+    }
+
+    // Step 1: Build symmetric structure of A + A^T
+    IT *A_sym_row_ptr, *A_sym_col;
+    int A_sym_nnz = 0;
+    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
+                        A_sym_nnz);
+
+
+
+    // Step 2: Call kernel for desired traversal method
+    int n_levels = 0;
+    if ( type == "JH" ){
+        n_levels = Utils::generate_perm_jh(A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
+    }
+    else if ( type == "BFS" ){
+        n_levels = Utils::generate_perm_BFS(A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
+    }
+    else if ( type == "DFS" ){
+        n_levels = Utils::generate_perm_DFS(A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
+    }
+    else{
+        // Throwing errors in lib is not nice.
+        // TODO: think of a way to tell user that the wrong type is used.
+    }
+    
+    // Step 3: Compute permuation - if necessary
+    if ( type != "BFS" ){
+        for (int i = 0; i < A_n_rows; i++) {
+            perm[i] = i;
+        }
+        std::stable_sort(perm, perm + A_n_rows, [&](const int &a, const int &b) {
+            return (lvl[a] < lvl[b]);
+        });
+    }
+
     // Compute inverse permutation
     for (int i = 0; i < A_n_rows; ++i) {
         inv_perm[perm[i]] = i;
     }
 
-    int n_levels = global_max_level + 1;
     IF_SMAX_DEBUG(
         ErrorHandler::log("%d levels detected in generate_perm", n_levels));
     uc->lvl_ptr = new int[n_levels + 1];
@@ -377,9 +313,9 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     delete[] A_sym_row_ptr;
     delete[] A_sym_col;
     delete[] lvl;
-
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting generate_perm"));
-};
+
+}
 
 template <typename IT, typename VT>
 void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
