@@ -3,12 +3,6 @@
 #include "error_handler.hpp"
 #include "utils.hpp"
 
-#include "kernels/spgemm.hpp"
-#include "kernels/spmm.hpp"
-#include "kernels/spmv.hpp"
-#include "kernels/sptrsm.hpp"
-#include "kernels/sptrsv.hpp"
-
 #include <functional>
 #include <iomanip>
 #include <iostream>
