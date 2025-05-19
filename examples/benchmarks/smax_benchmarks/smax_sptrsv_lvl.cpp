@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
     smax->register_kernel("my_sptrsv_lvl", SMAX::KernelType::SPTRSV);
-    smax->utils->generate_perm_jh<int>(crs_mat->n_rows, crs_mat->row_ptr,
+    smax->utils->generate_perm<int>(crs_mat->n_rows, crs_mat->row_ptr,
                                        crs_mat->col, perm, inv_perm);
     smax->kernel("my_sptrsv_lvl")->set_mat_perm(true);
     smax->utils->apply_mat_perm<int, double>(
