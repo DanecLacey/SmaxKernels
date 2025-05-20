@@ -28,10 +28,15 @@ class Utils {
     template <typename IT>
     int generate_perm_DFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                           int *inv_perm, int *lvl);
+
     template <typename IT>
     int generate_perm_BFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                           int *inv_perm, int *lvl);
 
+    template <typename IT>
+    int generate_color_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                          int *inv_perm, int *lvl);
+    
     template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                        int *inv_perm, std::string type = std::string("BFS"));
