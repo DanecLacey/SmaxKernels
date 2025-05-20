@@ -51,9 +51,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(NOT DEBUG_LEVEL MATCHES "^[123]$")
         message(FATAL_ERROR "DEBUG_LEVEL must be 1, 2, or 3 (got: ${DEBUG_LEVEL})")
     endif()
-    # Provide dropdown-like choices for debug levels in GUI
     set_property(CACHE DEBUG_LEVEL PROPERTY STRINGS 1 2 3)
     message(STATUS "Debug Level: ${DEBUG_LEVEL}")
+else()
+    # If not Debug, remove it from GUI (cache)
+    unset(DEBUG_LEVEL CACHE)
 endif()
 
 # Default to g++ if no compiler is specified

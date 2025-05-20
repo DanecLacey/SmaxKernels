@@ -67,16 +67,22 @@ void Utils::print_timers() {
     std::cout << std::scientific;
     std::cout << std::setprecision(3);
 
-    // Helper
+    // Helpers //
     auto print_timing = [&](const std::string &label, double time) {
     std::cout << std::left << std::setw(left_flush_width) << label
         << std::right << std::setw(right_flush_width) << time
         << " [s]\n";
     };
+    
+    std::string label = "SMAX Timer";
+    int label_len = label.size();
+    int dash_total = total_content_width - label_len;
+    int dash_left = dash_total / 2;
+    int dash_right = dash_total - dash_left;
+    // Helpers //
 
     for (auto &[kernel_name, kernel_ptr] : this->kernels) {
-
-        std::cout << '+' << std::string(total_content_width, '-') << "+\n";
+        std::cout << '+' <<  std::string(dash_left, '-') << label << std::string(dash_right, '-') << "+\n";
 
         switch (kernel_ptr->k_ctx->kernel_type) {
         case KernelType::SPMV:
