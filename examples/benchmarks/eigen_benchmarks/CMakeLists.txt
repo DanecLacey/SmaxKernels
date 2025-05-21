@@ -16,7 +16,7 @@ foreach(src ${CPP_FILES})
     target_link_libraries(${exec_name} PRIVATE SMAX::smaxkernels timing mmio)
 
     # Link against Eigen CMake export package
-    target_link_libraries(${exec_name} PRIVATE Eigen)
+    target_link_libraries(${exec_name} PRIVATE Eigen3::Eigen)
 
     # Optionally link against LIKWID
     if(USE_LIKWID)
