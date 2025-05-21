@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
         Eigen::MatrixXd::Constant(crs_mat->n_rows, n_vectors, 0.0);
 
     // Wrap your CRS data into an Eigen SparseMatrix
-    Eigen::SparseMatrix<double> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
+    Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
     std::vector<Eigen::Triplet<double>> triplets;
     triplets.reserve(crs_mat->nnz);
 
