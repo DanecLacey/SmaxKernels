@@ -256,15 +256,18 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
 
     // Step 2: Call kernel for desired traversal method
     int n_levels = 0;
-    if (type == "BFS") {
-        n_levels = Utils::generate_perm_BFS(A_n_rows, A_sym_row_ptr, A_sym_col,
-                                            perm, inv_perm, lvl);
-    } else if (type == "JH") {
+    if (type == "JH") {
         n_levels = Utils::generate_perm_jh(A_n_rows, A_sym_row_ptr, A_sym_col,
                                            perm, inv_perm, lvl);
+    } else if (type == "BFS") {
+        n_levels = Utils::generate_perm_BFS(A_n_rows, A_sym_row_ptr, A_sym_col,
+                                            perm, inv_perm, lvl);
     } else if (type == "DFS") {
         n_levels = Utils::generate_perm_DFS(A_n_rows, A_sym_row_ptr, A_sym_col,
                                             perm, inv_perm, lvl);
+    } else if (type == "MC") {
+        n_levels = Utils::generate_color_perm(A_n_rows, A_sym_row_ptr,
+                                              A_sym_col, perm, inv_perm, lvl);
     } else {
         // Throwing errors in lib is not nice.
         // TODO: think of a way to tell user that the wrong type is used.
@@ -310,6 +313,72 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     delete[] A_sym_col;
     delete[] lvl;
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting generate_perm"));
+}
+
+// Testing Coloring options
+template <typename IT>
+int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
+                               int *perm, int *inv_perm, int *lvl) {
+
+    int *color = lvl;
+    int *usable_colors = new int[A_n_rows];
+    for (int i = 0; i < A_n_rows; i++) {
+        color[i] = -2;
+        usable_colors[i] = -1;
+    }
+
+    int max_color = 0;
+
+    // Use BFS-like traversal to assign colors
+    //
+    // Start queueing the island roots
+    std::queue<int> q; // Queue for BFS
+    for (int start = 0; start < A_n_rows; ++start) {
+        bool is_root = true;
+        for (int nnz = A_sym_row_ptr[start]; nnz < A_sym_row_ptr[start + 1];
+             ++nnz) {
+            if (A_sym_col[nnz] < start) {
+                is_root = false;
+                break;
+            }
+        }
+        if (is_root) {
+            q.push(start);
+            color[start] = -1;
+        }
+    }
+
+    // Perform BFS
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+
+        // Enqueue all unvisited neighbors
+        for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; ++jj) {
+            int v = A_sym_col[jj];
+            if (color[v] == -2) {
+                color[v] = -1;
+                q.push(v);
+            } else if (color[v] >= 0) {
+                usable_colors[color[v]] = u;
+            }
+        }
+
+        for (int c = 0; c < A_n_rows; c++) {
+            if (usable_colors[c] != u) {
+                color[u] = c;
+                max_color = std::max(max_color, c);
+                break;
+            }
+        }
+    }
+
+    for (int i = 0; i < A_n_rows; i++) {
+        printf("%d, ", color[i]);
+    }
+    printf("\n");
+
+    return ++max_color;
 }
 
 template <typename IT, typename VT>
