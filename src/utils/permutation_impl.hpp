@@ -125,7 +125,8 @@ int Utils::generate_perm_DFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
            "are known bugs...\n");
 
     // Simulate a DFS traversal and collect levels
-    std::vector<bool> visited(A_n_rows, false);
+    std::vector<int> distance(A_n_rows, -1);
+    std::vector<int> depends(A_n_rows, -1);
     int global_max_level = 0;
 
     // Start queueing the island roots
@@ -141,8 +142,7 @@ int Utils::generate_perm_DFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
         }
         if (is_root) {
             q.push_back(start);
-            lvl[start] = 0;
-            visited[start] = true;
+            distance[start] = 0;
         }
     }
 
@@ -153,19 +153,32 @@ int Utils::generate_perm_DFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
         q.pop_front();
 
         // Enqueue all unvisited neighbors
-        // for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1];
-        for (int jj = A_sym_row_ptr[u + 1] - 1; jj >= A_sym_row_ptr[u]; --jj) {
+        for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; jj++){
             int v = A_sym_col[jj];
-            if (!visited[v] && (v > u)) {
-                visited[v] = true;
+            if (v <= u)
+                continue;
+            if (distance[v] == -1){
                 q.push_front(v);
-                lvl[v] = lvl[u] + 1;
-                global_max_level = std::max(global_max_level, lvl[v]);
-            } else if (visited[v] && (v < u)) {
-                lvl[v] = lvl[u] + 1;
-                global_max_level = std::max(global_max_level, lvl[v]);
+                distance[v] = distance[u] + 1;
+                depends[v] = u;
+            } else if (distance[v] <= distance[u]){
+                distance[v] = distance[u] + 1;
+                depends[v] = u;
             }
         }
+    }
+
+    for (int node = 0; node < A_n_rows; node++){
+        lvl[node] = 0;
+        int node_level = 0;
+        int dependency, dependency_old = node;
+        while(dependency = depends[dependency_old], dependency != -1){
+            node_level++;
+            dependency_old = dependency;
+        }
+        lvl[node] = node_level + lvl[dependency_old];
+        global_max_level = std::max(global_max_level, lvl[node]);
+        depends[node] = -1;
     }
 
     return global_max_level + 1;
