@@ -22,3 +22,13 @@ file(DOWNLOAD
 )
 
 include(${CPM_DOWNLOAD_LOCATION})
+
+get_cmake_property(_cache_vars CACHE_VARIABLES)
+foreach(var ${_cache_vars})
+    string(FIND "${var}" "CPM_" CPM_POS)
+    string(FIND "${var}" "FETCHCONTENT_" FC_POS)
+
+    if(CPM_POS EQUAL 0 OR FC_POS EQUAL 0)
+        mark_as_advanced(${var})
+    endif()
+endforeach()
