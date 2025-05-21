@@ -28,7 +28,7 @@ jobs:
         name: install-dir
         path: ${{github.workspace}}/install/
       
-  test:
+  build_test:
     needs: build
     runs-on: ubuntu-latest
 
@@ -46,3 +46,23 @@ jobs:
           cmake .. -DCMAKE_INSTALL_PREFIX=../../install
           make
 
+    - uses: actions/upload-artifact@v4
+      with: 
+        name: tests
+        path: ${{github.workspace}}/examples/build/tests/
+
+  run_test:
+    needs: build_test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: tests
+          path: ${{github.workspace}}/run_tests
+
+      - name: Execute Tests
+        run: |
+          cd run_tests
+          ./run_tests
