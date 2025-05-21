@@ -33,7 +33,6 @@
 
 #include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 int main(void) {
     // Initialize operands
@@ -72,7 +71,8 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Get BFS permutation vector
-    smax->utils->generate_perm<int>(A_n_rows, A_row_ptr, A_col, perm, inv_perm, std::string("BFS"));
+    smax->utils->generate_perm<int>(A_n_rows, A_row_ptr, A_col, perm, inv_perm,
+                                    std::string("BFS"));
 
     printf("BFS Permutation:\n");
     print_vector<int>(perm, A_n_rows);

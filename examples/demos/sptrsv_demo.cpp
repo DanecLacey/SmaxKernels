@@ -3,8 +3,9 @@
  * @brief Basic example demonstrating how to use the SMAX library to perform
  * sparse triangular solve with a lower triangular matrix (SpTSV).
  */
+
+#include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 int main(void) {
     // Initialize operands

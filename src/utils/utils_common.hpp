@@ -31,6 +31,13 @@ class UtilsErrorHandler : public ErrorHandler {
             << " is out of bounds (min = " << min_cols - 1 << ").";
         utils_fatal("[" + util_name + "] " + oss.str());
     }
+    static void perm_type_dne(const std::string &failed_type,
+                              const char *available_types) {
+        std::ostringstream oss;
+        oss << "Permutation type: " << failed_type << " does not exist.\n";
+        oss << "Please choose a type in: " << available_types << ".\n";
+        utils_fatal(oss.str());
+    }
 };
 
 template <typename IT>

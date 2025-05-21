@@ -4,8 +4,9 @@
  * sparse matrix-matrix multiplication (SpGEMM) with the two input matrices
  * being the same (A == B).
  */
+
+#include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 int main(void) {
     int A_n_rows = 3;

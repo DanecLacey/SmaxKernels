@@ -5,8 +5,9 @@
  * matrices (A != B). It also shows how one may use different integer and float
  * data types.
  */
+
+#include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 int main(void) {
     int A_n_rows = 3;

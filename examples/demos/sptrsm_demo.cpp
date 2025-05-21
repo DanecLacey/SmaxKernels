@@ -4,8 +4,9 @@
  * sparse triangular solve with a lower triangular matrix and multiple RHS
  * vectors (SpTSM).
  */
+
+#include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 #define N_VECTORS 4
 

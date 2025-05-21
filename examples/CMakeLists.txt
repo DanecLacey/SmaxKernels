@@ -204,6 +204,9 @@ target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(tests)
 add_custom_target(tests DEPENDS ${test_targets})
 
+add_subdirectory(demos)
+add_custom_target(demos DEPENDS ${demos_targets})
+
 add_subdirectory(applications)
 add_custom_target(applications DEPENDS ${application_targets})
 
