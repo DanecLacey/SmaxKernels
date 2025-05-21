@@ -1,9 +1,6 @@
 #pragma once
 
 #include "common.hpp"
-#include <variant>
-
-using Variant = std::variant<int, void *, void **>;
 
 namespace SMAX {
 

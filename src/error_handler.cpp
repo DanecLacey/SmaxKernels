@@ -55,14 +55,12 @@ void ErrorHandler::_log(const std::string &log_message) {
             if (n_lines % LINE_COUNT_WARNING == 0) {
                 std::cerr << "Warning: " << LINE_COUNT_WARNING
                           << " lines in log file."
-                          << " Consider turning off SMAX_DEBUG_MODE."
-                          << std::endl;
+                          << " Consider turning off DEBUG_MODE." << std::endl;
             }
             if (n_lines == LINE_COUNT_ERROR) {
                 std::cerr << "Error: " << LINE_COUNT_ERROR
                           << " lines in log file."
-                          << " Turn off SMAX_DEBUG_MODE. Aborting."
-                          << std::endl;
+                          << " Turn off DEBUG_MODE. Aborting." << std::endl;
                 close_log();
                 exit(EXIT_FAILURE);
             }

@@ -12,12 +12,9 @@
         printf("]\n");                                                         \
     } while (0)
 
-#define DEBUG_PRINT_ITER(n_iters, residual_norm)                               \
+#define PRINT_ITER(n_iters, residual_norm)                                     \
     do {                                                                       \
-        if (DEBUG) {                                                           \
-            printf("iter: %d, residual_norm = %f\n", (n_iters),                \
-                   (residual_norm));                                           \
-        }                                                                      \
+        printf("iter: %d, residual_norm = %f\n", (n_iters), (residual_norm));  \
     } while (0)
 
 CRSMatrix *create1DPoissonMatrixCRS(int n) {

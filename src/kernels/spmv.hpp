@@ -5,6 +5,7 @@
 #include "../macros.hpp"
 #include "spmv/spmv_common.hpp"
 #include "spmv/spmv_cpu.hpp"
+#include "spmv/spmv_cuda.cuh"
 
 namespace SMAX::KERNELS {
 
@@ -13,8 +14,8 @@ class SpMVKernel : public Kernel {
     std::unique_ptr<SPMV::Args> args;
     std::unique_ptr<SPMV::Flags> flags;
 
-    using CpuFunc = int (*)(Timers *, KernelContext *, SPMV::Args *,
-                            SPMV::Flags *, int, int, int);
+    using Func = int (*)(Timers *, KernelContext *, SPMV::Args *, SPMV::Flags *,
+                         int, int, int);
 
     SpMVKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
@@ -57,18 +58,26 @@ class SpMVKernel : public Kernel {
     }
 
     // Dispatch kernel based on platform
-    int dispatch(CpuFunc cpu_func, const char *label, int A_offset,
-                 int x_offset, int y_offset) {
+    int dispatch(Func func, const char *label, int A_offset, int x_offset,
+                 int y_offset) {
         IF_SMAX_DEBUG(if (!k_ctx || !args || !flags) {
             std::cerr << "Error: Null kernel state in " << label << "\n";
             return 1;
         });
 
-        switch (k_ctx->platform_type) {
+        return func(timers, k_ctx.get(), args.get(), flags.get(), A_offset,
+                    x_offset, y_offset);
+    }
+
+    int initialize(int A_offset, int x_offset, int y_offset) override {
+        switch (this->k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(timers, k_ctx.get(), args.get(), flags.get(),
-                            A_offset, x_offset, y_offset);
-            break;
+            return dispatch(SPMV::initialize_cpu, "spmv_finalize", A_offset,
+                            x_offset, y_offset);
+        }
+        case PlatformType::CUDA: {
+            return dispatch(SPMV::initialize_cuda, "spmv_finalize", A_offset,
+                            x_offset, y_offset);
         }
         default:
             std::cerr << "Error: Platform not supported\n";
@@ -76,19 +85,36 @@ class SpMVKernel : public Kernel {
         }
     }
 
-    int initialize(int A_offset, int x_offset, int y_offset) override {
-        return dispatch(SPMV::initialize_cpu, "spmv_initialize", A_offset,
-                        x_offset, y_offset);
-    }
-
     int apply(int A_offset, int x_offset, int y_offset) override {
-        return dispatch(SPMV::apply_cpu, "spmv_apply", A_offset, x_offset,
-                        y_offset);
+        switch (this->k_ctx->platform_type) {
+        case PlatformType::CPU: {
+            return dispatch(SPMV::apply_cpu, "spmv_apply", A_offset, x_offset,
+                            y_offset);
+        }
+        case PlatformType::CUDA: {
+            return dispatch(SPMV::apply_cuda, "spmv_apply", A_offset, x_offset,
+                            y_offset);
+        }
+        default:
+            std::cerr << "Error: Platform not supported\n";
+            return 1;
+        }
     }
 
     int finalize(int A_offset, int x_offset, int y_offset) override {
-        return dispatch(SPMV::finalize_cpu, "spmv_finalize", A_offset, x_offset,
-                        y_offset);
+        switch (this->k_ctx->platform_type) {
+        case PlatformType::CPU: {
+            return dispatch(SPMV::finalize_cpu, "spmv_finalize", A_offset,
+                            x_offset, y_offset);
+        }
+        case PlatformType::CUDA: {
+            return dispatch(SPMV::finalize_cuda, "spmv_finalize", A_offset,
+                            x_offset, y_offset);
+        }
+        default:
+            std::cerr << "Error: Platform not supported\n";
+            return 1;
+        }
     }
 
     int swap_operands(void) override {

@@ -1,6 +1,5 @@
 #pragma once
 
-// Enables SMAX_DEBUG_MODE if selected in CMakeLists.txt
 #include "smax_config.hpp"
 
 #ifdef _OPENMP
@@ -28,7 +27,7 @@ namespace SMAX {
 
 #endif
 
-#if SMAX_DEBUG_MODE
+#if DEBUG_MODE
 #define IF_SMAX_DEBUG(code)                                                    \
     do {                                                                       \
         code;                                                                  \
@@ -40,7 +39,7 @@ namespace SMAX {
     } while (0)
 #endif
 
-#if SMAX_DEBUG_MODE && (DEBUG_LEVEL == 1)
+#if DEBUG_MODE && (DEBUG_LEVEL == 1)
 #define IF_SMAX_DEBUG_1(...)                                                   \
     do {                                                                       \
         __VA_ARGS__;                                                           \
@@ -49,7 +48,7 @@ namespace SMAX {
 #define IF_SMAX_DEBUG_1(...)
 #endif
 
-#if SMAX_DEBUG_MODE && (DEBUG_LEVEL == 2)
+#if DEBUG_MODE && (DEBUG_LEVEL == 2)
 #define IF_SMAX_DEBUG_2(...)                                                   \
     do {                                                                       \
         __VA_ARGS__;                                                           \
@@ -58,7 +57,7 @@ namespace SMAX {
 #define IF_SMAX_DEBUG_2(...)
 #endif
 
-#if SMAX_DEBUG_MODE && (DEBUG_LEVEL == 3)
+#if DEBUG_MODE && (DEBUG_LEVEL == 3)
 #define IF_SMAX_DEBUG_3(...)                                                   \
     do {                                                                       \
         __VA_ARGS__;                                                           \

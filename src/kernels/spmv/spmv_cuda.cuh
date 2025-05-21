@@ -1,33 +1,33 @@
 #pragma once
 
 #include "../../common.hpp"
-#include "spmv_cpu/spmv_cpu_core.hpp"
+#include "spmv_cuda/spmv_cuda_core.cuh"
 
 namespace SMAX::KERNELS::SPMV {
 
 // These templated structs are just little helpers to wrap the core functions.
 // The operator() function is called in the dispatch_spmv function to execute
 // the correct function for the given types.
-template <typename IT, typename VT> struct Init_CPU {
+template <typename IT, typename VT> struct Init_CUDA {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags, int A_offset, int x_offset, int y_offset) {
-        return SPMV_CPU::initialize_cpu_core<IT, VT>(
+        return SPMV_CUDA::initialize_cuda_core<IT, VT>(
             timers, k_ctx, args, flags, A_offset, x_offset, y_offset);
     }
 };
 
-template <typename IT, typename VT> struct Apply_CPU {
+template <typename IT, typename VT> struct Apply_CUDA {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags, int A_offset, int x_offset, int y_offset) {
-        return SPMV_CPU::apply_cpu_core<IT, VT>(timers, k_ctx, args, flags,
-                                                A_offset, x_offset, y_offset);
+        return SPMV_CUDA::apply_cuda_core<IT, VT>(timers, k_ctx, args, flags,
+                                                  A_offset, x_offset, y_offset);
     }
 };
 
-template <typename IT, typename VT> struct Finalize_CPU {
+template <typename IT, typename VT> struct Finalize_CUDA {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags, int A_offset, int x_offset, int y_offset) {
-        return SPMV_CPU::finalize_cpu_core<IT, VT>(
+        return SPMV_CUDA::finalize_cuda_core<IT, VT>(
             timers, k_ctx, args, flags, A_offset, x_offset, y_offset);
     }
 };
@@ -36,8 +36,8 @@ template <typename IT, typename VT> struct Finalize_CPU {
 // integer and floating point types.
 // Dispatch kernel based on data types
 template <template <typename IT, typename VT> class Func>
-int dispatch_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
-                 int A_offset, int x_offset, int y_offset) {
+int dispatch_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
+                  Flags *flags, int A_offset, int x_offset, int y_offset) {
     switch (k_ctx->float_type) {
     case FloatType::FLOAT32:
         switch (k_ctx->int_type) {
@@ -96,20 +96,20 @@ int dispatch_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
 }
 
 // These invoke the dispatcher function with the correct template parameters
-int initialize_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
-                   Flags *flags, int A_offset, int x_offset, int y_offset) {
-    return dispatch_cpu<Init_CPU>(timers, k_ctx, args, flags, A_offset,
-                                  x_offset, y_offset);
+int initialize_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
+                    Flags *flags, int A_offset, int x_offset, int y_offset) {
+    return dispatch_cuda<Init_CUDA>(timers, k_ctx, args, flags, A_offset,
+                                    x_offset, y_offset);
 }
-int apply_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
-              int A_offset, int x_offset, int y_offset) {
-    return dispatch_cpu<Apply_CPU>(timers, k_ctx, args, flags, A_offset,
-                                   x_offset, y_offset);
+int apply_cuda(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
+               int A_offset, int x_offset, int y_offset) {
+    return dispatch_cuda<Apply_CUDA>(timers, k_ctx, args, flags, A_offset,
+                                     x_offset, y_offset);
 }
-int finalize_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
-                 int A_offset, int x_offset, int y_offset) {
-    return dispatch_cpu<Finalize_CPU>(timers, k_ctx, args, flags, A_offset,
-                                      x_offset, y_offset);
+int finalize_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
+                  Flags *flags, int A_offset, int x_offset, int y_offset) {
+    return dispatch_cuda<Finalize_CUDA>(timers, k_ctx, args, flags, A_offset,
+                                        x_offset, y_offset);
 }
 
 } // namespace SMAX::KERNELS::SPMV

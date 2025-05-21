@@ -10,9 +10,9 @@ namespace SMAX {
 class Utils {
   private:
     std::unordered_map<std::string, std::unique_ptr<Kernel>> &kernels;
-    UtilitiesContainer *uc = nullptr;
 
   public:
+    UtilitiesContainer *uc = nullptr;
     Utils(std::unordered_map<std::string, std::unique_ptr<Kernel>> &_kernels,
           UtilitiesContainer *_uc)
         : kernels(_kernels), uc(_uc) {}
@@ -35,8 +35,8 @@ class Utils {
 
     template <typename IT>
     int generate_color_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                          int *inv_perm, int *lvl);
-    
+                            int *inv_perm, int *lvl);
+
     template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                        int *inv_perm, std::string type = std::string("BFS"));

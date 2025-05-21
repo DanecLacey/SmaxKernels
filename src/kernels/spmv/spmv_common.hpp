@@ -10,12 +10,18 @@ struct Args {
     SparseMatrix *A;
     DenseMatrix *x;
     DenseMatrix *y;
+    SparseMatrix *d_A; // Device copy
+    DenseMatrix *d_x;  // Device copy
+    DenseMatrix *d_y;  // Device copy
     UtilitiesContainer *uc;
 
     Args(UtilitiesContainer *_uc) {
         A = new SparseMatrix();
         x = new DenseMatrix();
         y = new DenseMatrix();
+        d_A = new SparseMatrix();
+        d_x = new DenseMatrix();
+        d_y = new DenseMatrix();
         uc = _uc;
     }
 
@@ -24,6 +30,9 @@ struct Args {
         delete A;
         delete x;
         delete y;
+        delete d_A;
+        delete d_x;
+        delete d_y;
     }
 
     // Disable copying to prevent double deletion

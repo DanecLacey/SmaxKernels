@@ -12,14 +12,20 @@ project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Optional: restrict required version
+find_package(CUDAToolkit QUIET)
+if (CUDAToolkit_FOUND)
+    enable_language(CUDA)
+endif()
+
 # List of source files for building the library
 set(SOURCES
     src/interface.cpp
     src/error_handler.cpp
 )
 
-# List of header files for installation and IDE support
-set(HEADERS
+# List of header files for installation
+set(COMMON_HEADERS
     src/interface.hpp
     src/common.hpp
     src/macros.hpp
@@ -30,9 +36,47 @@ set(HEADERS
     src/utils.hpp
 )
 
-# Additional directories containing public headers (subfolders to install)
-set(HEADER_DIRS
-    src/kernels
+set(COMMON_KERNEL_HEADERS
+    src/kernels/kernels_common.hpp
+    src/kernels/spgemm.hpp
+    src/kernels/spgemm/spgemm_common.hpp
+    src/kernels/spmm.hpp
+    src/kernels/spmm/spmm_common.hpp
+    src/kernels/spmv.hpp
+    src/kernels/spmv/spmv_common.hpp
+    src/kernels/sptrsm.hpp
+    src/kernels/sptrsm/sptrsm_common.hpp
+    src/kernels/sptrsv.hpp
+    src/kernels/sptrsv/sptrsv_common.hpp
+)
+
+set(CPU_KERNEL_HEADERS
+    src/kernels/spgemm/spgemm_cpu.hpp
+    src/kernels/spmm/spmm_cpu.hpp
+    src/kernels/spmv/spmv_cpu.hpp
+    src/kernels/sptrsm/sptrsm_cpu.hpp
+    src/kernels/sptrsv/sptrsv_cpu.hpp
+)
+
+set(CPU_HEADER_DIRS
+    src/kernels/spgemm/spgemm_cpu/
+    src/kernels/spmm/spmm_cpu/
+    src/kernels/spmv/spmv_cpu/
+    src/kernels/sptrsm/sptrsm_cpu/
+    src/kernels/sptrsv/sptrsv_cpu/
+    src/platforms/cpu/
+)
+
+set(CUDA_KERNEL_HEADERS
+    src/kernels/spmv/spmv_cuda.cuh
+)
+
+set(CUDA_HEADER_DIRS
+    src/kernels/spmv/spmv_cuda/
+    src/platforms/cuda
+)
+
+set(COMMON_HEADER_DIRS
     src/utils
 )
 
@@ -46,6 +90,7 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # Debug-specific configuration
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(DEBUG_MODE 1)
     set(DEBUG_LEVEL 1 CACHE STRING "Set the debug verbosity level (1, 2, or 3)")
     # Validate that debug level is within accepted values
     if(NOT DEBUG_LEVEL MATCHES "^[123]$")
@@ -54,42 +99,85 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set_property(CACHE DEBUG_LEVEL PROPERTY STRINGS 1 2 3)
     message(STATUS "Debug Level: ${DEBUG_LEVEL}")
 else()
-    # If not Debug, remove it from GUI (cache)
+    set(DEBUG_MODE 0)
+    # If not Debug, remove it from GUI cache
     unset(DEBUG_LEVEL CACHE)
 endif()
 
-# Default to g++ if no compiler is specified
+# If the user didn't specify a compiler, default to g++
 if(NOT DEFINED CMAKE_CXX_COMPILER)
     set(CMAKE_CXX_COMPILER "g++" CACHE STRING "Default compiler" FORCE)
+    message(STATUS "No compiler selected, using default: ${CMAKE_CXX_COMPILER}")
 endif()
+
 
 # Display chosen compiler info
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
+if (CUDAToolkit_FOUND)
+    message(STATUS "CUDA Compiler ID: ${CMAKE_CUDA_COMPILER_ID}")
+    message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
+endif()
 
 # Normalize compiler ID string to uppercase
-string(TOUPPER "${CMAKE_CXX_COMPILER_ID}" COMPILER_ID)
+string(TOUPPER "${CMAKE_CXX_COMPILER_ID}" CPU_COMPILER_ID)
+string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID)
 
 # Set compiler flags based on compiler type and build type
-if(COMPILER_ID STREQUAL "GNU")
+# Also configure headers based on platflorm!
+set(HEADERS ${COMMON_HEADERS} ${COMMON_KERNEL_HEADERS})
+set(HEADER_DIRS ${COMMON_HEADER_DIRS})
+
+# GPU builds
+if(GPU_COMPILER_ID STREQUAL "NVIDIA")
+    set(USE_CUDA 1)
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -Xcompiler=-fPIC")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -Xcompiler=-fPIC")
+    endif()
+    list(APPEND HEADERS ${CUDA_KERNEL_HEADERS})
+    list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
+
+    if(NOT DEFINED CUDA_TPB)
+        set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
+    endif()
+    add_compile_definitions(CUDA_TPB=${CUDA_TPB})
+    message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
+
+    # Need to compile with nvcc, so add to sources
+    list(APPEND SOURCES
+        src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
+    )
+
+else()
+    set(USE_CUDA 0)
+    message(WARNING "No supported GPU compiler found, building for CPU only.")
+endif()
+
+# CPU builds (default)
+list(APPEND HEADERS ${CPU_KERNEL_HEADERS})
+list(APPEND HEADER_DIRS ${CPU_HEADER_DIRS})
+if(CPU_COMPILER_ID STREQUAL "GNU")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fstrict-aliasing -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
     endif()
-elseif(COMPILER_ID STREQUAL "INTEL")
+elseif(CPU_COMPILER_ID STREQUAL "INTEL")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fno-alias -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
     endif()
-elseif(COMPILER_ID STREQUAL "INTELLLVM")
+elseif(CPU_COMPILER_ID STREQUAL "INTELLLVM")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer -fp-model=precise")
     endif()
-elseif(COMPILER_ID STREQUAL "CLANG")
+elseif(CPU_COMPILER_ID STREQUAL "CLANG")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-alias -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -99,12 +187,13 @@ else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
-# Set internal debug mode variable for preprocessing logic
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(SMAX_DEBUG_MODE 1)
-else()
-  set(SMAX_DEBUG_MODE 0)
-endif()
+# Create the shared library target
+add_library(${LIBRARY_NAME} SHARED ${SOURCES})
+
+target_compile_definitions(${LIBRARY_NAME} PUBLIC
+    USE_CUDA=${USE_CUDA}
+    DEBUG_MODE=${DEBUG_MODE}
+)
 
 # Configure and generate a configuration header
 set(SMAX_CONFIG_IN ${CMAKE_CURRENT_SOURCE_DIR}/cmake/smax_config.hpp.in)
@@ -119,15 +208,10 @@ set_property(
 # Process the config header template
 configure_file(${SMAX_CONFIG_IN} ${SMAX_CONFIG_OUT} @ONLY)
 
-# Create the shared library target
-add_library(${LIBRARY_NAME} SHARED ${SOURCES})
-
 # Add DEBUG_LEVEL definition to the library only in Debug mode
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_definitions(${LIBRARY_NAME}
-    PRIVATE
-      DEBUG_LEVEL=${DEBUG_LEVEL}
-  )
+    PRIVATE DEBUG_LEVEL=${DEBUG_LEVEL} )
 endif()
 
 # Include directories used when building or installing the library
@@ -137,6 +221,23 @@ target_include_directories(${LIBRARY_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
+
+
+if (CUDAToolkit_FOUND)
+    # This tells the host compiler where to find CUDA headers
+    target_include_directories(${LIBRARY_NAME} PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+
+    # Propagate to users
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC CUDA_TPB=${CUDA_TPB})
+    target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDA_INCLUDE_DIRS})
+    target_link_libraries(${LIBRARY_NAME} PUBLIC CUDA::cudart)
+
+    # Mark .cu files as CUDA language explicitly (optional but safe)
+    set_source_files_properties(
+        src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
+        PROPERTIES LANGUAGE CUDA
+    )
+endif()
 
 # Build configuration options
 option(USE_TIMERS "Enable Timers support" ON)
@@ -179,6 +280,9 @@ else()
 endif()
 
 # Set default install paths (lib, include, etc.)
+message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "Install path prefix")
+
 include(GNUInstallDirs)
 
 # Install the compiled library to appropriate system directories
@@ -190,16 +294,37 @@ install(TARGETS ${LIBRARY_NAME}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-# Install public header files and generated config header
-install(
-  FILES
-    ${HEADERS}
-    ${CMAKE_CURRENT_BINARY_DIR}/include/smax_config.hpp
+# Install generated config header
+install( FILES ${CMAKE_CURRENT_BINARY_DIR}/include/smax_config.hpp
   DESTINATION include/${PROJECT_NAME}
 )
 
-# Install any additional header subdirectories (e.g. utils, kernels)
-install(DIRECTORY ${HEADER_DIRS} DESTINATION include/${PROJECT_NAME})
+# Manually forcing header installations to maintain desired dir structure
+set(SRC_ROOT_DIR "${CMAKE_SOURCE_DIR}/src")
+
+foreach(base_dir IN LISTS HEADER_DIRS)
+    get_filename_component(base_dir_abs "${base_dir}" ABSOLUTE)
+
+    file(GLOB_RECURSE dir_headers CONFIGURE_DEPENDS
+        "${base_dir_abs}/*.hpp"
+        "${base_dir_abs}/*.cuh"
+    )
+    foreach(header IN LISTS dir_headers)
+        get_filename_component(header_abs "${header}" ABSOLUTE)
+        # Use SRC_ROOT_DIR instead of base_dir_abs here!
+        file(RELATIVE_PATH rel_path "${SRC_ROOT_DIR}" "${header_abs}")
+        get_filename_component(rel_dir "${rel_path}" DIRECTORY)
+        install(FILES "${header_abs}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/${rel_dir}")
+    endforeach()
+endforeach()
+
+foreach(header IN LISTS HEADERS)
+    get_filename_component(header_abs "${header}" ABSOLUTE)
+    file(RELATIVE_PATH rel_path "${SRC_ROOT_DIR}" "${header_abs}")
+    get_filename_component(rel_dir "${rel_path}" DIRECTORY)
+    install(FILES "${header_abs}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/${rel_dir}")
+endforeach()
+
 
 # Export the target definitions for reuse in other CMake projects
 install(EXPORT SmaxKernelsTargets

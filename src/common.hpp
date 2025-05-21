@@ -5,13 +5,21 @@
 #include "memory_utils.hpp"
 #include "stopwatch.hpp"
 
+#include <variant>
+#if USE_CUDA
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+
 namespace SMAX {
+
+using Variant = std::variant<int, void *, void **>;
 
 // Available kernels
 enum class KernelType { SPMV, SPMM, SPGEMV, SPGEMM, SPTRSV, SPTRSM };
 
 // Available platforms
-enum class PlatformType { CPU };
+enum class PlatformType { CPU, CUDA };
 
 // Available integer types
 enum class IntType { INT16, INT32, INT64, UINT16, UINT32, UINT64 };
