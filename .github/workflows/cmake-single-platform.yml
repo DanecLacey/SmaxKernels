@@ -65,4 +65,5 @@ jobs:
       - name: Execute Tests
         run: |
           cd run_tests
+          chmod +x ./run_tests
           ./run_tests
