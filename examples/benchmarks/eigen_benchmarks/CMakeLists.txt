@@ -1,6 +1,7 @@
 # Get all .cpp files in the current directory
 file(GLOB CPP_FILES *.cpp)
 
+
 # Create a list to store target names
 set(eigen_benchmarks_targets)
 
@@ -15,7 +16,7 @@ foreach(src ${CPP_FILES})
     target_link_libraries(${exec_name} PRIVATE SMAX::smaxkernels timing mmio)
 
     # Link against Eigen CMake export package
-    target_link_libraries(${exec_name} PRIVATE Eigen3::Eigen)
+    target_link_libraries(${exec_name} PRIVATE Eigen)
 
     # Optionally link against LIKWID
     if(USE_LIKWID)
