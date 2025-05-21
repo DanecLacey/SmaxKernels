@@ -59,11 +59,34 @@ REGISTER_TEST(perm_test_1) {
     smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_bfs,
                                    inv_perm_bfs, std::string("BFS"));
 
+    int expected_max_level = 4;
+    int *expected_levels = new int[5]{0, 2, 4, 6, 8};
+    if(smax->uc->n_levels != expected_max_level)
+        throw std::runtime_error("Number of levels does not match in BFS.");
+    for (int l = 0; l <= expected_max_level; l++){
+        if (expected_levels[l] != smax->uc->lvl_ptr[l])
+            throw std::runtime_error("Level size does not match in BFS.");
+    }
+
     smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_jh,
                                    inv_perm_jh, std::string("JH"));
 
+    if(smax->uc->n_levels != expected_max_level)
+        throw std::runtime_error("Number of levels does not match in JH.");
+    for (int l = 0; l <= expected_max_level; l++){
+        if (expected_levels[l] != smax->uc->lvl_ptr[l])
+            throw std::runtime_error("Level size does not match in JH.");
+    }
+
     smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_dfs,
                                    inv_perm_dfs, std::string("DFS"));
+
+    if(smax->uc->n_levels != expected_max_level)
+        throw std::runtime_error("Number of levels does not match in DFS.");
+    for (int l = 0; l <= expected_max_level; l++){
+        if (expected_levels[l] != smax->uc->lvl_ptr[l])
+            throw std::runtime_error("Level size does not match in DFS.");
+    }
 
     // printf("BFS Permutation:\n");
     // print_vector<IT>(perm_bfs, A_n_rows);
@@ -77,8 +100,6 @@ REGISTER_TEST(perm_test_1) {
     // TODO: Compare with expected permutation vectors
     // If comparison fails, throw std::runtime_error("description")
     int *expected_perm = new int[A_n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
-    int *expected_levels = new int[5]{2, 2, 1, 1, 2};
-    int expected_max_level = 5;
 
     bool check_bfs = true;
     bool check_jh = true;
