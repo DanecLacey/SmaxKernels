@@ -11,7 +11,7 @@ CPMAddPackage(
 # If Eigen was successfully added, define it as an imported interface library
 if(Eigen_ADDED)
   add_library(Eigen INTERFACE IMPORTED)  # Create an imported interface target for Eigen
-    #add_library(Eigen3::Eigen ALIAS Eigen)
   # Set Eigen's include directories so that projects using Eigen can find its headers
   target_include_directories(Eigen INTERFACE ${Eigen_SOURCE_DIR})
+  add_library(Eigen3::Eigen ALIAS Eigen)
 endif()
