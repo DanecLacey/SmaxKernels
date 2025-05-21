@@ -42,6 +42,14 @@ Kernel *Interface::kernel(const std::string &kernel_name) {
     }
 }
 
+int Interface::get_uc_n_levels(void) const{
+    return this->uc->n_levels;
+}
+
+int Interface::get_uc_level_ptr_at(int idx) const{
+    return this->uc->lvl_ptr[idx];
+}
+
 int Interface::register_kernel(const std::string &name, KernelType kernel_type,
                                PlatformType platform, IntType int_type,
                                FloatType float_type) {
