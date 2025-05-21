@@ -2,14 +2,14 @@
 
 **S**parse **MA**trix mpi+**X** **Kernels** is a lightweight, portable C++ library providing high-performance implementations of popular sparse matrix kernels of the form `C = A op B`.
 
-## Features ##
-* Clean, minimalist library interface 
+## Features ## 
 * Efficient implementations of Sparse:
     * Matrix-Vector Multiplication -- **SpMV**
     * Matrix-Multiple Vector Multiplication -- **SpMM**
     * Matrix-Sparse Matrix Multiplication -- **SpGEMM**
     * Triangular Solve -- **SpTRSV**
     * Batched Triangular Solve -- **SpTRSM**
+* Clean, minimalist library interface
 * Stacked timers around key regions
 * Supports multiple integer and floating-point types
 
@@ -30,10 +30,11 @@ mkdir build && cd build
 cmake .. -DCMAKE_CXX_COMPILER=<CXX> -DCMAKE_PREFIX_PATH=<INSTALL_PATH> 
 make -j
 ```
-* Very basic examples are provided in `/examples/tests`.
+* Very basic demonstrations of the API are provided in `/examples/demos`.
 * More realistic examples can be found in `/examples/applications`.
 * There are pre-made benchmarks of the kernels provided by SmaxKernels, as well as optional third party [[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html), [PETSc](https://petsc.org/release/)] kernels to compare against, which are all found in `/examples/benchmarks`.
 * Validation of Smax kernels against MKL kernels are found in `/examples/validation` (requires MKL).
+* Unit tests are found in `/examples/tests`
 
 ## Notice ##
 This project is very much still in development, and many features may be unfinished, broken, or subject to change.
