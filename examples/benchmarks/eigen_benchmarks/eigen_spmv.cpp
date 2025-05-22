@@ -6,16 +6,19 @@
 #include <fast_matrix_market/app/Eigen.hpp>
 
 int main(int argc, char *argv[]) {
-    INIT_SPMV;
+    // INIT_SPMV;
 
-    Eigen::VectorXd eigen_x = Eigen::VectorXd::Constant(crs_mat->n_cols, 1.0);
-    Eigen::VectorXd eigen_y = Eigen::VectorXd::Constant(crs_mat->n_rows, 0.0);
+    init_pin(); // Remove pinning overhead from benchmark timing
 
-    // Wrap your CRS data into an Eigen SparseMatrix
     std::ifstream input_stream(argv[1]);
     Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_mat;
     fast_matrix_market::read_matrix_market_eigen(input_stream, eigen_mat);
+    Eigen::VectorXd eigen_x = Eigen::VectorXd::Constant(eigen_mat.cols(), 1.0);
+    Eigen::VectorXd eigen_y = Eigen::VectorXd::Constant(eigen_mat.rows(), 0.0);
+    eigen_mat.nonZeros();
+
 #if 0 
+    // Wrap your CRS data into an Eigen SparseMatrix
     Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
     std::vector<Eigen::Triplet<double>> triplets;
     triplets.reserve(crs_mat->nnz);
@@ -49,9 +52,6 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    // Just to take overhead of pinning away from timers
-    init_pin();
-
     std::function<void(bool)> lambda = [bench_name, eigen_mat, eigen_x,
                                         &eigen_y](bool warmup) {
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
@@ -60,8 +60,21 @@ int main(int argc, char *argv[]) {
     };
 
     RUN_BENCH;
-    PRINT_SPMV_BENCH;
-    FINALIZE_SPMV;
+    std::cout << "----------------" << std::endl;
+    std::cout << "--" << bench_name << " Bench--" << std::endl;
+    std::cout << argv[1] << " with " << n_threads << " thread(s)" << std::endl;
+    std::cout << "Runtime: " << runtime << std::endl;
+    std::cout << "Iterations: " << n_iter << std::endl;
+
+    long flops_per_iter = eigen_mat.nonZeros() * SPMV_FLOPS_PER_NZ;
+    long iter_per_second = static_cast<long>(n_iter / runtime);
+
+    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF
+              << " [GF/s]" << std::endl;
+    std::cout << "----------------" << std::endl;
+
+    // PRINT_SPMV_BENCH;
+    // FINALIZE_SPMV;
     delete bench_harness;
 
 #ifdef USE_LIKWID
