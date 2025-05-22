@@ -166,16 +166,22 @@ endif()
 
 # Enable Eigen support
 if(USE_EIGEN)
-    find_package(Eigen3 REQUIRED)
+    find_package(Eigen3 QUIET)
+
     if(Eigen3_FOUND)
-        message(STATUS "Eigen found, Eigen3::Eigen is now available for linking.")
-        add_compile_options(-mavx2 -mno-avx512f) # TODO: Needed for Eigen... Why?
+        message(STATUS "Using system-installed Eigen (Eigen3::Eigen)")
     else()
-        message(FATAL_ERROR "Eigen requested but not found.")
+        message(STATUS "Eigen not found locally, fetching via CPM")
+        include(cmake/CPM.cmake)
+        include(cmake/eigen.cmake)
     endif()
+
+    # Optional: Compiler flags specific to Eigen performance tuning
+    add_compile_options(-mavx2 -mno-avx512f)
 else()
     message(STATUS "Eigen support is disabled.")
 endif()
+
 
 # Enable MKL support
 if(USE_MKL)
