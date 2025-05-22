@@ -1,12 +1,9 @@
-#ifndef SMAX_SPGEMM_COMMON_HPP
-#define SMAX_SPGEMM_COMMON_HPP
+#pragma once
 
 #include "../../common.hpp"
 #include "../kernels_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPGEMM {
+namespace SMAX::KERNELS::SPGEMM {
 
 struct Args {
 
@@ -48,8 +45,4 @@ class SpGEMMErrorHandler : public KernelErrorHandler {
     }
 };
 
-} // namespace SPGEMM
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPGEMM_COMMON_HPP
+} // namespace SMAX::KERNELS::SPGEMM

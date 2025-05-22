@@ -8,10 +8,10 @@
 
 #include "mmio.hpp"
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 void *mmio_aligned_malloc(size_t bytesize) {
     int errorCode;
@@ -203,6 +203,10 @@ int mm_write_mtx_array_size(FILE *f, int M, int N) {
 
 int mm_read_mtx_crd_data(FILE *f, int M, int N, int nz, int I_[], int J[],
                          double val[], MM_typecode matcode) {
+
+    // supress warnings
+    (void)M;
+    (void)N;
     int i;
     if (mm_is_complex(matcode)) {
         for (i = 0; i < nz; i++)

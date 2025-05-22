@@ -1,23 +1,17 @@
-#ifndef SMAX_SPGEMM_SYMBOLIC_CPU_IMPL_HPP
-#define SMAX_SPGEMM_SYMBOLIC_CPU_IMPL_HPP
+#pragma once
 
 #include "../../../common.hpp"
 #include "../../kernels_common.hpp"
 #include "../spgemm_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPGEMM {
-namespace SPGEMM_CPU {
+namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU {
 
 template <typename IT, typename VT>
-inline void padded_symbolic_phase(int A_n_rows, int A_n_cols, int A_nnz,
-                                  IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
-                                  VT *RESTRICT A_val, int B_n_rows,
-                                  int B_n_cols, int B_nnz, IT *RESTRICT B_col,
-                                  IT *RESTRICT B_row_ptr, VT *RESTRICT B_val,
-                                  int &C_n_rows, int &C_n_cols, int &C_nnz,
-                                  IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
+inline void
+padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
+                      int B_n_rows, int B_n_cols, IT *RESTRICT B_col,
+                      IT *RESTRICT B_row_ptr, int &C_n_rows, int &C_n_cols,
+                      int &C_nnz, IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
 
     GET_THREAD_COUNT(int, num_threads);
     if (num_threads > 1) {
@@ -70,7 +64,6 @@ inline void padded_symbolic_phase(int A_n_rows, int A_n_cols, int A_nnz,
     // Allocate padded CRS arrays for C
     int upper_nnz_bound = tl_offsets[num_threads];
     IT *padded_C_col = new IT[upper_nnz_bound];
-    VT *padded_C_val = new VT[upper_nnz_bound];
     bool **used_cols = new bool *[num_threads];
     int *tl_nnz = new int[num_threads];
 #pragma omp parallel for
@@ -150,9 +143,4 @@ inline void padded_symbolic_phase(int A_n_rows, int A_n_cols, int A_nnz,
     }
 }
 
-} // namespace SPGEMM_CPU
-} // namespace SPGEMM
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPGEMM_SYMBOLIC_CPU_IMPL_HPP
+} // namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU

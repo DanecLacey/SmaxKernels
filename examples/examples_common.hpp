@@ -1,5 +1,4 @@
-#ifndef SMAX_EXAMPLES_COMMON_HPP
-#define SMAX_EXAMPLES_COMMON_HPP
+#pragma once
 
 #include "mmio.hpp"
 #include <fstream>
@@ -17,15 +16,11 @@
 #define PRINT_WIDTH 18
 
 #ifdef _OPENMP
-
 #define GET_THREAD_COUNT int n_threads = omp_get_max_threads();
 #define GET_THREAD_ID int tid = omp_get_thread_num();
-
 #else
-
 #define GET_THREAD_COUNT int n_threads = 1;
 #define GET_THREAD_ID int tid = 0;
-
 #endif
 
 #define CHECK_MKL_STATUS(status, message)                                      \
@@ -34,6 +29,7 @@
         exit(EXIT_FAILURE);                                                    \
     }
 
+#ifdef DEBUG_MODE
 #define DIFF_STATUS_MACRO(relative_diff, working_file)                         \
     do {                                                                       \
         if ((std::abs(relative_diff) > 0.01) || std::isinf(relative_diff)) {   \
@@ -42,6 +38,13 @@
             working_file << std::left << std::setw(PRINT_WIDTH) << "WARNING";  \
         }                                                                      \
     } while (0)
+#else
+#define DIFF_STATUS_MACRO(relative_diff, working_file)                         \
+    do {                                                                       \
+        if (std::abs(relative_diff) > 0.0001)                                  \
+            working_file << std::left << std::setw(PRINT_WIDTH) << "WARNING";  \
+    } while (0)
+#endif
 
 #define UPDATE_MAX_DIFFS(i, y_MKL, y_SMAX, relative_diff, absolute_diff)       \
     do {                                                                       \
@@ -57,6 +60,7 @@
         }                                                                      \
     } while (0)
 
+#ifdef DEBUG_MODE
 #define CHECK_MAX_DIFFS_AND_PRINT_ERROR_WARNING(                               \
     max_relative_diff, max_absolute_diff, working_file)                        \
     do {                                                                       \
@@ -70,6 +74,14 @@
             working_file << std::left << std::setw(PRINT_WIDTH) << "WARNING";  \
         }                                                                      \
     } while (0)
+#else
+#define CHECK_MAX_DIFFS_AND_PRINT_ERROR_WARNING(                               \
+    max_relative_diff, max_absolute_diff, working_file)                        \
+    do {                                                                       \
+        if (std::abs(max_relative_diff) > 0.0001)                              \
+            working_file << std::left << std::setw(PRINT_WIDTH) << "WARNING";  \
+    } while (0)
+#endif
 
 inline void sort_perm(int *arr, int *perm, int len, bool rev = false) {
     if (rev == false) {
@@ -112,6 +124,10 @@ class CliParser {
     virtual ~CliParser() { delete args_; }
 
     virtual CliArgs *parse(int argc, char *argv[]) {
+        // supress warnings
+        (void)argc;
+        (void)argv;
+
         delete args_;
         args_ = new CliArgs();
         return args_;
@@ -301,6 +317,32 @@ struct CRSMatrix {
         delete[] row_ptr;
     }
 
+    void write_to_mtx_file(std::string file_out_name) {
+        // Convert csr back to coo for mtx format printing
+        std::vector<int> temp_rows(nnz);
+        std::vector<int> temp_cols(nnz);
+        std::vector<double> temp_values(nnz);
+
+        int elem_num = 0;
+        for (int row = 0; row < n_rows; ++row) {
+            for (int idx = row_ptr[row]; idx < row_ptr[row + 1]; ++idx) {
+                temp_rows[elem_num] =
+                    row + 1; // +1 to adjust for 1 based indexing in mm-format
+                temp_cols[elem_num] = col[idx] + 1;
+                temp_values[elem_num] = val[idx];
+                ++elem_num;
+            }
+        }
+
+        std::string file_name = file_out_name + "_out_matrix.mtx";
+
+        mm_write_mtx_crd(
+            &file_name[0], n_rows, n_cols, nnz, &(temp_rows)[0],
+            &(temp_cols)[0], &(temp_values)[0],
+            const_cast<char *>("MCRG") // TODO: <- make more general
+        );
+    }
+
     void print(void) {
         std::cout << "NNZ: " << this->nnz << std::endl;
         std::cout << "N_rows: " << this->n_rows << std::endl;
@@ -468,6 +510,10 @@ void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
                           double *&D_plus_L_val, int &U_n_rows, int &U_n_cols,
                           int &U_nnz, int *&U_row_ptr, int *&U_col,
                           double *&U_val) {
+
+    // supress warnings
+    (void)A_nnz;
+
     // Count nnz
     for (int i = 0; i < A_n_rows; ++i) {
         int row_start = A_row_ptr[i];
@@ -529,4 +575,38 @@ void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
     }
 }
 
-#endif // SMAX_EXAMPLES_COMMON_HPP
+template <typename VT> void print_vector(VT *vec, int n_rows) {
+    printf("Vector: [");
+    for (int i = 0; i < n_rows; ++i) {
+        std::cout << vec[i] << ", ";
+    }
+    printf("]\n\n");
+}
+
+template <typename IT, typename VT>
+void print_matrix(int n_rows, int n_cols, int nnz, IT *col, IT *row_ptr,
+                  VT *val, bool symbolic = false) {
+    printf("n_rows = %i\n", n_rows);
+    printf("n_cols = %i\n", n_cols);
+    printf("nnz = %i\n", nnz);
+    printf("col = [");
+    for (int i = 0; i < nnz; ++i) {
+        std::cout << col[i] << ", ";
+    }
+    printf("]\n");
+
+    printf("row_ptr = [");
+    for (int i = 0; i <= n_rows; ++i) {
+        std::cout << row_ptr[i] << ", ";
+    }
+    printf("]\n");
+
+    if (!symbolic) {
+        printf("val = [");
+        for (int i = 0; i < nnz; ++i) {
+            std::cout << val[i] << ", ";
+        }
+        printf("]\n");
+    }
+    printf("\n");
+}

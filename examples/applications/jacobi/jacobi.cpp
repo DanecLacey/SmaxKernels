@@ -11,10 +11,6 @@
 #define DOMAIN_SIZE 10
 #define X_INIT 1.0
 
-#ifndef DEBUG
-#define DEBUG 1
-#endif
-
 double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
                       SMAX::Interface *smax) {
 
@@ -43,19 +39,31 @@ void solve(DenseMatrix *x_old, DenseMatrix *x_new, DenseMatrix *b,
 
         jacobi_iter(x_old, x_new, b, D, smax);
 
+        // Swap library pointers and application pointers to keep in-sync
+        // This is because SMAX does not own the memory at x_old and x_new,
+        // it merely points to the same memory locations
         smax->kernel("x_new <- Ax_old")->swap_operands();
+        std::swap(x_old, x_new);
 
         ++n_iters;
 
         // Compute residual every CHECK_LENGTH iterations
         if (n_iters % CHECK_LENGTH == 0) {
             residual_norm = check_residual(b, tmp, residual, smax);
-            DEBUG_PRINT_ITER(n_iters, residual_norm);
+            PRINT_ITER(n_iters, residual_norm);
         }
     }
 }
 
 int main(void) {
+#if SMAX_USE_CUDA
+    printf("Using CUDA kernels.\n");
+    constexpr SMAX::PlatformType Platform = SMAX::PlatformType::CUDA;
+#else
+    printf("Using CPU kernels.\n");
+    constexpr SMAX::PlatformType Platform = SMAX::PlatformType::CPU;
+#endif
+
     // Set up problem
     CRSMatrix *A = create2DPoissonMatrixCRS(DOMAIN_SIZE);
     CRSMatrix *A_perm = new CRSMatrix(A->n_rows, A->n_cols, A->nnz);
@@ -82,10 +90,10 @@ int main(void) {
     peel_diag_crs(A_perm, D);
 
     // Register necessary sparse kernels to SMAX
-    smax->register_kernel("tmp <- Ax", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("tmp <- Ax", SMAX::KernelType::SPMV, Platform);
     REGISTER_SPMV_DATA("tmp <- Ax", A_perm, x_new, tmp);
 
-    smax->register_kernel("x_new <- Ax_old", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("x_new <- Ax_old", SMAX::KernelType::SPMV, Platform);
     REGISTER_SPMV_DATA("x_new <- Ax_old", A_perm, x_old, x_new);
 
     // Compute initial residual norm
@@ -93,7 +101,7 @@ int main(void) {
 
     // Iterate until convergence is reached
     int n_iters = 0;
-    DEBUG_PRINT_ITER(n_iters, residual_norm);
+    PRINT_ITER(n_iters, residual_norm);
     solve(x_old, x_new, b, tmp, residual, D, n_iters, residual_norm, smax);
 
     if (residual_norm < TOL) {
@@ -103,6 +111,8 @@ int main(void) {
         std::cout << "Jacobi solver did not converge." << std::endl;
     }
     std::cout << "Final residual norm: " << residual_norm << std::endl;
+
+    smax->utils->print_timers();
 
     delete A_perm;
     delete x_new;

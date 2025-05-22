@@ -1,5 +1,6 @@
-#ifndef SMAX_MACROS_HPP
-#define SMAX_MACROS_HPP
+#pragma once
+
+#include "smax_config.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -26,17 +27,54 @@ namespace SMAX {
 
 #endif
 
-#ifdef DEBUG_MODE
-#define IF_DEBUG(code)                                                         \
+#if DEBUG_MODE
+#define IF_SMAX_DEBUG(code)                                                    \
+    do {                                                                       \
+        code;                                                                  \
+    } while (0)
+
+#else
+#define IF_SMAX_DEBUG(code)                                                    \
+    do {                                                                       \
+    } while (0)
+#endif
+
+#if DEBUG_MODE && (DEBUG_LEVEL == 1)
+#define IF_SMAX_DEBUG_1(...)                                                   \
+    do {                                                                       \
+        __VA_ARGS__;                                                           \
+    } while (0)
+#else
+#define IF_SMAX_DEBUG_1(...)
+#endif
+
+#if DEBUG_MODE && (DEBUG_LEVEL == 2)
+#define IF_SMAX_DEBUG_2(...)                                                   \
+    do {                                                                       \
+        __VA_ARGS__;                                                           \
+    } while (0)
+#else
+#define IF_SMAX_DEBUG_2(...)
+#endif
+
+#if DEBUG_MODE && (DEBUG_LEVEL == 3)
+#define IF_SMAX_DEBUG_3(...)                                                   \
+    do {                                                                       \
+        __VA_ARGS__;                                                           \
+    } while (0)
+#else
+#define IF_SMAX_DEBUG_3(...)
+#endif
+
+#ifdef USE_TIMERS
+#define IF_SMAX_TIME(code)                                                     \
     do {                                                                       \
         code;                                                                  \
     } while (0)
 #else
-#define IF_DEBUG(code)                                                         \
+#define IF_SMAX_TIME(code)                                                     \
     do {                                                                       \
     } while (0)
 #endif
 
 } // namespace SMAX
-
-#endif // SMAX_MACROS_HPP

@@ -5,8 +5,9 @@
  * matrices (A != B). It also shows how one may use different integer and float
  * data types.
  */
+
+#include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 int main(void) {
     int A_n_rows = 3;
@@ -32,13 +33,14 @@ int main(void) {
 
     SMAX::Interface *smax = new SMAX::Interface();
 
-    smax->register_kernel("my_spgemm_AB", SMAX::SPGEMM, SMAX::CPU, SMAX::UINT16,
-                          SMAX::FLOAT32);
+    smax->register_kernel("my_spgemm_AB", SMAX::KernelType::SPGEMM,
+                          SMAX::PlatformType::CPU, SMAX::IntType::UINT16,
+                          SMAX::FloatType::FLOAT32);
 
     smax->kernel("my_spgemm_AB")
-        ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
+        ->register_A(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
     smax->kernel("my_spgemm_AB")
-        ->register_B(B_n_rows, B_n_cols, B_nnz, &B_col, &B_row_ptr, &B_val);
+        ->register_B(B_n_rows, B_n_cols, B_nnz, B_col, B_row_ptr, B_val);
     smax->kernel("my_spgemm_AB")
         ->register_C(&C_n_rows, &C_n_cols, &C_nnz, &C_col, &C_row_ptr, &C_val);
     // NOTE: Since C matrix is to be generated, we need pointers to metadata,
@@ -46,7 +48,7 @@ int main(void) {
 
     smax->kernel("my_spgemm_AB")->run();
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_matrix<u_int16_t, float>(C_n_rows, C_n_cols, C_nnz, C_col, C_row_ptr,
                                    C_val);

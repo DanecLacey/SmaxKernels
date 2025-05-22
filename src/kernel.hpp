@@ -1,484 +1,69 @@
-#ifndef SMAX_KERNEL_HPP
-#define SMAX_KERNEL_HPP
+#pragma once
 
 #include "common.hpp"
-#include "kernels/spgemm.hpp"
-#include "kernels/spgemm/spgemm_common.hpp"
-#include "kernels/spmm.hpp"
-#include "kernels/spmm/spmm_common.hpp"
-#include "kernels/spmv.hpp"
-#include "kernels/spmv/spmv_common.hpp"
-#include "kernels/sptrsm.hpp"
-#include "kernels/sptrsm/sptrsm_common.hpp"
-#include "kernels/sptrsv.hpp"
-#include "kernels/sptrsv/sptrsv_common.hpp"
-
-#include <cstdarg>
 
 namespace SMAX {
 
 class Kernel {
   private:
-    KernelType kernel_type;
-    PlatformType platform;
-    IntType int_type;
-    FloatType float_type;
+    // Type erasure helpers
+    template <typename T> Variant wrap_arg(T **ptr) {
+        return reinterpret_cast<void **>(ptr);
+    }
+
+    template <typename T> Variant wrap_arg(T *ptr) {
+        return static_cast<void *>(ptr);
+    }
+
+    Variant wrap_arg(int val) { return val; }
 
   public:
-    // DL 06.05.2025 TODO: Do these need to be public? Or am I being lazy?
-    KernelContext context;
-    UtilitiesContainer *uc;
+    std::unique_ptr<KernelContext> k_ctx;
+    Timers *timers;
 
-    // DL 07.05.2025 NOTE: Only the chosen kernel has args struct populated
-    // A bit wasteful, but cleaner interface
-    KERNELS::SPMV::Args *spmv_args;
-    KERNELS::SPMV::Flags *spmv_flags;
-    KERNELS::SPMM::Args *spmm_args;
-    KERNELS::SPMM::Flags *spmm_flags;
-    KERNELS::SPGEMM::Args *spgemm_args;
-    KERNELS::SPGEMM::Flags *spgemm_flags;
-    KERNELS::SPTRSV::Args *sptrsv_args;
-    KERNELS::SPTRSV::Flags *sptrsv_flags;
-    KERNELS::SPTRSM::Args *sptrsm_args;
-    KERNELS::SPTRSM::Flags *sptrsm_flags;
+    Kernel(std::unique_ptr<KernelContext> _k_ctx) : k_ctx(std::move(_k_ctx)) {
+        this->timers = new Timers;
+#ifdef USE_TIMERS
+        CREATE_SMAX_STOPWATCH(initialize)
+        CREATE_SMAX_STOPWATCH(apply)
+        CREATE_SMAX_STOPWATCH(finalize)
+#endif
+    }
+    virtual ~Kernel() { delete this->timers; };
 
-    Kernel(KernelType kernel_type, PlatformType platform, IntType int_type,
-           FloatType float_type) {
+    // Methods to override
+    virtual int initialize(int A_offset, int B_offset, int C_offset) = 0;
+    virtual int apply(int A_offset, int B_offset, int C_offset) = 0;
+    virtual int finalize(int A_offset, int B_offset, int C_offset) = 0;
+    virtual int _register_A(const std::vector<Variant> &args) = 0;
+    virtual int _register_B(const std::vector<Variant> &args) = 0;
+    virtual int _register_C(const std::vector<Variant> &args) = 0;
 
-        this->context =
-            KernelContext{kernel_type, platform, int_type, float_type};
+    // Flag setters to override
+    virtual int set_mat_perm(bool) {
+        std::cerr << "set_mat_perm not supported for this kernel.\n";
+        return 1;
+    }
+    virtual int set_mat_upper_triang(bool) {
+        std::cerr << "set_mat_upper_triang not supported for this kernel.\n";
+        return 1;
+    }
+    virtual int set_mat_lower_triang(bool) {
+        std::cerr << "set_mat_lower_triang not supported for this kernel.\n";
+        return 1;
     }
 
-    ~Kernel() {
-        switch (context.kernel_type) {
-        case SPMV: {
-            delete spmv_args;
-            delete spmv_flags;
-            break;
-        }
-        case SPMM: {
-            delete spmm_args;
-            delete spmm_flags;
-            break;
-        }
-        case SPGEMM: {
-            delete spgemm_args;
-            delete spgemm_flags;
-            break;
-        }
-        case SPTRSV: {
-            delete sptrsv_args;
-            delete sptrsv_flags;
-            break;
-        }
-        case SPTRSM: {
-            delete sptrsm_args;
-            delete sptrsm_flags;
-            break;
-        }
-        default:
-            std::cerr << "Error: Kernel not supported\n";
-        }
+    // Swapping utility to override
+    virtual int swap_operands(void) {
+        std::cerr << "swap_operands not supported for this kernel.\n";
+        return 1;
     }
 
-    int swap_operands(void) {
-
-        switch (this->context.kernel_type) {
-        case SPMV: {
-            std::swap(*this->spmv_args->x->val, *this->spmv_args->y->val);
-            break;
-        }
-        case SPMM: {
-            std::swap(*this->spmm_args->X->val, *this->spmm_args->Y->val);
-            break;
-        }
-        default:
-            std::cerr << "Error: Swapping not yet supported for this kernel.\n";
-            return 1;
-        }
-    }
-
-    // Flag setters
-    int set_mat_perm(bool flag) {
-
-        switch (this->context.kernel_type) {
-        case SPTRSV: {
-            this->sptrsv_flags->mat_permuted = flag;
-            break;
-        }
-        case SPTRSM: {
-            this->sptrsm_flags->mat_permuted = flag;
-            break;
-        }
-        default:
-            std::cerr << "Error: This kernel does not support this flag.\n";
-            return 1;
-        }
-
-        return 0;
-    }
-
-    int set_mat_upper_triang(bool flag) {
-
-        switch (this->context.kernel_type) {
-        case SPTRSV: {
-            this->sptrsv_flags->mat_upper_triang = flag;
-            break;
-        }
-        case SPTRSM: {
-            this->sptrsm_flags->mat_upper_triang = flag;
-            break;
-        }
-        default:
-            std::cerr << "Error: This kernel does not support this flag.\n";
-            return 1;
-        }
-
-        return 0;
-    }
-
-    int set_mat_lower_triang(bool flag) {
-
-        switch (this->context.kernel_type) {
-        case SPTRSV: {
-            this->sptrsv_flags->mat_lower_triang = flag;
-            break;
-        }
-        case SPTRSM: {
-            this->sptrsm_flags->mat_lower_triang = flag;
-            break;
-        }
-        default:
-            std::cerr << "Error: This kernel does not support this flag.\n";
-            return 1;
-        }
-
-        return 0;
-    }
-
-    // C-style variadic function arg list
-    int register_A(...) {
-        // this->timers->register_A_time->start();
-
-        va_list user_args;
-        va_start(user_args, this);
-
-        switch (this->context.kernel_type) {
-        case SPMV: {
-            int ret = KERNELS::spmv_register_A(this->spmv_args->A, user_args);
-            va_end(user_args);
-            // this->timers->register_A_time->stop();
-            return ret;
-        }
-        case SPMM: {
-            int ret = KERNELS::spmm_register_A(this->spmm_args->A, user_args);
-            va_end(user_args);
-            // this->timers->register_A_time->stop();
-            return ret;
-        }
-        case SPGEMM: {
-            int ret =
-                KERNELS::spgemm_register_A(this->spgemm_args->A, user_args);
-            va_end(user_args);
-            // this->timers->register_A_time->stop();
-            return ret;
-        }
-        case SPTRSV: {
-            int ret =
-                KERNELS::sptrsv_register_A(this->sptrsv_args->A, user_args);
-            va_end(user_args);
-            // this->timers->register_A_time->stop();
-            return ret;
-        }
-        case SPTRSM: {
-            int ret =
-                KERNELS::sptrsm_register_A(this->sptrsm_args->A, user_args);
-            va_end(user_args);
-            // this->timers->register_A_time->stop();
-            return ret;
-        }
-        default:
-            std::cerr << "Error: Kernel not supported\n";
-            return 1;
-        }
-
-        // this->timers->register_A_time->stop();
-        return 0;
-    }
-
-    // C-style variadic function arg list
-    int register_B(...) {
-        // this->timers->register_B_time->start();
-        va_list user_args;
-        va_start(user_args, this);
-
-        switch (this->context.kernel_type) {
-        case SPMV: {
-            int ret = KERNELS::spmv_register_B(this->spmv_args->x, user_args);
-            va_end(user_args);
-            // this->timers->register_B_time->stop();
-            return ret;
-        }
-        case SPMM: {
-            int ret = KERNELS::spmm_register_B(this->spmm_args->X, user_args);
-            va_end(user_args);
-            // this->timers->register_B_time->stop();
-            return ret;
-        }
-        case SPGEMM: {
-            int ret =
-                KERNELS::spgemm_register_B(this->spgemm_args->B, user_args);
-            va_end(user_args);
-            // this->timers->register_B_time->stop();
-            return ret;
-        }
-        case SPTRSV: {
-            int ret =
-                KERNELS::sptrsv_register_B(this->sptrsv_args->x, user_args);
-            va_end(user_args);
-            // this->timers->register_B_time->stop();
-            return ret;
-        }
-        case SPTRSM: {
-            int ret =
-                KERNELS::sptrsm_register_B(this->sptrsm_args->X, user_args);
-            va_end(user_args);
-            // this->timers->register_B_time->stop();
-            return ret;
-        }
-        default:
-            std::cerr << "Error: Kernel not supported\n";
-            return 1;
-        }
-
-        // this->timers->register_B_time->stop();
-        return 0;
-    }
-
-    // C-style variadic function arg list
-    int register_C(...) {
-        // this->timers->register_C_time->start();
-        va_list user_args;
-        va_start(user_args, this);
-
-        switch (this->context.kernel_type) {
-        case SPMV: {
-            int ret = KERNELS::spmv_register_C(this->spmv_args->y, user_args);
-            va_end(user_args);
-            // this->timers->register_C_time->stop();
-            return ret;
-        }
-        case SPMM: {
-            int ret = KERNELS::spmm_register_C(this->spmm_args->Y, user_args);
-            va_end(user_args);
-            // this->timers->register_C_time->stop();
-            return ret;
-        }
-        case SPGEMM: {
-            int ret =
-                KERNELS::spgemm_register_C(this->spgemm_args->C, user_args);
-            va_end(user_args);
-            // this->timers->register_C_time->stop();
-            return ret;
-        }
-        case SPTRSV: {
-            int ret =
-                KERNELS::sptrsv_register_C(this->sptrsv_args->y, user_args);
-            va_end(user_args);
-            // this->timers->register_C_time->stop();
-            return ret;
-        }
-        case SPTRSM: {
-            int ret =
-                KERNELS::sptrsm_register_C(this->sptrsm_args->Y, user_args);
-            va_end(user_args);
-            // this->timers->register_C_time->stop();
-            return ret;
-        }
-        default:
-            std::cerr << "Error: Kernel not supported\n";
-            return 1;
-        }
-
-        // this->timers->register_C_time->stop();
-        return 0;
-    }
-
-    int dispatch(std::function<int(KernelContext, KERNELS::SPMV::Args *,
-                                   KERNELS::SPMV::Flags *)>
-                     func_spmv,
-                 const char *label_spmv,
-                 std::function<int(KernelContext, KERNELS::SPMM::Args *,
-                                   KERNELS::SPMM::Flags *)>
-                     func_spmm,
-                 const char *label_spmm,
-                 std::function<int(KernelContext, KERNELS::SPGEMM::Args *,
-                                   KERNELS::SPGEMM::Flags *)>
-                     func_spgemm,
-                 const char *label_spgemm,
-                 std::function<int(KernelContext, KERNELS::SPTRSV::Args *,
-                                   KERNELS::SPTRSV::Flags *)>
-                     func_sptrsv,
-                 const char *label_sptrsv,
-                 std::function<int(KernelContext, KERNELS::SPTRSM::Args *,
-                                   KERNELS::SPTRSM::Flags *)>
-                     func_sptrsm,
-                 const char *label_sptrsm) {
-        switch (this->context.kernel_type) {
-        case SPMV:
-            CHECK_ERROR(
-                func_spmv(this->context, this->spmv_args, this->spmv_flags),
-                label_spmv);
-            break;
-        case SPMM:
-            CHECK_ERROR(
-                func_spmm(this->context, this->spmm_args, this->spmm_flags),
-                label_spmm);
-            break;
-        case SPGEMM:
-            CHECK_ERROR(func_spgemm(this->context, this->spgemm_args,
-                                    this->spgemm_flags),
-                        label_spgemm);
-            break;
-        case SPTRSV:
-            CHECK_ERROR(func_sptrsv(this->context, this->sptrsv_args,
-                                    this->sptrsv_flags),
-                        label_sptrsv);
-            break;
-        case SPTRSM:
-            CHECK_ERROR(func_sptrsm(this->context, this->sptrsm_args,
-                                    this->sptrsm_flags),
-                        label_sptrsm);
-            break;
-        default:
-            std::cerr << "Error: Kernel: " << this->kernel_type
-                      << " not supported\n";
-            return 1;
-        }
-        return 0;
-    }
-
-    int initialize(int A_offset = 0, int B_offset = 0, int C_offset = 0) {
-        // this->timers->initialize_time->start();
-        int ret = dispatch(
-            [A_offset, B_offset, C_offset](KernelContext context,
-                                           KERNELS::SPMV::Args *spmv_args,
-                                           KERNELS::SPMV::Flags *spmv_flags) {
-                return KERNELS::spmv_initialize(context, spmv_args, spmv_flags,
-                                                A_offset, B_offset, C_offset);
-            },
-            "spmv_initialize",
-            [A_offset, B_offset, C_offset](KernelContext context,
-                                           KERNELS::SPMM::Args *spmm_args,
-                                           KERNELS::SPMM::Flags *spmm_flags) {
-                return KERNELS::spmm_initialize(context, spmm_args, spmm_flags,
-                                                A_offset, B_offset, C_offset);
-            },
-            "spmm_initialize",
-            [this](KernelContext context, KERNELS::SPGEMM::Args *spgemm_args,
-                   KERNELS::SPGEMM::Flags *spgemm_flags) {
-                return KERNELS::spgemm_initialize(context, spgemm_args,
-                                                  spgemm_flags);
-            },
-            "spgemm_initialize",
-            [this](KernelContext context, KERNELS::SPTRSV::Args *sptrsv_args,
-                   KERNELS::SPTRSV::Flags *sptrsv_flags) {
-                return KERNELS::sptrsv_initialize(context, sptrsv_args,
-                                                  sptrsv_flags);
-            },
-            "sptrsv_initialize",
-            [this](KernelContext context, KERNELS::SPTRSM::Args *sptrsm_args,
-                   KERNELS::SPTRSM::Flags *sptrsm_flags) {
-                return KERNELS::sptrsm_initialize(context, sptrsm_args,
-                                                  sptrsm_flags);
-            },
-            "sptrsm_initialize");
-        // this->timers->initialize_time->stop();
-        return ret;
-    }
-
-    int apply(int A_offset, int B_offset, int C_offset) {
-        // this->timers->apply_time->start();
-        int ret = dispatch(
-            [A_offset, B_offset, C_offset](KernelContext context,
-                                           KERNELS::SPMV::Args *spmv_args,
-                                           KERNELS::SPMV::Flags *spmv_flags) {
-                return KERNELS::spmv_apply(context, spmv_args, spmv_flags,
-                                           A_offset, B_offset, C_offset);
-            },
-            "spmv_apply",
-            [A_offset, B_offset, C_offset](KernelContext context,
-                                           KERNELS::SPMM::Args *spmm_args,
-                                           KERNELS::SPMM::Flags *spmm_flags) {
-                return KERNELS::spmm_apply(context, spmm_args, spmm_flags,
-                                           A_offset, B_offset, C_offset);
-            },
-            "spmm_apply",
-            [this](KernelContext context, KERNELS::SPGEMM::Args *spgemm_args,
-                   KERNELS::SPGEMM::Flags *spgemm_flags) {
-                return KERNELS::spgemm_apply(context, spgemm_args,
-                                             spgemm_flags);
-            },
-            "spgemm_apply",
-            [this](KernelContext context, KERNELS::SPTRSV::Args *sptrsv_args,
-                   KERNELS::SPTRSV::Flags *sptrsv_flags) {
-                return KERNELS::sptrsv_apply(context, sptrsv_args,
-                                             sptrsv_flags);
-            },
-            "sptrsv_apply",
-            [this](KernelContext context, KERNELS::SPTRSM::Args *sptrsm_args,
-                   KERNELS::SPTRSM::Flags *sptrsm_flags) {
-                return KERNELS::sptrsm_apply(context, sptrsm_args,
-                                             sptrsm_flags);
-            },
-            "sptrsm_apply");
-        // this->timers->apply_time->stop();
-        return ret;
-    }
-
-    int finalize(int A_offset, int B_offset, int C_offset) {
-        // this->timers->finalize_time->start();
-        int ret = dispatch(
-            [A_offset, B_offset, C_offset](KernelContext context,
-                                           KERNELS::SPMV::Args *spmv_args,
-                                           KERNELS::SPMV::Flags *spmv_flags) {
-                return KERNELS::spmv_finalize(context, spmv_args, spmv_flags,
-                                              A_offset, B_offset, C_offset);
-            },
-            "spmv_finalize",
-            [this, A_offset, B_offset,
-             C_offset](KernelContext context, KERNELS::SPMM::Args *spmm_args,
-                       KERNELS::SPMM::Flags *spmm_flags) {
-                return KERNELS::spmm_finalize(context, spmm_args, spmm_flags,
-                                              A_offset, B_offset, C_offset);
-            },
-            "spmm_finalize",
-            [this](KernelContext context, KERNELS::SPGEMM::Args *spgemm_args,
-                   KERNELS::SPGEMM::Flags *spgemm_flags) {
-                return KERNELS::spgemm_finalize(context, spgemm_args,
-                                                spgemm_flags);
-            },
-            "spgemm_finalize",
-            [this](KernelContext context, KERNELS::SPTRSV::Args *sptrsv_args,
-                   KERNELS::SPTRSV::Flags *sptrsv_flags) {
-                return KERNELS::sptrsv_finalize(context, sptrsv_args,
-                                                sptrsv_flags);
-            },
-            "sptrsv_finalize",
-            [this](KernelContext context, KERNELS::SPTRSM::Args *sptrsm_args,
-                   KERNELS::SPTRSM::Flags *sptrsm_flags) {
-                return KERNELS::sptrsm_finalize(context, sptrsm_args,
-                                                sptrsm_flags);
-            },
-            "sptrsm_finalize");
-        // this->timers->finalize_time->stop();
-        return ret;
-    }
-
+    // User-facing helpers
     int run(int A_offset = 0, int B_offset = 0, int C_offset = 0) {
-        // DL 09.05.2025 NOTE: Since only a single memory address is registered,
-        // the offsets are to access other parts of memory at runtime
-        // (e.g. register A to kernel, but A[i*n_rows] used for computation)
+        // DL 09.05.2025 NOTE: Since only a single memory address is
+        // registered, the offsets are to access other parts of memory at
+        // runtime (e.g. register A to kernel, but A[i*n_rows] needed)
         CHECK_ERROR(initialize(A_offset, B_offset, C_offset), "initialize");
         CHECK_ERROR(apply(A_offset, B_offset, C_offset), "apply");
         CHECK_ERROR(finalize(A_offset, B_offset, C_offset), "finalize");
@@ -486,55 +71,20 @@ class Kernel {
         return 0;
     }
 
-    // TODO: each kernel should have it's own timers
-    // void print_timers()
-    // {
-    //     this->timers->total_time->stop();
+    template <typename... Args> int register_A(Args &&...args) {
+        std::vector<Variant> packed_args{wrap_arg(std::forward<Args>(args))...};
+        return _register_A(packed_args);
+    }
 
-    //     long double total_time = this->timers->total_time->get_wtime();
-    //     long double register_A_time =
-    //     this->timers->register_A_time->get_wtime(); long double
-    //     register_B_time = this->timers->register_B_time->get_wtime();
-    //     long double register_C_time =
-    //     this->timers->register_C_time->get_wtime(); long double
-    //     initialize_time = this->timers->initialize_time->get_wtime();
-    //     long double apply_time = this->timers->apply_time->get_wtime();
-    //     long double finalize_time =
-    //     this->timers->finalize_time->get_wtime();
+    template <typename... Args> int register_B(Args &&...args) {
+        std::vector<Variant> packed_args{wrap_arg(std::forward<Args>(args))...};
+        return _register_B(packed_args);
+    }
 
-    //     int right_flush_width = 30;
-    //     int left_flush_width = 25;
-
-    //     std::cout << std::endl;
-    //     std::cout << std::scientific;
-    //     std::cout << std::setprecision(3);
-
-    //     std::cout <<
-    //     "+---------------------------------------------------------+" <<
-    //     std::endl; std::cout << std::left << std::setw(left_flush_width)
-    //     << "Total elapsed time: " << std::right <<
-    //     std::setw(right_flush_width); std::cout << total_time << "[s]" <<
-    //     std::endl; std::cout << std::left << std::setw(left_flush_width)
-    //     << "| Register Structs time: " << std::right <<
-    //     std::setw(right_flush_width); std::cout << register_A_time +
-    //     register_A_time + register_B_time + register_C_time << "[s]" <<
-    //     std::endl; std::cout << std::left << std::setw(left_flush_width)
-    //     << "| Initialize time: " << std::right <<
-    //     std::setw(right_flush_width); std::cout << initialize_time <<
-    //     "[s]"
-    //     << std::endl; std::cout << std::left <<
-    //     std::setw(left_flush_width)
-    //     << "| Apply time: " << std::right <<
-    //     std::setw(right_flush_width); std::cout << apply_time << "[s]" <<
-    //     std::endl; std::cout << std::left << std::setw(left_flush_width)
-    //     << "| Finalize time: " << std::right <<
-    //     std::setw(right_flush_width); std::cout << finalize_time << "[s]"
-    //     << std::endl; std::cout <<
-    //     "+---------------------------------------------------------+" <<
-    //     std::endl; std::cout << std::endl;
-    // }
+    template <typename... Args> int register_C(Args &&...args) {
+        std::vector<Variant> packed_args{wrap_arg(std::forward<Args>(args))...};
+        return _register_C(packed_args);
+    }
 };
 
 } // namespace SMAX
-
-#endif // SMAX_KERNEL_HPP

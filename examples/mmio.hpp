@@ -6,10 +6,7 @@
  *
  */
 
-#ifndef MM_IO_HPP
-#define MM_IO_HPP
-
-// #include "aligned_malloc.hpp"
+#pragma once
 
 #include <algorithm>
 #include <map>
@@ -217,5 +214,3 @@ int mm_read_unsymmetric_sparse(const char *fname, int *M_, int *N_, int *nz_,
 
     return 0;
 }
-
-#endif

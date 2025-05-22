@@ -1,27 +1,45 @@
-#ifndef SMAX_UTILS_HPP
-#define SMAX_UTILS_HPP
+#pragma once
 
 #include "common.hpp"
 #include "error_handler.hpp"
+#include "kernel.hpp"
+#include <string>
 
 namespace SMAX {
 
 class Utils {
   private:
-    UtilitiesContainer *uc = nullptr;
+    std::unordered_map<std::string, std::unique_ptr<Kernel>> &kernels;
 
   public:
-    Utils(UtilitiesContainer *_uc) : uc(_uc) {}
+    UtilitiesContainer *uc = nullptr;
+    Utils(std::unordered_map<std::string, std::unique_ptr<Kernel>> &_kernels,
+          UtilitiesContainer *_uc)
+        : kernels(_kernels), uc(_uc) {}
 
     ~Utils() {}
 
+    void print_timers();
+
     template <typename IT>
-    void generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                       int *inv_perm);
+    int generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                         int *inv_perm, int *lvl);
+
+    template <typename IT>
+    int generate_perm_DFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                          int *inv_perm, int *lvl);
+
+    template <typename IT>
+    int generate_perm_BFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                          int *inv_perm, int *lvl);
+
+    template <typename IT>
+    int generate_color_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
+                            int *inv_perm, int *lvl);
 
     template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                       int *inv_perm);
+                       int *inv_perm, std::string type = std::string("BFS"));
 
     template <typename IT, typename VT>
     void apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
@@ -37,5 +55,3 @@ class Utils {
 // DL 06.05.2025 NOTE: Don't love forward declaring the class.. Works for now
 #include "utils/permutation_impl.hpp"
 #include "utils/timers.hpp"
-
-#endif // SMAX_UTILS_HPP

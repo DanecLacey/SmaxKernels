@@ -6,6 +6,16 @@ project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
 find_package(SmaxKernels REQUIRED)
 
+# Set C++ standard version
+set(CPP_VERSION c++17 CACHE STRING "C++ version")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Optional: restrict required version
+find_package(CUDAToolkit QUIET)
+if (CUDAToolkit_FOUND)
+    enable_language(CUDA)
+endif()
+
 # Set default build type if not defined
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
@@ -16,7 +26,7 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # Handle Debug build-specific settings
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(DEBUG_LEVEL 1 CACHE STRING "Set the debug level (1, 2, or 3)")
+    set(DEBUG_LEVEL 1 CACHE STRING "Set the debug verbosity level (1, 2, or 3)")
     # Validate debug level input
     if(NOT DEBUG_LEVEL MATCHES "^[123]$")
         message(FATAL_ERROR "DEBUG_LEVEL must be 1, 2, or 3 (got: ${DEBUG_LEVEL})")
@@ -27,34 +37,65 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Debug Level: ${DEBUG_LEVEL}")
 endif()
 
-# Set default C++ compiler if not specified
-if(NOT DEFINED CMAKE_CXX_COMPILER AND DEFINED ENV{CXX})
-    set(CMAKE_CXX_COMPILER $ENV{CXX})
+# If the user didn't specify a compiler, default to g++
+if(NOT DEFINED CMAKE_CXX_COMPILER)
+    set(CMAKE_CXX_COMPILER "g++" CACHE STRING "Default compiler" FORCE)
+    message(STATUS "No compiler selected, using default: ${CMAKE_CXX_COMPILER}")
 endif()
 
 # Display the selected compiler
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
+if (CUDAToolkit_FOUND)
+    message(STATUS "CUDA Compiler ID: ${CMAKE_CUDA_COMPILER_ID}")
+    message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
+endif()
 
-# Set architecture flags for all builds
-add_compile_options(-march=native -std=c++17)
-add_compile_options(-mavx2 -mno-avx512f) # TODO: Needed for Eigen... Why?
-# Sort of an ugly workaround
-add_library(mmio STATIC mmio.cpp)
-target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# Normalize compiler ID for consistent matching
+string(TOUPPER "${CMAKE_CXX_COMPILER_ID}" CPU_COMPILER_ID)
+string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID)
 
-# Compiler-specific flags for GNU and Intel compilers
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+# Compiler-specific flags
+# GPU builds
+if(GPU_COMPILER_ID STREQUAL "NVIDIA")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstrict-aliasing -O3")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -Xcompiler=-fPIC")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -Xcompiler=-fPIC")
     endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel" OR CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    list(APPEND HEADERS ${CUDA_KERNEL_HEADERS})
+    list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
+else()
+    message(WARNING "No supported GPU compiler found, building for CPU only.")
+endif()
+
+# CPU builds (default)
+list(APPEND HEADERS ${CPU_KERNEL_HEADERS})
+list(APPEND HEADER_DIRS ${CPU_HEADER_DIRS})
+if(CPU_COMPILER_ID STREQUAL "GNU")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fstrict-aliasing -O3")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
+    endif()
+elseif(CPU_COMPILER_ID STREQUAL "INTEL")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fno-alias -O3")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
+    endif()
+elseif(CPU_COMPILER_ID STREQUAL "INTELLLVM")
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost -O3")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer -fp-model=precise")
+    endif()
+elseif(CPU_COMPILER_ID STREQUAL "CLANG")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-alias -O3")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "-DDEBUG_MODE  ${CMAKE_CXX_FLAGS} -g -Wall -Wextra")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
     endif()
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
@@ -190,8 +231,15 @@ else()
     message(WARNING "Validation checks not built. MKL is required.")
 endif()
 
+# Sort of an ugly workaround
+add_library(mmio STATIC mmio.cpp)
+target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_subdirectory(tests)
 add_custom_target(tests DEPENDS ${test_targets})
+
+add_subdirectory(demos)
+add_custom_target(demos DEPENDS ${demos_targets})
 
 add_subdirectory(applications)
 add_custom_target(applications DEPENDS ${application_targets})

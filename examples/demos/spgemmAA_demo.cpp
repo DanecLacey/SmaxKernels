@@ -4,8 +4,9 @@
  * sparse matrix-matrix multiplication (SpGEMM) with the two input matrices
  * being the same (A == B).
  */
+
+#include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 int main(void) {
     int A_n_rows = 3;
@@ -24,19 +25,20 @@ int main(void) {
 
     SMAX::Interface *smax = new SMAX::Interface();
 
-    smax->register_kernel("my_spgemm_AA", SMAX::SPGEMM, SMAX::CPU, SMAX::UINT16,
-                          SMAX::FLOAT32);
+    smax->register_kernel("my_spgemm_AA", SMAX::KernelType::SPGEMM,
+                          SMAX::PlatformType::CPU, SMAX::IntType::UINT16,
+                          SMAX::FloatType::FLOAT32);
 
     smax->kernel("my_spgemm_AA")
-        ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
+        ->register_A(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
     smax->kernel("my_spgemm_AA")
-        ->register_B(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
+        ->register_B(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
     smax->kernel("my_spgemm_AA")
         ->register_C(&C_n_rows, &C_n_cols, &C_nnz, &C_col, &C_row_ptr, &C_val);
 
     smax->kernel("my_spgemm_AA")->run();
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_matrix<u_int16_t, float>(C_n_rows, C_n_cols, C_nnz, C_col, C_row_ptr,
                                    C_val);

@@ -33,7 +33,6 @@
 
 #include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 int main(void) {
     // Initialize operands
@@ -72,7 +71,8 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Get BFS permutation vector
-    smax->utils->generate_perm<int>(A_n_rows, A_row_ptr, A_col, perm, inv_perm);
+    smax->utils->generate_perm<int>(A_n_rows, A_row_ptr, A_col, perm, inv_perm,
+                                    std::string("BFS"));
 
     printf("BFS Permutation:\n");
     print_vector<int>(perm, A_n_rows);
@@ -113,7 +113,7 @@ int main(void) {
                          U_col, U_val);
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("solve_perm_Lx=b", SMAX::SPTRSV, SMAX::CPU);
+    smax->register_kernel("solve_perm_Lx=b", SMAX::KernelType::SPTRSV);
 
     // Tell SMAX to expect a permuted matrix
     // This enables level-set scheduling for SpTRSV
@@ -121,11 +121,11 @@ int main(void) {
 
     // Register operands to this kernel tag
     smax->kernel("solve_perm_Lx=b")
-        ->register_A(L_n_rows, L_n_cols, L_nnz, &L_col, &L_row_ptr, &L_val);
+        ->register_A(L_n_rows, L_n_cols, L_nnz, L_col, L_row_ptr, L_val);
 
     // x and b are dense vectors
-    smax->kernel("solve_perm_Lx=b")->register_B(A_n_rows, &x_perm);
-    smax->kernel("solve_perm_Lx=b")->register_C(A_n_cols, &b_perm);
+    smax->kernel("solve_perm_Lx=b")->register_B(A_n_rows, x_perm);
+    smax->kernel("solve_perm_Lx=b")->register_C(A_n_cols, b_perm);
 
     // Execute all phases of this kernel
     smax->kernel("solve_perm_Lx=b")->run();
@@ -133,7 +133,7 @@ int main(void) {
     // Unpermute solution vector
     smax->utils->apply_vec_perm<double>(A_n_cols, x_perm, x, inv_perm);
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_vector<double>(x, A_n_cols);
 

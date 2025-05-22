@@ -10,10 +10,6 @@
 #define CHECK_LENGTH 5
 #define DOMAIN_SIZE 10
 
-#ifndef DEBUG
-#define DEBUG 1
-#endif
-
 double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
                       SMAX::Interface *smax) {
 
@@ -47,12 +43,20 @@ void solve(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
         // Compute residual every CHECK_LENGTH iterations
         if (n_iters % CHECK_LENGTH == 0) {
             residual_norm = check_residual(b, tmp, residual, smax);
-            DEBUG_PRINT_ITER(n_iters, residual_norm);
+            PRINT_ITER(n_iters, residual_norm);
         }
     }
 }
 
 int main(void) {
+#if SMAX_USE_CUDA
+    printf("Using CUDA kernels.\n");
+    constexpr SMAX::PlatformType Platform = SMAX::PlatformType::CUDA;
+#else
+    printf("Using CPU kernels.\n");
+    constexpr SMAX::PlatformType Platform = SMAX::PlatformType::CPU;
+#endif
+
     // Set up problem
     CRSMatrix *A = create2DPoissonMatrixCRS(DOMAIN_SIZE);
     DenseMatrix *x = new DenseMatrix(A->n_cols, 1, 0.0);
@@ -67,14 +71,14 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register necessary sparse kernels to SMAX
-    smax->register_kernel("tmp <- Ax", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("tmp <- Ax", SMAX::KernelType::SPMV, Platform);
     REGISTER_SPMV_DATA("tmp <- Ax", A, x, tmp);
 
-    smax->register_kernel("tmp <- Ux", SMAX::SPMV, SMAX::CPU);
+    smax->register_kernel("tmp <- Ux", SMAX::KernelType::SPMV, Platform);
     REGISTER_SPMV_DATA("tmp <- Ux", U, x, tmp);
 
-    smax->register_kernel("solve x <- (D+L)^{-1}(b-Ux)", SMAX::SPTRSV,
-                          SMAX::CPU);
+    smax->register_kernel("solve x <- (D+L)^{-1}(b-Ux)",
+                          SMAX::KernelType::SPTRSV);
     REGISTER_SPTRSV_DATA("solve x <- (D+L)^{-1}(b-Ux)", D_plus_L, x, tmp);
 
     // Compute initial residual norm
@@ -82,7 +86,7 @@ int main(void) {
 
     // Iterate until convergence is reached
     int n_iters = 0;
-    DEBUG_PRINT_ITER(n_iters, residual_norm);
+    PRINT_ITER(n_iters, residual_norm);
     solve(b, tmp, residual, n_iters, residual_norm, smax);
 
     if (residual_norm < TOL) {
@@ -92,6 +96,8 @@ int main(void) {
         std::cout << "Gauss-Seidel solver did not converge." << std::endl;
     }
     std::cout << "Final residual norm: " << residual_norm << std::endl;
+
+    smax->utils->print_timers();
 
     delete x;
     delete b;

@@ -1,6 +1,3 @@
-#ifndef SMAX_BENCHMARKS_COMMON_HPP
-#define SMAX_BENCHMARKS_COMMON_HPP
+#pragma once
 
 #include "SmaxKernels/interface.hpp"
-
-#endif // SMAX_BENCHMARKS_COMMON_HPP

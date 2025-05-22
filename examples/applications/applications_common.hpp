@@ -1,5 +1,4 @@
-#ifndef SMAX_APPLICATIONS_COMMON
-#define SMAX_APPLICATIONS_COMMON
+#pragma once
 
 #include "../spmv_helpers.hpp"
 #include "../sptrsv_helpers.hpp"
@@ -13,12 +12,9 @@
         printf("]\n");                                                         \
     } while (0)
 
-#define DEBUG_PRINT_ITER(n_iters, residual_norm)                               \
+#define PRINT_ITER(n_iters, residual_norm)                                     \
     do {                                                                       \
-        if (DEBUG) {                                                           \
-            printf("iter: %d, residual_norm = %f\n", (n_iters),                \
-                   (residual_norm));                                           \
-        }                                                                      \
+        printf("iter: %d, residual_norm = %f\n", (n_iters), (residual_norm));  \
     } while (0)
 
 CRSMatrix *create1DPoissonMatrixCRS(int n) {
@@ -134,5 +130,3 @@ double infty_vec_norm(double *val, int n_rows) {
 
     return max_abs;
 };
-
-#endif // SMAX_APPLICATIONS_COMMON

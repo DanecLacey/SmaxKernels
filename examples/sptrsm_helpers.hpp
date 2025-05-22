@@ -1,5 +1,4 @@
-#ifndef SMAX_SPTRSM_HELPERS
-#define SMAX_SPTRSM_HELPERS
+#pragma once
 
 #include "examples_common.hpp"
 
@@ -28,10 +27,10 @@
 
 #define REGISTER_SPTRSM_DATA(kernel_name, mat, X, B)                           \
     smax->kernel(kernel_name)                                                  \
-        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, &mat->col,            \
-                     &mat->row_ptr, &mat->val);                                \
-    smax->kernel(kernel_name)->register_B(mat->n_cols, n_vectors, &X->val);    \
-    smax->kernel(kernel_name)->register_C(mat->n_rows, n_vectors, &B->val);
+        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, mat->col,             \
+                     mat->row_ptr, mat->val);                                  \
+    smax->kernel(kernel_name)->register_B(mat->n_cols, n_vectors, X->val);     \
+    smax->kernel(kernel_name)->register_C(mat->n_rows, n_vectors, B->val);
 
 // TODO
 #define PRINT_SPTRSM_BENCH                                                     \
@@ -187,5 +186,3 @@ void compare_sptrsm(const int n_rows, const int n_vectors, const double *y_SMAX,
     working_file << "\n";
     working_file.close();
 }
-
-#endif // SMAX_SPTRSM_HELPERS

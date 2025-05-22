@@ -1,5 +1,4 @@
-#ifndef SMAX_GAUSS_SEIDEL_UTILS
-#define SMAX_GAUSS_SEIDEL_UTILS
+#pragma once
 
 #include "../../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
@@ -49,5 +48,3 @@ void normalize_x(DenseMatrix *x_new, DenseMatrix *x_old, DenseMatrix *D,
         x_new->val[row_idx] = (b->val[row_idx] - offdiag_sum) / D->val[row_idx];
     }
 }
-
-#endif // SMAX_GAUSS_SEIDEL_UTILS

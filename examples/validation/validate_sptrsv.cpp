@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     // Smax SpTRSV
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_sptrsv", SMAX::SPTRSV, SMAX::CPU);
+    smax->register_kernel("my_sptrsv", SMAX::KernelType::SPTRSV);
     REGISTER_SPTRSV_DATA("my_sptrsv", crs_mat_D_plus_L, x_smax, b)
     smax->kernel("my_sptrsv")->run();
 

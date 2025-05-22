@@ -21,9 +21,14 @@ std::string ErrorHandler::get_current_time() {
     // Get current time
     auto now = std::chrono::system_clock::now();
 
-    // Get the time as time_t and as a tm structure
-    auto now_time_t = std::chrono::system_clock::to_time_t(now);
-    auto now_tm = *std::localtime(&now_time_t);
+    // Convert to time_t
+    std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
+
+    // Thread-safe conversion to tm using localtime_r
+    std::tm now_tm;
+    if (localtime_r(&now_time_t, &now_tm) == nullptr) {
+        return "[TIME_ERROR] "; // Fallback in case of failure
+    }
 
     // Get the microseconds part (fraction of the second)
     auto micros = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -39,38 +44,48 @@ std::string ErrorHandler::get_current_time() {
 }
 
 void ErrorHandler::_log(const std::string &log_message) {
-    if (log_file.is_open()) {
-        log_file << get_current_time() + log_message
-                 << std::endl; // Write log to file
-        ++n_lines;
+#pragma omp master
+    {
+        if (log_file.is_open()) {
+            log_file << get_current_time() + log_message
+                     << std::endl; // Write log to file
+            ++n_lines;
 
-        // Some protection against blowing up the file system
-        if (n_lines % LINE_COUNT_WARNING == 0) {
-            std::cerr << "Warning: " << LINE_COUNT_WARNING
-                      << " lines in log file."
-                      << " Consider turning off DEBUG_MODE." << std::endl;
+            // Some protection against blowing up the file system
+            if (n_lines % LINE_COUNT_WARNING == 0) {
+                std::cerr << "Warning: " << LINE_COUNT_WARNING
+                          << " lines in log file."
+                          << " Consider turning off DEBUG_MODE." << std::endl;
+            }
+            if (n_lines == LINE_COUNT_ERROR) {
+                std::cerr << "Error: " << LINE_COUNT_ERROR
+                          << " lines in log file."
+                          << " Turn off DEBUG_MODE. Aborting." << std::endl;
+                close_log();
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            std::cerr << "Error: Unable to open log file!" << std::endl;
         }
-        if (n_lines == LINE_COUNT_ERROR) {
-            std::cerr << "Error: " << LINE_COUNT_ERROR << " lines in log file."
-                      << " Turn off DEBUG_MODE. Aborting." << std::endl;
-            close_log();
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        std::cerr << "Error: Unable to open log file!" << std::endl;
     }
 }
 
 void ErrorHandler::initialize_log(const std::string &filename) {
-    log_file.open(filename, std::ios::out);
-    if (!log_file.is_open()) {
-        throw std::runtime_error("Failed to open log file: " + filename);
+#pragma omp master
+    {
+        log_file.open(filename, std::ios::out);
+        if (!log_file.is_open()) {
+            throw std::runtime_error("Failed to open log file: " + filename);
+        }
     }
-}
+} // namespace SMAX
 
 void ErrorHandler::close_log() {
-    if (log_file.is_open()) {
-        log_file.close();
+#pragma omp master
+    {
+        if (log_file.is_open()) {
+            log_file.close();
+        }
     }
 }
 

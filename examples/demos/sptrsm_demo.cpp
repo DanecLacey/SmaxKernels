@@ -4,8 +4,9 @@
  * sparse triangular solve with a lower triangular matrix and multiple RHS
  * vectors (SpTSM).
  */
+
+#include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 #define N_VECTORS 4
 
@@ -33,21 +34,22 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("solve_LX=B", SMAX::SPTRSM, SMAX::CPU, SMAX::UINT32,
-                          SMAX::FLOAT32);
+    smax->register_kernel("solve_LX=B", SMAX::KernelType::SPTRSM,
+                          SMAX::PlatformType::CPU, SMAX::IntType::UINT32,
+                          SMAX::FloatType::FLOAT32);
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format
     smax->kernel("solve_LX=B")
-        ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
+        ->register_A(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
     // X and B are dense vectors
-    smax->kernel("solve_LX=B")->register_B(A_n_rows, N_VECTORS, &X);
-    smax->kernel("solve_LX=B")->register_C(A_n_cols, N_VECTORS, &B);
+    smax->kernel("solve_LX=B")->register_B(A_n_rows, N_VECTORS, X);
+    smax->kernel("solve_LX=B")->register_C(A_n_cols, N_VECTORS, B);
 
     // Execute all phases of this kernel
     smax->kernel("solve_LX=B")->run();
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_vector<float>(X, A_n_cols * N_VECTORS);
 

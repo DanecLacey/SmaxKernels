@@ -1,100 +1,134 @@
-#ifndef SMAX_SPMV_HPP
-#define SMAX_SPMV_HPP
+#pragma once
 
 #include "../common.hpp"
+#include "../kernel.hpp"
 #include "../macros.hpp"
+#include "spmv/spmv_common.hpp"
 #include "spmv/spmv_cpu.hpp"
+#if USE_CUDA
+#include "spmv/spmv_cuda.cuh"
+#endif
 
-#include <cstdarg>
-#include <functional>
+namespace SMAX::KERNELS {
 
-namespace SMAX {
-namespace KERNELS {
+class SpMVKernel : public Kernel {
+  public:
+    std::unique_ptr<SPMV::Args> args;
+    std::unique_ptr<SPMV::Flags> flags;
 
-int spmv_register_A(SparseMatrix *A, va_list args) {
-    A->n_rows = va_arg(args, int);
-    A->n_cols = va_arg(args, int);
-    A->nnz = va_arg(args, int);
-    A->col = va_arg(args, void **);
-    A->row_ptr = va_arg(args, void **);
-    A->val = va_arg(args, void **);
+    using Func = int (*)(Timers *, KernelContext *, SPMV::Args *, SPMV::Flags *,
+                         int, int, int);
 
-    return 0;
-}
+    SpMVKernel(std::unique_ptr<KernelContext> k_ctx)
+        : Kernel(std::move(k_ctx)) {}
 
-int spmv_register_B(DenseMatrix *x, va_list args) {
-    x->n_rows = va_arg(args, int);
-    x->val = va_arg(args, void **);
+    ~SpMVKernel() {}
 
-    return 0;
-}
+    int _register_A(const std::vector<Variant> &args) override {
+        if (args.size() != 6)
+            throw std::runtime_error("SpMVKernel register_A expects 6 args");
 
-int spmv_register_C(DenseMatrix *y, va_list args) {
-    y->n_rows = va_arg(args, int);
-    y->val = va_arg(args, void **);
+        this->args->A->n_rows = std::get<int>(args[0]);
+        this->args->A->n_cols = std::get<int>(args[1]);
+        this->args->A->nnz = std::get<int>(args[2]);
 
-    return 0;
-}
+        this->args->A->col = std::get<void *>(args[3]);
+        this->args->A->row_ptr = std::get<void *>(args[4]);
+        this->args->A->val = std::get<void *>(args[5]);
 
-int spmv_dispatch(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
-                  int A_offset, int x_offset, int y_offset,
-                  std::function<int(KernelContext, SPMV::Args *, SPMV::Flags *,
-                                    int, int, int)>
-                      cpu_func,
-                  const char *label) {
-    switch (context.platform_type) {
-    case CPU:
-        CHECK_ERROR(
-            cpu_func(context, args, flags, A_offset, x_offset, y_offset),
-            label);
-        break;
-    default:
-        std::cerr << "Error: Platform not supported\n";
-        return 1;
+        return 0;
+    };
+
+    int _register_B(const std::vector<Variant> &args) {
+        if (args.size() != 2)
+            throw std::runtime_error("SpMVKernel register_B expects 2 args");
+
+        this->args->x->n_rows = std::get<int>(args[0]);
+        this->args->x->val = std::get<void *>(args[1]);
+
+        return 0;
     }
-    return 0;
-}
 
-int spmv_initialize(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
-                    int A_offset, int x_offset, int y_offset) {
+    int _register_C(const std::vector<Variant> &args) {
+        if (args.size() != 2)
+            throw std::runtime_error("SpMVKernel register_C expects 2 args");
 
-    return spmv_dispatch(
-        context, args, flags, A_offset, x_offset, y_offset,
-        [](KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
-           int A_offset, int x_offset, int y_offset) {
-            return SPMV::spmv_initialize_cpu(context, args, flags, A_offset,
-                                             x_offset, y_offset);
-        },
-        "spmv_initialize");
-}
+        this->args->y->n_rows = std::get<int>(args[0]);
+        this->args->y->val = std::get<void *>(args[1]);
 
-int spmv_apply(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
-               int A_offset, int x_offset, int y_offset) {
+        return 0;
+    }
 
-    return spmv_dispatch(
-        context, args, flags, A_offset, x_offset, y_offset,
-        [](KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
-           int A_offset, int x_offset, int y_offset) {
-            return SPMV::spmv_apply_cpu(context, args, flags, A_offset,
-                                        x_offset, y_offset);
-        },
-        "spmv_apply");
-}
+    // Dispatch kernel based on platform
+    int dispatch(Func func, const char *label, int A_offset, int x_offset,
+                 int y_offset) {
+        IF_SMAX_DEBUG(if (!k_ctx || !args || !flags) {
+            std::cerr << "Error: Null kernel state in " << label << "\n";
+            return 1;
+        });
 
-int spmv_finalize(KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
-                  int A_offset, int x_offset, int y_offset) {
+        return func(timers, k_ctx.get(), args.get(), flags.get(), A_offset,
+                    x_offset, y_offset);
+    }
 
-    return spmv_dispatch(
-        context, args, flags, A_offset, x_offset, y_offset,
-        [](KernelContext context, SPMV::Args *args, SPMV::Flags *flags,
-           int A_offset, int x_offset, int y_offset) {
-            return SPMV::spmv_finalize_cpu(context, args, flags, A_offset,
-                                           x_offset, y_offset);
-        },
-        "spmv_finalize");
-}
+    int initialize(int A_offset, int x_offset, int y_offset) override {
+        switch (this->k_ctx->platform_type) {
+        case PlatformType::CPU: {
+            return dispatch(SPMV::initialize_cpu, "spmv_finalize", A_offset,
+                            x_offset, y_offset);
+        }
+        case PlatformType::CUDA: {
+#if USE_CUDA
+            return dispatch(SPMV::initialize_cuda, "spmv_finalize", A_offset,
+                            x_offset, y_offset);
+#endif
+        }
+        default:
+            std::cerr << "Error: Platform not supported\n";
+            return 1;
+        }
+    }
 
-} // namespace KERNELS
-} // namespace SMAX
+    int apply(int A_offset, int x_offset, int y_offset) override {
+        switch (this->k_ctx->platform_type) {
+        case PlatformType::CPU: {
+            return dispatch(SPMV::apply_cpu, "spmv_apply", A_offset, x_offset,
+                            y_offset);
+        }
+        case PlatformType::CUDA: {
+#if USE_CUDA
+            return dispatch(SPMV::apply_cuda, "spmv_apply", A_offset, x_offset,
+                            y_offset);
+#endif
+        }
+        default:
+            std::cerr << "Error: Platform not supported\n";
+            return 1;
+        }
+    }
 
-#endif // SMAX_SPMV_HPP
+    int finalize(int A_offset, int x_offset, int y_offset) override {
+        switch (this->k_ctx->platform_type) {
+        case PlatformType::CPU: {
+            return dispatch(SPMV::finalize_cpu, "spmv_finalize", A_offset,
+                            x_offset, y_offset);
+        }
+        case PlatformType::CUDA: {
+#if USE_CUDA
+            return dispatch(SPMV::finalize_cuda, "spmv_finalize", A_offset,
+                            x_offset, y_offset);
+#endif
+        }
+        default:
+            std::cerr << "Error: Platform not supported\n";
+            return 1;
+        }
+    }
+
+    int swap_operands(void) override {
+        std::swap(args->x, args->y);
+        return 0;
+    }
+};
+
+} // namespace SMAX::KERNELS

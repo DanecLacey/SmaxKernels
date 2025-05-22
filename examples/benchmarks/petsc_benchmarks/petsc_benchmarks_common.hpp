@@ -1,6 +1,3 @@
-#ifndef PETSC_BENCHMARKS_COMMON_HPP
-#define PETSC_BENCHMARKS_COMMON_HPP
+#pragma once
 
 #include <petscksp.h>
-
-#endif // PETSC_BENCHMARKS_COMMON_HPP

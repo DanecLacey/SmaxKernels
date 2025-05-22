@@ -1,12 +1,9 @@
-#ifndef SMAX_SPTRSM_COMMON_HPP
-#define SMAX_SPTRSM_COMMON_HPP
+#pragma once
 
 #include "../../common.hpp"
 #include "../kernels_common.hpp"
 
-namespace SMAX {
-namespace KERNELS {
-namespace SPTRSM {
+namespace SMAX::KERNELS::SPTRSM {
 
 struct Args {
 
@@ -73,8 +70,4 @@ class SpTRSMErrorHandler : public KernelErrorHandler {
     }
 };
 
-} // namespace SPTRSM
-} // namespace KERNELS
-} // namespace SMAX
-
-#endif // SMAX_SPTRSM_COMMON_HPP
+} // namespace SMAX::KERNELS::SPTRSM

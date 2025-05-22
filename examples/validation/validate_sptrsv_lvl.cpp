@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
         new CRSMatrix(n_rows, crs_mat->n_cols, crs_mat->nnz);
 
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_lvl_sptrsv", SMAX::SPTRSV, SMAX::CPU);
+    smax->register_kernel("my_lvl_sptrsv", SMAX::KernelType::SPTRSV);
 
     // Generate and apply permutation
     smax->utils->generate_perm<int>(n_rows, crs_mat->row_ptr, crs_mat->col,

@@ -1,5 +1,4 @@
-#ifndef SMAX_SPMM_HELPERS
-#define SMAX_SPMM_HELPERS
+#pragma once
 
 #include "examples_common.hpp"
 
@@ -22,10 +21,10 @@
 
 #define REGISTER_SPMM_DATA(kernel_name, mat, n_vectors, X, Y)                  \
     smax->kernel(kernel_name)                                                  \
-        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, &mat->col,            \
-                     &mat->row_ptr, &mat->val);                                \
-    smax->kernel(kernel_name)->register_B(mat->n_cols, n_vectors, &X->val);    \
-    smax->kernel(kernel_name)->register_C(mat->n_rows, n_vectors, &Y->val);
+        ->register_A(mat->n_rows, mat->n_cols, mat->nnz, mat->col,             \
+                     mat->row_ptr, mat->val);                                  \
+    smax->kernel(kernel_name)->register_B(mat->n_cols, n_vectors, X->val);     \
+    smax->kernel(kernel_name)->register_C(mat->n_rows, n_vectors, Y->val);
 
 #define PRINT_SPMM_BENCH                                                       \
     std::cout << "----------------" << std::endl;                              \
@@ -178,5 +177,3 @@ void compare_spmm(const int n_rows, const int n_vectors, const double *y_SMAX,
     working_file << "\n";
     working_file.close();
 }
-
-#endif // SMAX_SPMM_HELPERS

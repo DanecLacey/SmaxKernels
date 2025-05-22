@@ -3,8 +3,9 @@
  * @brief Basic example demonstrating how to use the SMAX library to perform
  * sparse matrix-multiple vector multiplication (SpMM).
  */
+
+#include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
-#include "utils.hpp"
 
 #define N_VECTORS 4
 
@@ -29,20 +30,20 @@ int main(void) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("useful_spmm", SMAX::SPMM, SMAX::CPU);
+    smax->register_kernel("useful_spmm", SMAX::KernelType::SPMM);
 
     // Register operands to this kernel tag
     // A is assumed to be in CRS format
     smax->kernel("useful_spmm")
-        ->register_A(A_n_rows, A_n_cols, A_nnz, &A_col, &A_row_ptr, &A_val);
+        ->register_A(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
     // X and Y are dense matrices
-    smax->kernel("useful_spmm")->register_B(A_n_cols, N_VECTORS, &X);
-    smax->kernel("useful_spmm")->register_C(A_n_rows, N_VECTORS, &Y);
+    smax->kernel("useful_spmm")->register_B(A_n_cols, N_VECTORS, X);
+    smax->kernel("useful_spmm")->register_C(A_n_rows, N_VECTORS, Y);
 
     // Execute all phases of this kernel
     smax->kernel("useful_spmm")->run();
 
-    smax->print_timers();
+    smax->utils->print_timers();
 
     print_vector<double>(Y, A_n_cols * N_VECTORS);
 
