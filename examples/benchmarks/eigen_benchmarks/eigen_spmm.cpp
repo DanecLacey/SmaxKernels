@@ -3,6 +3,8 @@
 #include "../benchmarks_common.hpp"
 #include "eigen_benchmarks_common.hpp"
 
+#include <fast_matrix_market/app/Eigen.hpp>
+
 int main(int argc, char *argv[]) {
     INIT_SPMM;
 
@@ -12,6 +14,10 @@ int main(int argc, char *argv[]) {
         Eigen::MatrixXd::Constant(crs_mat->n_rows, n_vectors, 0.0);
 
     // Wrap your CRS data into an Eigen SparseMatrix
+    std::ifstream input_stream(argv[1]);
+    Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_mat;
+    fast_matrix_market::read_matrix_market_eigen(input_stream, eigen_mat);
+#if 0 
     Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
     std::vector<Eigen::Triplet<double>> triplets;
     triplets.reserve(crs_mat->nnz);
@@ -25,7 +31,7 @@ int main(int argc, char *argv[]) {
         }
     }
     eigen_mat.setFromTriplets(triplets.begin(), triplets.end());
-
+#endif
     // Setup benchmark metadata
     std::string bench_name = "eigen_spmm";
     double runtime = 0.0;
