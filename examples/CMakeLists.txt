@@ -109,6 +109,9 @@ option(USE_EIGEN "Enable Eigen support" OFF)
 option(USE_MKL "Enable MKL support" OFF)
 option(USE_PETSC "Enable PETSC support" OFF)
 
+include(cmake/CPM.cmake)
+include(cmake/fastmmio.cmake)
+
 # === OpenMP Support ===
 if(USE_OPENMP)
     # Find OpenMP package and enable if found
@@ -172,10 +175,8 @@ if(USE_EIGEN)
         message(STATUS "Using system-installed Eigen (Eigen3::Eigen)")
     else()
         message(STATUS "Eigen not found locally, fetching via CPM")
-        include(cmake/CPM.cmake)
         include(cmake/eigen.cmake)
     endif()
-
     # Optional: Compiler flags specific to Eigen performance tuning
     add_compile_options(-mavx2 -mno-avx512f)
 else()

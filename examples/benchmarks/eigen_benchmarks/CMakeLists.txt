@@ -17,6 +17,7 @@ foreach(src ${CPP_FILES})
 
     # Link against Eigen CMake export package
     target_link_libraries(${exec_name} PRIVATE Eigen3::Eigen)
+    target_link_libraries(${exec_name} PRIVATE fast_matrix_market::fast_matrix_market)
 
     # Optionally link against LIKWID
     if(USE_LIKWID)
