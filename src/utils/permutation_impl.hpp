@@ -386,11 +386,6 @@ int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
         }
     }
 
-    for (int i = 0; i < A_n_rows; i++) {
-        printf("%d, ", color[i]);
-    }
-    printf("\n");
-
     return ++max_color;
 }
 

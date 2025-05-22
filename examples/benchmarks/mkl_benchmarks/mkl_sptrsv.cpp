@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
                      "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
+    CHECK_MKL_STATUS(mkl_sparse_set_sv_hint(A, SPARSE_OPERATION_NON_TRANSPOSE, descr, 1000), "mkl_sparse_set_sv_hint");
     CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
     // Make lambda, and pass to the benchmarking harness
