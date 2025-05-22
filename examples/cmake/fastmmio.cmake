@@ -1,0 +1,1 @@
+CPMAddPackage("gh:alugowski/fast_matrix_market#main")
