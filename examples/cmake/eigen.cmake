@@ -1,8 +1,8 @@
 # Use CPM to fetch and manage the Eigen library
 CPMAddPackage(
   NAME Eigen  # Package name
-  VERSION 3.2.8  # Specify Eigen version
-  URL https://gitlab.com/libeigen/eigen/-/archive/3.2.8/eigen-3.2.8.tar.gz  # Download URL for Eigen
+  VERSION 3.4.0  # Specify Eigen version
+  URL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz  # Download URL for Eigen
 
   # Eigen does not provide a standard CMakeLists.txt for building as a library
   DOWNLOAD_ONLY YES  # Only download Eigen, do not attempt to build it
