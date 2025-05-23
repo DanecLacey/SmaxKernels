@@ -19,8 +19,8 @@ jobs:
             compiler_type: icpx
           - compiler: intel-oneapi-compilers
             compiler_type: icpc
-          # - compiler: nvhpc@22.3
-          #   compiler_id: NVHPC
+          - compiler: cuda
+            compiler_type: nvcc
 
     steps:
       - uses: actions/checkout@v4
@@ -34,13 +34,13 @@ jobs:
           path: ~/.spack
           key: ${{ runner.os }}-spack-${{ matrix.compiler }}
 
-      - name: Install compiler via Spack
-        if: matrix.compiler != 'system'
+      - name: Install ompilers via Spack
+        if: matrix.compiler != 'system' && matrix.compiler != 'cuda'
         run: |
           spack install ${{
             matrix.compiler
           }}
-          spack load ${{
+          spack load --sh ${{
             matrix.compiler
           }}
           spack compiler find
@@ -53,17 +53,25 @@ jobs:
             echo "CXX=$(spack location -i intel-oneapi-compilers)/compiler/latest/linux/bin/icpx" >> $GITHUB_ENV
           elif [[ "${{ matrix.compiler_type }}" == "icpc" ]]; then
             echo "CXX=$(spack location -i intel-oneapi-compilers)/compiler/latest/linux/bin/intel64/icpc" >> $GITHUB_ENV
+          elif [[ "${{ matrix.compiler_type }}" == "nvcc" ]]; then
+            echo "CXX=/usr/local/cuda/bin/nvcc" >> $GITHUB_ENV
           fi
-
       - name: Show C++ compiler
         run: echo "Using CXX = ${CXX}"
 
       - name: CMake configure SMAX
         run: |
           echo "CMake configure SMAX pwd = $(pwd)"
-          mkdir smax_build && cd smax_build
-          cmake .. \
-            -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install/ -DCMAKE_CXX_COMPILER=$CXX
+          if [[ "${{ matrix.compiler_type }}" == "nvcc" ]]; then
+            cmake .. \
+              -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install/ \
+              -DCMAKE_CXX_COMPILER=$CXX \
+              -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
+          else
+            cmake .. \
+              -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install/ \
+              -DCMAKE_CXX_COMPILER=$CXX
+          fi
           echo "CMake configure SMAX INSTALLING TO = $(realpath ${{github.workspace}}/install/)"
 
       - name: Build & install SMAX
@@ -79,8 +87,16 @@ jobs:
           echo "CMake configure Tests pwd = $(pwd)"
           echo "CMake configure Tests ${{github.workspace}}/install/ = $(realpath ${{github.workspace}}/install/)"
           mkdir tests_build && cd tests_build
-          cmake .. \
-            -DCMAKE_PREFIX_PATH=${{github.workspace}}/install/ -DCMAKE_CXX_COMPILER=$CXX
+          if [[ "${{ matrix.compiler_type }}" == "nvcc" ]]; then
+            cmake .. \
+              -DCMAKE_PREFIX_PATH=${{github.workspace}}/install/ \
+              -DCMAKE_CXX_COMPILER=$CXX \
+              -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
+          else
+            cmake .. \
+              -DCMAKE_PREFIX_PATH=${{github.workspace}}/install/ \
+              -DCMAKE_CXX_COMPILER=$CXX
+          fi
 
       - name: Build Tests
         working-directory: examples/tests_build
