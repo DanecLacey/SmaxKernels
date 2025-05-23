@@ -48,18 +48,21 @@ jobs:
 
       - name: CMake configure SMAX
         run: |
+          echo "CMake configure SMAX pwd = ${pwd}"
           mkdir smax_build && cd smax_build
           cmake .. \
             -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_CXX_COMPILER=$CXX
 
       - name: Build & install SMAX
         run: |
+          echo "Build & install SMAX pwd = ${pwd}"
           cd smax_build/
           make -j
           make install
 
       - name: CMake configure Tests
         run: |
+          echo "CMake configure Tests pwd = ${pwd}"
           cd examples/
           mkdir tests_build && cd tests_build
           cmake .. \
