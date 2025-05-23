@@ -15,8 +15,8 @@ jobs:
         include:
           - compiler: system
             compiler_type: cxx
-          # - compiler: intel@15.0.6
-          #   compiler_id: INTEL
+          - compiler: intel@15.0.6
+            compiler_type: cxx
           # - compiler: nvhpc@22.3
           #   compiler_id: NVHPC
 
