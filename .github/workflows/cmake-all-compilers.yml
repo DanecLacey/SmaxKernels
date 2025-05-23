@@ -1,15 +1,14 @@
-name: CMake on a single platform
+name: CMake tests with multiple compilers
 
 on:
   push:
-    branches: [ "new_pipeline_tests" ]       # Trigger on push to this branch
+    branches: [ "new_pipeline_tests" ]
   pull_request:
-    branches: [ "new_pipeline_tests" ]       # Trigger on PR targeting this branch
+    branches: [ "new_pipeline_tests" ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest                   # Use Ubuntu runner
-
+  configureSpack:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -17,15 +16,19 @@ jobs:
           - compiler: gcc@12.1.0
             compiler_type: cxx
             compiler_id: GNU
+          # - compiler: intel@15.0.6
+          #   compiler_type: cxx
+          #   compiler_id: INTEL
+          # - compiler: nvhpc@22.3
+          #   compiler_type: cuda
+          #   compiler_id: NVIDIA
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Spack
         uses: spack/setup-spack@v2
 
-      # Add caching here:
       - name: Cache Spack directory
         uses: actions/cache@v3
         with:
@@ -35,21 +38,63 @@ jobs:
             ${{ runner.os }}-spack-${{ matrix.compiler }}-
             ${{ runner.os }}-spack-
 
-      - name: Install and configure compiler
-        shell: bash
+      - name: Install compiler with Spack
         run: |
           spack install ${{ matrix.compiler }}
-          export COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
+          COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
+          echo "COMPILER_DIR=$COMPILER_DIR" >> $GITHUB_ENV
+          echo "COMPILER_TYPE=${{ matrix.compiler_type }}" >> $GITHUB_ENV
+          echo "COMPILER_ID=${{ matrix.compiler_id }}" >> $GITHUB_ENV
 
+      - name: Save compiler environment info
+        run: |
+          echo "#!/bin/bash" > compiler_env.sh
+          echo "set -e" > compiler_env.sh
+          echo "export COMPILER_DIR=$COMPILER_DIR" > compiler_env.sh
+          echo "In configureSpack, saving compiler: $COMPILER_DIR"
+          echo "export COMPILER_TYPE=${{ matrix.compiler_type }}" >> compiler_env.sh
+          echo "export COMPILER_ID=${{ matrix.compiler_id }}" >> compiler_env.sh
           if [[ "${{ matrix.compiler_type }}" == "cxx" ]]; then
-            echo "CMAKE_CXX_COMPILER=${COMPILER_DIR}/bin/c++" >> $GITHUB_ENV
+            echo "export CMAKE_CXX_COMPILER=$COMPILER_DIR/bin/c++" >> compiler_env.sh
           elif [[ "${{ matrix.compiler_type }}" == "cuda" ]]; then
-            echo "CMAKE_CUDA_COMPILER=${COMPILER_DIR}/bin/nvcc" >> $GITHUB_ENV
-            echo "CUDA_HOME=${COMPILER_DIR}" >> $GITHUB_ENV
-            echo "CMAKE_CXX_COMPILER=${COMPILER_DIR}/bin/nvc++" >> $GITHUB_ENV
+            echo "export CMAKE_CUDA_COMPILER=$COMPILER_DIR/bin/nvcc" >> compiler_env.sh
+            echo "export CUDA_HOME=$COMPILER_DIR" >> compiler_env.sh
+            echo "export CMAKE_CXX_COMPILER=$COMPILER_DIR/bin/nvc++" >> compiler_env.sh
           fi
 
-      - name: Configure build with CMake
+      - name: Upload compiler environment info
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiler-env-${{ matrix.compiler_id }}
+          path: compiler_env.sh
+
+  build:
+    needs: configureSpack
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc@12.1.0
+            compiler_type: cxx
+            compiler_id: GNU
+          # Extend matrix here to match `configureSpack`
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: compiler-env-${{ matrix.compiler_id }}
+          path: ./env
+
+      - name: Source compiler env
+        run: |
+          source ./env/compiler_env.sh
+          COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
+          echo "In build, Using compiler: $COMPILER_DIR"
+
+      - name: Configure with CMake
         run: |
           mkdir build && cd build
           cmake .. \
@@ -57,78 +102,94 @@ jobs:
             -DCMAKE_CXX_COMPILER="${{ env.CMAKE_CXX_COMPILER }}" \
             ${{ matrix.compiler_type == 'cuda' && format('-DCMAKE_CUDA_COMPILER={0}', env.CMAKE_CUDA_COMPILER) || '' }}
 
-      - name: Build and install
+      - name: Build and Install
         run: |
           cd build
-          make -j                                  # Parallel build
-          make install                             # Install to ../install
+          make -j
+          make install
 
-      - name: Upload install artifact
+      - name: Upload install directory
         uses: actions/upload-artifact@v4
         with:
-          name: install-dir-${{ matrix.compiler_id }}    # Use consistent artifact naming
+          name: install-dir-${{ matrix.compiler_id }}
           path: ${{ github.workspace }}/install/
 
   buildTests:
-    needs: build                             # Depends on build jobs
+    needs: build
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        compiler:
-          - gcc@12.1.0
-          # - intel@15.0.6
-          # - oneapi@2023.1.0
-          # - nvhpc@22.3
-
-    steps:
-      - uses: actions/checkout@v4           # Checkout source again
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: install-dir-${{ matrix.compiler }}    # Download the matching install artifact
-          path: ${{ github.workspace }}/install
-
-      - name: CMake and make tests
-        run: |
-          cd examples
-          mkdir build && cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=../../install
-          make
-
-      - name: Upload test binaries artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tests-${{ matrix.compiler }}            # Upload test binaries per compiler
-          path: ${{ github.workspace }}/examples/build/tests/
-
-  runTests:
-    needs: buildTests                        # Depends on buildTests jobs
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        compiler:
-          - gcc@12.1.0
-          # - intel@15.0.6
-          # - oneapi@2023.1.0
-          # - nvhpc@22.3
+        include:
+          - compiler: gcc@12.1.0
+            compiler_type: cxx
+            compiler_id: GNU
+          # - Add more compilers here
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
         with:
-          name: install-dir-${{ matrix.compiler }}
+          name: install-dir-${{ matrix.compiler_id }}
           path: ${{ github.workspace }}/install
 
       - uses: actions/download-artifact@v4
         with:
-          name: tests-${{ matrix.compiler }}
+          name: compiler-env-${{ matrix.compiler_id }}
+          path: ./env
+
+        run: |
+          source ./env/compiler_env.sh
+          COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
+          echo "In buildTests, Using compiler: $COMPILER_DIR"
+
+      - name: Build tests
+        run: |
+          cd examples
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_INSTALL_PREFIX=../../install \
+            -DCMAKE_CXX_COMPILER="${{ env.CMAKE_CXX_COMPILER }}" \
+            ${{ matrix.compiler_type == 'cuda' && format('-DCMAKE_CUDA_COMPILER={0}', env.CMAKE_CUDA_COMPILER) || '' }}
+          make -j
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tests-${{ matrix.compiler_id }}
+          path: ${{ github.workspace }}/examples/build/tests/
+
+  runTests:
+    needs: buildTests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - compiler: gcc@12.1.0
+            compiler_type: cxx
+            compiler_id: GNU
+          # Add other compilers similarly
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: install-dir-${{ matrix.compiler_id }}
+          path: ${{ github.workspace }}/install
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tests-${{ matrix.compiler_id }}
           path: ${{ github.workspace }}/run_tests
 
-      - name: Execute Tests
+        run: |
+          source ./env/compiler_env.sh
+          COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
+          echo "In runTests, Using compiler: $COMPILER_DIR"
+
+      - name: Run tests
         run: |
           cd run_tests
+          # If you have a single binary called run_tests:
           chmod +x ./run_tests
           ./run_tests
