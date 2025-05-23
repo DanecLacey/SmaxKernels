@@ -58,13 +58,22 @@ jobs:
             echo "CUDA=" >> $GITHUB_ENV
           elif [[ "${{ matrix.compiler_type }}" == "nvcc" ]]; then
             echo "CXX=$(which g++)" >> $GITHUB_ENV
-            echo "CUDA=/usr/local/cuda/bin/nvcc" >> $GITHUB_ENV
+            echo "CUDA=$(which nvcc)" >> $GITHUB_ENV
           fi
 
       - name: Show Compilers
         run: |
           echo "Using CXX = ${CXX}"
           echo "Using CUDA = ${CUDA}"
+
+      - name: Check CUDA nvcc
+        if: matrix.compiler_type == 'nvcc'
+        run: |
+          ls -l /usr/local/cuda/bin/nvcc
+          /usr/local/cuda/bin/nvcc --version
+
+      - name: Check CMake version
+        run: cmake --version
 
       - name: CMake configure SMAX
         run: |
@@ -92,7 +101,7 @@ jobs:
           cmake .. \
             -DCMAKE_PREFIX_PATH=${{github.workspace}}/install/ \
             -DCMAKE_CXX_COMPILER=$CXX \
-            -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
+            -DCMAKE_CUDA_COMPILER=$CUDA
 
 
       - name: Build Tests
