@@ -62,8 +62,9 @@ jobs:
           fi
 
       - name: Show Compilers
-        run: echo "Using CXX = ${CXX}"
-        run: echo "Using CUDA = ${CUDA}"
+        run: |
+          echo "Using CXX = ${CXX}"
+          echo "Using CUDA = ${CUDA}"
 
       - name: CMake configure SMAX
         run: |
