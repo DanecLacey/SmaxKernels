@@ -62,6 +62,7 @@ jobs:
       - name: CMake configure SMAX
         run: |
           echo "CMake configure SMAX pwd = $(pwd)"
+          mkdir smax_build && cd smax_build
           if [[ "${{ matrix.compiler_type }}" == "nvcc" ]]; then
             cmake .. \
               -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install/ \
