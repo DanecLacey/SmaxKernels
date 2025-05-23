@@ -1,0 +1,134 @@
+name: CMake on a single platform
+
+on:
+  push:
+    branches: [ "new_pipeline_tests" ]       # Trigger on push to this branch
+  pull_request:
+    branches: [ "new_pipeline_tests" ]       # Trigger on PR targeting this branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest                   # Use Ubuntu runner
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc@12.1.0
+            compiler_type: cxx
+            compiler_id: GNU
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Spack
+        uses: spack/setup-spack@v2
+
+      # Add caching here:
+      - name: Cache Spack directory
+        uses: actions/cache@v3
+        with:
+          path: ~/.spack
+          key: ${{ runner.os }}-spack-${{ matrix.compiler }}-${{ hashFiles('**/spack.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-spack-${{ matrix.compiler }}-
+            ${{ runner.os }}-spack-
+
+      - name: Install and configure compiler
+        shell: bash
+        run: |
+          spack install ${{ matrix.compiler }}
+          export COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
+
+          if [[ "${{ matrix.compiler_type }}" == "cxx" ]]; then
+            echo "CMAKE_CXX_COMPILER=${COMPILER_DIR}/bin/c++" >> $GITHUB_ENV
+          elif [[ "${{ matrix.compiler_type }}" == "cuda" ]]; then
+            echo "CMAKE_CUDA_COMPILER=${COMPILER_DIR}/bin/nvcc" >> $GITHUB_ENV
+            echo "CUDA_HOME=${COMPILER_DIR}" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER=${COMPILER_DIR}/bin/nvc++" >> $GITHUB_ENV
+          fi
+
+      - name: Configure build with CMake
+        run: |
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_INSTALL_PREFIX=../install \
+            -DCMAKE_CXX_COMPILER="${{ env.CMAKE_CXX_COMPILER }}" \
+            ${{ matrix.compiler_type == 'cuda' && format('-DCMAKE_CUDA_COMPILER={0}', env.CMAKE_CUDA_COMPILER) || '' }}
+
+      - name: Build and install
+        run: |
+          cd build
+          make -j                                  # Parallel build
+          make install                             # Install to ../install
+
+      - name: Upload install artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-dir-${{ matrix.compiler_id }}    # Use consistent artifact naming
+          path: ${{ github.workspace }}/install/
+
+  buildTests:
+    needs: build                             # Depends on build jobs
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        compiler:
+          - gcc@12.1.0
+          # - intel@15.0.6
+          # - oneapi@2023.1.0
+          # - nvhpc@22.3
+
+    steps:
+      - uses: actions/checkout@v4           # Checkout source again
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: install-dir-${{ matrix.compiler }}    # Download the matching install artifact
+          path: ${{ github.workspace }}/install
+
+      - name: CMake and make tests
+        run: |
+          cd examples
+          mkdir build && cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=../../install
+          make
+
+      - name: Upload test binaries artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-${{ matrix.compiler }}            # Upload test binaries per compiler
+          path: ${{ github.workspace }}/examples/build/tests/
+
+  runTests:
+    needs: buildTests                        # Depends on buildTests jobs
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        compiler:
+          - gcc@12.1.0
+          # - intel@15.0.6
+          # - oneapi@2023.1.0
+          # - nvhpc@22.3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: install-dir-${{ matrix.compiler }}
+          path: ${{ github.workspace }}/install
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tests-${{ matrix.compiler }}
+          path: ${{ github.workspace }}/run_tests
+
+      - name: Execute Tests
+        run: |
+          cd run_tests
+          chmod +x ./run_tests
+          ./run_tests
