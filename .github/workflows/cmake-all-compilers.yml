@@ -15,7 +15,6 @@ jobs:
         include:
           - compiler: gcc@12.1.0
             compiler_type: cxx
-            compiler_id: GNU
           # - compiler: intel@15.0.6
           #   compiler_type: cxx
           #   compiler_id: INTEL
@@ -48,8 +47,8 @@ jobs:
 
       - name: Save compiler environment info
         run: |
-          echo "#!/bin/bash" > compiler_env.sh
-          echo "set -e" > compiler_env.sh
+          echo "#!/bin/bash" >> compiler_env.sh
+          echo "set -e" >> compiler_env.sh
           echo "export COMPILER_DIR=$COMPILER_DIR" > compiler_env.sh
           echo "In configureSpack, saving compiler: $COMPILER_DIR"
           echo "export COMPILER_TYPE=${{ matrix.compiler_type }}" >> compiler_env.sh
@@ -61,6 +60,7 @@ jobs:
             echo "export CUDA_HOME=$COMPILER_DIR" >> compiler_env.sh
             echo "export CMAKE_CXX_COMPILER=$COMPILER_DIR/bin/nvc++" >> compiler_env.sh
           fi
+          chmod +x compiler_env.sh
 
       - name: Upload compiler environment info
         uses: actions/upload-artifact@v4
@@ -77,7 +77,6 @@ jobs:
         include:
           - compiler: gcc@12.1.0
             compiler_type: cxx
-            compiler_id: GNU
           # Extend matrix here to match `configureSpack`
 
     steps:
@@ -91,7 +90,6 @@ jobs:
       - name: Source compiler env
         run: |
           source ./env/compiler_env.sh
-          COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
           echo "In build, Using compiler: $COMPILER_DIR"
 
       - name: Configure with CMake
@@ -99,7 +97,7 @@ jobs:
           mkdir build && cd build
           cmake .. \
             -DCMAKE_INSTALL_PREFIX=../install \
-            -DCMAKE_CXX_COMPILER="${{ env.CMAKE_CXX_COMPILER }}" \
+            -DCMAKE_CXX_COMPILER="${{ matrix.compiler_type == 'cuda' && 'g++' || env.CMAKE_CXX_COMPILER }}" \
             ${{ matrix.compiler_type == 'cuda' && format('-DCMAKE_CUDA_COMPILER={0}', env.CMAKE_CUDA_COMPILER) || '' }}
 
       - name: Build and Install
@@ -122,7 +120,6 @@ jobs:
         include:
           - compiler: gcc@12.1.0
             compiler_type: cxx
-            compiler_id: GNU
           # - Add more compilers here
 
     steps:
@@ -138,9 +135,9 @@ jobs:
           name: compiler-env-${{ matrix.compiler_id }}
           path: ./env
 
+      - name: Source compiler env
         run: |
           source ./env/compiler_env.sh
-          COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
           echo "In buildTests, Using compiler: $COMPILER_DIR"
 
       - name: Build tests
@@ -148,8 +145,8 @@ jobs:
           cd examples
           mkdir build && cd build
           cmake .. \
-            -DCMAKE_INSTALL_PREFIX=../../install \
-            -DCMAKE_CXX_COMPILER="${{ env.CMAKE_CXX_COMPILER }}" \
+            -DCMAKE_INSTALL_PREFIX=../install \
+            -DCMAKE_CXX_COMPILER="${{ matrix.compiler_type == 'cuda' && 'g++' || env.CMAKE_CXX_COMPILER }}" \
             ${{ matrix.compiler_type == 'cuda' && format('-DCMAKE_CUDA_COMPILER={0}', env.CMAKE_CUDA_COMPILER) || '' }}
           make -j
 
@@ -166,7 +163,6 @@ jobs:
         include:
           - compiler: gcc@12.1.0
             compiler_type: cxx
-            compiler_id: GNU
           # Add other compilers similarly
 
     steps:
@@ -182,14 +178,18 @@ jobs:
           name: tests-${{ matrix.compiler_id }}
           path: ${{ github.workspace }}/run_tests
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: compiler-env-${{ matrix.compiler_id }}
+          path: ./env
+
+      - name: Source compiler env
         run: |
           source ./env/compiler_env.sh
-          COMPILER_DIR=$(spack location -i ${{ matrix.compiler }})
           echo "In runTests, Using compiler: $COMPILER_DIR"
 
       - name: Run tests
         run: |
           cd run_tests
-          # If you have a single binary called run_tests:
           chmod +x ./run_tests
           ./run_tests
