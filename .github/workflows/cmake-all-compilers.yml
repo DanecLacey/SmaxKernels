@@ -45,6 +45,10 @@ jobs:
           }}
           spack compiler find
 
+      - name: Find icpx path
+        if: matrix.compiler_type == 'icpx'
+        run: which icpx
+
       - name: Set compiler environment variable
         run: |
           if [[ "${{ matrix.compiler }}" == "system" ]]; then
