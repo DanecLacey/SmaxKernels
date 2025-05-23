@@ -14,7 +14,7 @@ jobs:
       matrix:
         include:
           - compiler: system
-            compiler_type: GNU
+            compiler_type: cxx
           # - compiler: intel@15.0.6
           #   compiler_id: INTEL
           # - compiler: nvhpc@22.3
@@ -41,33 +41,34 @@ jobs:
           if [[ "${{ matrix.compiler }}" != "system" ]]; then
             spack load ${{ matrix.compiler }}
           fi
-          # Now $CC, $CXX, and (for cuda) $CUDA_HOME are set
-          echo "Using CC=$CC, CXX=$CXX"
+          export CXX=$(which g++) >> $GITHUB_ENV
 
       - name: CMake configure SMAX
         run: |
-          mkdir build && cd build
+          mkdir smax_build && cd smax_build
           cmake .. \
             -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_CXX_COMPILER=$CXX
 
       - name: Build & install SMAX
         run: |
+          cd smax_build/
           make -j
           make install
 
       - name: CMake configure Tests
         run: |
-          cd ../examples/
-          mkdir build && cd build
+          cd examples/
+          mkdir tests_build && cd tests_build
           cmake .. \
             -DCMAKE_PREFIX_PATH=../../install -DCMAKE_CXX_COMPILER=$CXX
 
       - name: Build Tests
         run: |
+          cd examples/tests_build/
           make -j
 
       - name: Run Tests
         run: |
-          cd tests/
+          cd examples/tests_build/
           chmod +x ./run_tests
           ./run_tests
