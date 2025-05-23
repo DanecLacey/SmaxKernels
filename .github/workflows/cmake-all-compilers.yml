@@ -37,17 +37,9 @@ jobs:
       - name: Install compilers via Spack
         if: matrix.compiler != 'system' && matrix.compiler != 'cuda'
         run: |
-          spack install ${{
-            matrix.compiler
-          }}
-          spack load --sh ${{
-            matrix.compiler
-          }}
+          spack install ${matrix.compiler}
+          eval $(spack load --sh ${matrix.compiler})
           spack compiler find
-
-      - name: Find icpx path
-        if: matrix.compiler_type == 'icpx'
-        run: which icpx
 
       - name: Set compiler environment variable
         run: |
@@ -55,12 +47,13 @@ jobs:
             echo "CXX=$(which g++)" >> $GITHUB_ENV
             echo "CUDA=" >> $GITHUB_ENV
           elif [[ "${{ matrix.compiler_type }}" == "icpx" ]]; then
-            echo "CXX=$(spack location -i intel-oneapi-compilers)/compiler/latest/linux/bin/icpx" >> $GITHUB_ENV
+            echo "CXX=$(which icpx)" >> $GITHUB_ENV
             echo "CUDA=" >> $GITHUB_ENV
           elif [[ "${{ matrix.compiler_type }}" == "icpc" ]]; then
-            echo "CXX=$(spack location -i intel-oneapi-compilers)/compiler/latest/linux/bin/intel64/icpc" >> $GITHUB_ENV
+            echo "CXX=$(which icpc)" >> $GITHUB_ENV
             echo "CUDA=" >> $GITHUB_ENV
           elif [[ "${{ matrix.compiler_type }}" == "nvcc" ]]; then
+            export PATH=/usr/local/cuda/bin:$PATH
             echo "CXX=$(which g++)" >> $GITHUB_ENV
             echo "CUDA=$(which nvcc)" >> $GITHUB_ENV
           fi
