@@ -6,10 +6,6 @@
 #include "stopwatch.hpp"
 
 #include <variant>
-#if USE_CUDA
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
 
 namespace SMAX {
 

@@ -39,25 +39,23 @@ set(COMMON_HEADERS
     src/utils.hpp
 )
 
-set(COMMON_KERNEL_HEADERS
+set(KERNEL_HEADERS
     src/kernels/kernels_common.hpp
     src/kernels/spgemm.hpp
     src/kernels/spgemm/spgemm_common.hpp
+    src/kernels/spgemm/spgemm_cpu.hpp
     src/kernels/spmm.hpp
     src/kernels/spmm/spmm_common.hpp
+    src/kernels/spmm/spmm_cpu.hpp
     src/kernels/spmv.hpp
     src/kernels/spmv/spmv_common.hpp
+    src/kernels/spmv/spmv_cpu.hpp
+    src/kernels/spmv/spmv_cuda.hpp
     src/kernels/sptrsm.hpp
     src/kernels/sptrsm/sptrsm_common.hpp
+    src/kernels/sptrsm/sptrsm_cpu.hpp
     src/kernels/sptrsv.hpp
     src/kernels/sptrsv/sptrsv_common.hpp
-)
-
-set(CPU_KERNEL_HEADERS
-    src/kernels/spgemm/spgemm_cpu.hpp
-    src/kernels/spmm/spmm_cpu.hpp
-    src/kernels/spmv/spmv_cpu.hpp
-    src/kernels/sptrsm/sptrsm_cpu.hpp
     src/kernels/sptrsv/sptrsv_cpu.hpp
 )
 
@@ -68,10 +66,6 @@ set(CPU_HEADER_DIRS
     src/kernels/sptrsm/sptrsm_cpu/
     src/kernels/sptrsv/sptrsv_cpu/
     src/platforms/cpu/
-)
-
-set(CUDA_KERNEL_HEADERS
-    src/kernels/spmv/spmv_cuda.cuh
 )
 
 set(CUDA_HEADER_DIRS
@@ -128,39 +122,40 @@ string(TOUPPER "${CMAKE_CXX_COMPILER_ID}" CPU_COMPILER_ID)
 string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID)
 
 # Set compiler flags based on compiler type and build type
-# Also configure headers based on platflorm!
-set(HEADERS ${COMMON_HEADERS} ${COMMON_KERNEL_HEADERS})
+set(HEADERS ${COMMON_HEADERS} ${KERNEL_HEADERS})
 set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 
 # GPU builds
-if(GPU_COMPILER_ID STREQUAL "NVIDIA")
+if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
     set(USE_CUDA 1)
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+
+    # Set CUDA flags based on build type
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -Xcompiler=-fPIC")
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -Xcompiler=-fPIC")
     endif()
-    list(APPEND HEADERS ${CUDA_KERNEL_HEADERS})
+
+    # Include CUDA headers
     list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
 
+    # Set CUDA threads-per-block if not already defined
     if(NOT DEFINED CUDA_TPB)
         set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
     endif()
     add_compile_definitions(CUDA_TPB=${CUDA_TPB})
     message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
 
-    # Need to compile with nvcc, so add to sources
+    # Add CUDA source file
     list(APPEND SOURCES
         src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
     )
-
 else()
     set(USE_CUDA 0)
     message(WARNING "No supported GPU compiler found, building for CPU only.")
 endif()
 
 # CPU builds (default)
-list(APPEND HEADERS ${CPU_KERNEL_HEADERS})
 list(APPEND HEADER_DIRS ${CPU_HEADER_DIRS})
 if(CPU_COMPILER_ID STREQUAL "GNU")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")

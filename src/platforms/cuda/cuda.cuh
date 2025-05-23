@@ -1,6 +1,10 @@
 #pragma once
 
-#include "../../common.hpp"
+#include "../../macros.hpp"
+#include <iostream>
+
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 namespace SMAX {
 

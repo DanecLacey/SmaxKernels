@@ -10,10 +10,23 @@ find_package(SmaxKernels REQUIRED)
 set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Optional: restrict required version
-find_package(CUDAToolkit QUIET)
-if (CUDAToolkit_FOUND)
-    enable_language(CUDA)
+# If the lib is built with CUDA, the examples must also be
+if(SMAX_USE_CUDA)
+    find_package(CUDAToolkit REQUIRED)
+else()
+    # The examples can be built with CUDA, even if the lib was not
+    find_package(CUDAToolkit QUIET)
+    if (CUDAToolkit_FOUND)
+        enable_language(CUDA)
+        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            set(CMAKE_CUDA_ARCHITECTURES 80 86)
+        endif()
+        if(NOT SMAX_USE_CUDA)
+            message(WARNING
+                "CUDA compiler found, but SMAX_USE_CUDA=${SMAX_USE_CUDA}. "
+                "CUDA examples will not be built.")
+        endif()
+    endif()
 endif()
 
 # Set default build type if not defined
@@ -64,15 +77,11 @@ if(GPU_COMPILER_ID STREQUAL "NVIDIA")
     elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -Xcompiler=-fPIC")
     endif()
-    list(APPEND HEADERS ${CUDA_KERNEL_HEADERS})
-    list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
 else()
-    message(WARNING "No supported GPU compiler found, building for CPU only.")
+    message(STATUS "No supported GPU compiler found, building for CPU only.")
 endif()
 
 # CPU builds (default)
-list(APPEND HEADERS ${CPU_KERNEL_HEADERS})
-list(APPEND HEADER_DIRS ${CPU_HEADER_DIRS})
 if(CPU_COMPILER_ID STREQUAL "GNU")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fstrict-aliasing -O3")

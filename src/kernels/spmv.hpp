@@ -5,9 +5,7 @@
 #include "../macros.hpp"
 #include "spmv/spmv_common.hpp"
 #include "spmv/spmv_cpu.hpp"
-#if USE_CUDA
-#include "spmv/spmv_cuda.cuh"
-#endif
+#include "spmv/spmv_cuda.hpp"
 
 namespace SMAX::KERNELS {
 
@@ -78,10 +76,8 @@ class SpMVKernel : public Kernel {
                             x_offset, y_offset);
         }
         case PlatformType::CUDA: {
-#if USE_CUDA
             return dispatch(SPMV::initialize_cuda, "spmv_finalize", A_offset,
                             x_offset, y_offset);
-#endif
         }
         default:
             std::cerr << "Error: Platform not supported\n";
@@ -96,10 +92,8 @@ class SpMVKernel : public Kernel {
                             y_offset);
         }
         case PlatformType::CUDA: {
-#if USE_CUDA
             return dispatch(SPMV::apply_cuda, "spmv_apply", A_offset, x_offset,
                             y_offset);
-#endif
         }
         default:
             std::cerr << "Error: Platform not supported\n";
@@ -114,10 +108,8 @@ class SpMVKernel : public Kernel {
                             x_offset, y_offset);
         }
         case PlatformType::CUDA: {
-#if USE_CUDA
             return dispatch(SPMV::finalize_cuda, "spmv_finalize", A_offset,
                             x_offset, y_offset);
-#endif
         }
         default:
             std::cerr << "Error: Platform not supported\n";

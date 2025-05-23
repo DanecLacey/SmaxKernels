@@ -8,6 +8,8 @@
 
 namespace SMAX {
 
+#define RESTRICT __restrict__
+
 #define CHECK_ERROR(func, label)                                               \
     if (func) {                                                                \
         std::cerr << "Error in " << label << "\n";                             \
