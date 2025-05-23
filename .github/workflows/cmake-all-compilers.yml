@@ -46,9 +46,16 @@ jobs:
             | sed 's/^export //' \
             >> $GITHUB_ENV
           
+      - name: Show Compilers
+        run: |
+          echo "icpx = $(which icpx)"
+          echo "icx = $(which icx)"
+          echo "icpc = $(which icpc)"
 
       - name: Set compiler environment variable
         run: |
+          run: echo "compiler_type=${{ matrix.compiler_type }}"
+          
           if [[ "${{ matrix.compiler }}" == "system" ]]; then
             echo "CXX=$(which g++)" >> $GITHUB_ENV
             echo "CUDA=" >> $GITHUB_ENV
@@ -62,11 +69,6 @@ jobs:
             echo "CXX=$(which g++)" >> $GITHUB_ENV
             echo "CUDA=$(which nvcc)" >> $GITHUB_ENV
           fi
-
-      - name: Show Compilers
-        run: |
-          echo "Using CXX = ${CXX}"
-          echo "Using CUDA = ${CUDA}"
 
       - name: Check CUDA nvcc
         if: matrix.compiler_type == 'nvcc'
@@ -113,4 +115,4 @@ jobs:
         working-directory: examples/tests_build/tests/
         run: |
           chmod +x ./run_tests
-          ./run_tests
+          yes | ./run_tests
