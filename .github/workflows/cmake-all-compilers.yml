@@ -41,7 +41,10 @@ jobs:
           if [[ "${{ matrix.compiler }}" != "system" ]]; then
             spack load ${{ matrix.compiler }}
           fi
-          export CXX=$(which g++) >> $GITHUB_ENV
+          echo "CXX=$(which g++)" >> $GITHUB_ENV
+
+      - name: Show C++ compiler
+        run: Using CXX = $CXX
 
       - name: CMake configure SMAX
         run: |
