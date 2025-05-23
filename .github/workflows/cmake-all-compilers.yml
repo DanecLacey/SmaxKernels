@@ -35,14 +35,10 @@ jobs:
           key: ${{ runner.os }}-spack-${{ matrix.compiler }}
 
       - name: Install compilers via Spack
-        if: matrix.compiler != 'system' && matrix.compiler != 'cuda'
+        if: matrix.compiler != 'system'
         run: |
-          spack install ${{
-            matrix.compiler
-          }}
-          eval $(spack load --sh ${matrix.compiler}) ${{
-            matrix.compiler
-          }}
+          spack install ${{ matrix.compiler }}
+          eval "$(spack load --sh ${{ matrix.compiler }})"
           spack compiler find
 
       - name: Set compiler environment variable
