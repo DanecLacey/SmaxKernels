@@ -60,8 +60,10 @@ jobs:
             echo "CXX=$(which g++)" >> $GITHUB_ENV
             echo "CUDA=/usr/local/cuda/bin/nvcc" >> $GITHUB_ENV
           fi
-      - name: Show C++ compiler
+
+      - name: Show Compilers
         run: echo "Using CXX = ${CXX}"
+        run: echo "Using CUDA = ${CUDA}"
 
       - name: CMake configure SMAX
         run: |
