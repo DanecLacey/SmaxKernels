@@ -52,6 +52,7 @@ jobs:
           mkdir smax_build && cd smax_build
           cmake .. \
             -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_CXX_COMPILER=$CXX
+          echo "CMake configure SMAX INSTALLING TO = $(realpath ../install)"
 
       - name: Build & install SMAX
         working-directory: smax_build
@@ -64,7 +65,7 @@ jobs:
         working-directory: examples
         run: |
           echo "CMake configure Tests pwd = $(pwd)"
-          echo "CMake configure Tests ../../install = $(ls ../../install)"
+          echo "CMake configure Tests ../../install = $(realpath ../install)"
           mkdir tests_build && cd tests_build
           cmake .. \
             -DCMAKE_PREFIX_PATH=../../install -DCMAKE_CXX_COMPILER=$CXX
