@@ -38,8 +38,12 @@ jobs:
         if: matrix.compiler != 'system'
         run: |
           spack install ${{ matrix.compiler }}
-          eval "$(spack load --sh ${{ matrix.compiler }})"
+          spack load --sh ${{ matrix.compiler }} > spack_env.sh
           spack compiler find
+          # Append those env vars to $GITHUB_ENV so next steps see them
+          echo 'source ${{github.workspace}}/spack_env.sh' >> $GITHUB_ENV
+          # Also, source it here to be able to run which icpx/icpc
+          source spack_env.sh
 
       - name: Set compiler environment variable
         run: |
@@ -54,7 +58,7 @@ jobs:
             echo "CUDA=" >> $GITHUB_ENV
           elif [[ "${{ matrix.compiler_type }}" == "nvcc" ]]; then
             echo "CXX=$(which g++)" >> $GITHUB_ENV
-            echo "CUDA=/usr/local/cuda/bin/nvcc" >> $GITHUB_ENV
+            echo "CUDA=$(which nvcc)" >> $GITHUB_ENV
           fi
 
       - name: Show Compilers
