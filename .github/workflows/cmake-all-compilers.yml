@@ -54,8 +54,8 @@ jobs:
 
       - name: Set compiler environment variable
         run: |
-          run: echo "compiler_type=${{ matrix.compiler_type }}"
-          
+          echo "compiler_type=${{ matrix.compiler_type }}"
+
           if [[ "${{ matrix.compiler }}" == "system" ]]; then
             echo "CXX=$(which g++)" >> $GITHUB_ENV
             echo "CUDA=" >> $GITHUB_ENV
