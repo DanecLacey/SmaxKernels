@@ -69,8 +69,7 @@ jobs:
       - name: Check CUDA nvcc
         if: matrix.compiler_type == 'nvcc'
         run: |
-          ls -l /usr/local/cuda/bin/nvcc
-          /usr/local/cuda/bin/nvcc --version
+          nvcc --version
 
       - name: Check CMake version
         run: cmake --version
