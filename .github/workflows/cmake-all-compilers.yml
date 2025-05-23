@@ -14,9 +14,11 @@ jobs:
       matrix:
         include:
           - compiler: system
-            compiler_type: cxx
-          - compiler: intel@15.0.6
-            compiler_type: cxx
+            compiler_type: g++
+          - compiler: intel-oneapi-compilers
+            compiler_type: icpx
+          - compiler: intel-oneapi-compilers
+            compiler_type: icpc
           # - compiler: nvhpc@22.3
           #   compiler_id: NVHPC
 
@@ -34,14 +36,24 @@ jobs:
 
       - name: Install compiler via Spack
         if: matrix.compiler != 'system'
-        run: spack install ${{ matrix.compiler }}
-
-      - name: Load compiler into env
         run: |
-          if [[ "${{ matrix.compiler }}" != "system" ]]; then
-            spack load ${{ matrix.compiler }}
+          spack install ${{
+            matrix.compiler
+          }}
+          spack load ${{
+            matrix.compiler
+          }}
+          spack compiler find
+
+      - name: Set compiler environment variable
+        run: |
+          if [[ "${{ matrix.compiler }}" == "system" ]]; then
+            echo "CXX=$(which g++)" >> $GITHUB_ENV
+          elif [[ "${{ matrix.compiler_type }}" == "icpx" ]]; then
+            echo "CXX=$(spack location -i intel-oneapi-compilers)/compiler/latest/linux/bin/icpx" >> $GITHUB_ENV
+          elif [[ "${{ matrix.compiler_type }}" == "icpc" ]]; then
+            echo "CXX=$(spack location -i intel-oneapi-compilers)/compiler/latest/linux/bin/intel64/icpc" >> $GITHUB_ENV
           fi
-          echo "CXX=$(which g++)" >> $GITHUB_ENV
 
       - name: Show C++ compiler
         run: echo "Using CXX = ${CXX}"
