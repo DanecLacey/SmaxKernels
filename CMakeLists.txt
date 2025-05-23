@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Optional: restrict required version
 find_package(CUDAToolkit QUIET)
-if (CUDAToolkit_FOUND)
+if (CUDAToolkit_FOUND OR (DEFINED CXX_CUDA_COMPILER AND CXX_CUDA_COMPILER STREQUAL "nvcc"))
     enable_language(CUDA)
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 80 86)
@@ -112,9 +112,11 @@ endif()
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
-if (CUDAToolkit_FOUND)
-    message(STATUS "CUDA Compiler ID: ${CMAKE_CUDA_COMPILER_ID}")
-    message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
+if(DEFINED CMAKE_CUDA_COMPILER_ID AND NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "")
+  message(STATUS "CUDA Compiler ID: ${CMAKE_CUDA_COMPILER_ID}")
+endif()
+if(DEFINED CMAKE_CUDA_COMPILER_VERSION AND NOT "${CMAKE_CUDA_COMPILER_VERSION}" STREQUAL "")
+  message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
 endif()
 
 # Normalize compiler ID string to uppercase

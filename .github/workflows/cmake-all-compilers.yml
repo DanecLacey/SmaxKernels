@@ -34,7 +34,7 @@ jobs:
           path: ~/.spack
           key: ${{ runner.os }}-spack-${{ matrix.compiler }}
 
-      - name: Install ompilers via Spack
+      - name: Install compilers via Spack
         if: matrix.compiler != 'system' && matrix.compiler != 'cuda'
         run: |
           spack install ${{
