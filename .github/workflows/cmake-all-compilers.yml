@@ -44,7 +44,7 @@ jobs:
           echo "CXX=$(which g++)" >> $GITHUB_ENV
 
       - name: Show C++ compiler
-        run: Using CXX = $CXX
+        run: Using CXX = ${CXX}
 
       - name: CMake configure SMAX
         run: |
