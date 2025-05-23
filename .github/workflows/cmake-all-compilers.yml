@@ -39,11 +39,13 @@ jobs:
         run: |
           spack install ${{ matrix.compiler }}
           spack load --sh ${{ matrix.compiler }} > spack_env.sh
-          spack compiler find
-          # Append those env vars to $GITHUB_ENV so next steps see them
-          echo 'source ${{github.workspace}}/spack_env.sh' >> $GITHUB_ENV
-          # Also, source it here to be able to run which icpx/icpc
+          chmod +x spack_env.sh
           source spack_env.sh
+          spack compiler find
+          grep '^export ' spack_env.sh \
+            | sed 's/^export //' \
+            >> $GITHUB_ENV
+          
 
       - name: Set compiler environment variable
         run: |
