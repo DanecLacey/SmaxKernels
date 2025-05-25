@@ -45,13 +45,13 @@ class SpTRSVErrorHandler : public KernelErrorHandler {
   public:
     static void zero_diag(int row_idx) {
         std::ostringstream oss;
-        oss << "Zero detected on diagonal at row index" << row_idx;
+        oss << "Zero detected on diagonal at row index: " << row_idx;
         kernel_fatal("[SpTRSV] " + oss.str());
     }
 
     static void no_diag(int row_idx) {
         std::ostringstream oss;
-        oss << "No diagonal to extract at row index" << row_idx;
+        oss << "No diagonal to extract at row index: " << row_idx;
         kernel_fatal("[SpTRSV] " + oss.str());
     }
 

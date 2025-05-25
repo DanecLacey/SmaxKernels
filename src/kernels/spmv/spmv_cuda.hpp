@@ -116,6 +116,13 @@ int initialize_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
     return dispatch_cuda<Init_CUDA>(timers, k_ctx, args, flags, A_offset,
                                     x_offset, y_offset);
 #else
+    (void)timers;
+    (void)k_ctx;
+    (void)args;
+    (void)flags;
+    (void)A_offset;
+    (void)x_offset;
+    (void)y_offset;
     return 1; // TODO: Handle error properly
 #endif
 }
@@ -125,6 +132,13 @@ int apply_cuda(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
     return dispatch_cuda<Apply_CUDA>(timers, k_ctx, args, flags, A_offset,
                                      x_offset, y_offset);
 #else
+    (void)timers;
+    (void)k_ctx;
+    (void)args;
+    (void)flags;
+    (void)A_offset;
+    (void)x_offset;
+    (void)y_offset;
     return 1; // TODO: Handle error properly
 #endif
 }
@@ -134,6 +148,13 @@ int finalize_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
     return dispatch_cuda<Finalize_CUDA>(timers, k_ctx, args, flags, A_offset,
                                         x_offset, y_offset);
 #else
+    (void)timers;
+    (void)k_ctx;
+    (void)args;
+    (void)flags;
+    (void)A_offset;
+    (void)x_offset;
+    (void)y_offset;
     return 1; // TODO: Handle error properly
 #endif
 }

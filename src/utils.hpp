@@ -22,6 +22,10 @@ class Utils {
     void print_timers();
 
     template <typename IT>
+    int build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
+                            IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz);
+
+    template <typename IT>
     int generate_perm_jh(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                          int *inv_perm, int *lvl);
 

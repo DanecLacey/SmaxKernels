@@ -10,16 +10,19 @@
 namespace SMAX {
 
 template <typename IT>
-void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
-                         IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz) {
+int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
+                               IT *&A_sym_row_ptr, IT *&A_sym_col,
+                               int &A_sym_nnz) {
 
     IF_SMAX_DEBUG(ErrorHandler::log("Entering build_symmetric_csr"));
 
     A_sym_row_ptr = new IT[A_n_rows + 1];
-    A_sym_row_ptr[0] = 0;
+    A_sym_row_ptr[0] = (IT)0;
     IT *nnz_per_row = new IT[A_n_rows];
-    bool *col_visited = new bool[A_n_rows]; // used to prevent duplicates
-    bool *sym_visited = new bool[A_n_rows]; // used to prevent duplicates
+    bool *col_visited = new bool[A_n_rows]; // to prevent duplicates
+    bool *sym_visited = new bool[A_n_rows];
+    std::vector<IT> touched_cols;
+    std::vector<IT> touched_sym;
 
 #pragma omp parallel for
     for (int i = 0; i < A_n_rows; ++i) {
@@ -29,8 +32,10 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
         sym_visited[i] = false;
     }
 
-    // === First pass: counting ===
+    // === First pass: Counting ===
     for (int i = 0; i < A_n_rows; ++i) {
+        touched_cols.clear();
+        touched_sym.clear();
         for (IT jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
             int j = A_col[jj];
 
@@ -38,23 +43,32 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
             if (!col_visited[j]) {
                 col_visited[j] = true;
                 ++nnz_per_row[i];
+                touched_cols.push_back(j);
             }
 
             // symmetric entry in row j
             if (i != j && !sym_visited[j]) {
-                sym_visited[j] = true;
-                ++nnz_per_row[j];
+
+                // binary‐search row j for i
+                auto bj = A_col + A_row_ptr[j];
+                auto ej = A_col + A_row_ptr[j + 1];
+                if (!std::binary_search(bj, ej, i)) {
+                    sym_visited[j] = true;
+                    ++nnz_per_row[j];
+                    touched_sym.push_back(j);
+                }
             }
         }
 
-        // TODO: Clearly not scalable
-        for (int i = 0; i < A_n_rows; ++i) {
-            col_visited[i] = false;
-            sym_visited[i] = false;
+        // Reset only touched entries
+        for (int j : touched_cols) {
+            col_visited[j] = false;
+        }
+        for (int j : touched_sym) {
+            sym_visited[j] = false;
         }
     }
 
-    // === Build row_ptr ===
     A_sym_row_ptr[0] = 0;
     for (int i = 0; i < A_n_rows; ++i) {
         A_sym_row_ptr[i + 1] = A_sym_row_ptr[i] + nnz_per_row[i];
@@ -62,14 +76,17 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
     A_sym_nnz = A_sym_row_ptr[A_n_rows];
     A_sym_col = new IT[A_sym_nnz];
 
-    // === Second pass: assignment ===
+    // Just to be extra safe
+#pragma omp parallel for
     for (int i = 0; i < A_n_rows; ++i) {
-        // TODO: Clearly not scalable
-        for (int i = 0; i < A_n_rows; ++i) {
-            col_visited[i] = false;
-            sym_visited[i] = false;
-        }
+        col_visited[i] = false;
+        sym_visited[i] = false;
+    }
 
+    // === Second pass: Assignment ===
+    for (int i = 0; i < A_n_rows; ++i) {
+        touched_cols.clear();
+        touched_sym.clear();
         int offset = A_sym_row_ptr[i];
         for (IT jj = A_row_ptr[i]; jj < A_row_ptr[i + 1]; ++jj) {
             int j = A_col[jj];
@@ -78,14 +95,36 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
             if (!col_visited[j]) {
                 col_visited[j] = true;
                 A_sym_col[offset++] = j;
+                touched_cols.push_back(j);
             }
 
             // symmetric
             if (i != j && !sym_visited[j]) {
-                sym_visited[j] = true;
-                A_sym_col[A_sym_row_ptr[j] + (--nnz_per_row[j])] = i;
+                auto bj = A_col + A_row_ptr[j];
+                auto ej = A_col + A_row_ptr[j + 1];
+                if (!std::binary_search(bj, ej, i)) {
+                    sym_visited[j] = true;
+                    A_sym_col[A_sym_row_ptr[j] + (--nnz_per_row[j])] = i;
+                    touched_sym.push_back(j);
+                }
+            }
+
+            // Reset only touched entries
+            for (int j : touched_cols) {
+                col_visited[j] = false;
+            }
+            for (int j : touched_sym) {
+                sym_visited[j] = false;
             }
         }
+    }
+
+    // === Third pass: Sorting == NOTE: Optional
+#pragma omp parallel for
+    for (int i = 0; i < A_n_rows; ++i) {
+        auto begin = A_sym_col + A_sym_row_ptr[i];
+        auto end = A_sym_col + A_sym_row_ptr[i + 1];
+        std::sort(begin, end);
     }
 
     delete[] nnz_per_row;
@@ -93,6 +132,8 @@ void build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
     delete[] sym_visited;
 
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
+
+    return 0;
 };
 
 template <typename IT>
@@ -153,26 +194,26 @@ int Utils::generate_perm_DFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
         q.pop_front();
 
         // Enqueue all unvisited neighbors
-        for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; jj++){
+        for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; jj++) {
             int v = A_sym_col[jj];
             if (v <= u)
                 continue;
-            if (distance[v] == -1){
+            if (distance[v] == -1) {
                 q.push_front(v);
                 distance[v] = distance[u] + 1;
                 depends[v] = u;
-            } else if (distance[v] <= distance[u]){
+            } else if (distance[v] <= distance[u]) {
                 distance[v] = distance[u] + 1;
                 depends[v] = u;
             }
         }
     }
 
-    for (int node = 0; node < A_n_rows; node++){
+    for (int node = 0; node < A_n_rows; node++) {
         lvl[node] = 0;
         int node_level = 0;
         int dependency, dependency_old = node;
-        while(dependency = depends[dependency_old], dependency != -1){
+        while (dependency = depends[dependency_old], dependency != -1) {
             node_level++;
             dependency_old = dependency;
         }
