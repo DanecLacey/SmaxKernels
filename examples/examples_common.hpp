@@ -583,6 +583,21 @@ template <typename VT> void print_vector(VT *vec, int n_rows) {
     printf("]\n\n");
 }
 
+template <typename VT> void print_exact_vector(VT *vec, int n_rows) {
+#include <iomanip>
+#include <iostream>
+#include <limits>
+
+    printf("Vector: [");
+    for (int i = 0; i < n_rows; ++i) {
+        std::cout << std::fixed
+                  << std::setprecision(
+                         std::numeric_limits<double>::max_digits10)
+                  << vec[i] << std::endl;
+    }
+    printf("]\n\n");
+}
+
 template <typename IT, typename VT>
 void print_matrix(int n_rows, int n_cols, int nnz, IT *col, IT *row_ptr,
                   VT *val, bool symbolic = false) {

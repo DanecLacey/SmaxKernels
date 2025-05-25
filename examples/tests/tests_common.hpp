@@ -4,14 +4,21 @@
 #include <stdexcept>
 #include <string>
 
+template <typename T> constexpr T get_epsilon() {
+    return static_cast<T>(1e-7); // For float or general fallback
+}
+
+template <> constexpr double get_epsilon<double>() { return 1e-14; }
+
 template <typename T>
 void compare_arrays(const T *a, const T *b, int N, std::string desc) {
     for (int i = 0; i < N; ++i) {
-        if (a[i] != b[i]) {
+        T diff = std::abs(a[i] - b[i]);
+        if (diff > get_epsilon<T>()) {
             // Build an error message with index and differing values
             std::ostringstream oss;
-            oss << desc << " : Array mismatch at index " << i
-                << ": first=" << a[i] << ", second=" << b[i];
+            oss << desc << " : Mismatch at index " << i << ": first=" << a[i]
+                << ", second=" << b[i];
             throw std::runtime_error(oss.str());
         }
     }

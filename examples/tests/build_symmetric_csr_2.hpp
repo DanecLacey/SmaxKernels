@@ -31,8 +31,6 @@
 #include "testing_framework.hpp"
 #include "tests_common.hpp"
 
-#include <stdexcept>
-
 REGISTER_TEST(build_symmetric_csr_2) {
 
     using IT = int;
