@@ -69,7 +69,7 @@ REGISTER_TEST(build_symmetric_csr_2) {
     //                 std::string("sym_row_ptr"));
 
     // Compare results
-    compare_value<IT>(expected_A_sym_nnz, A_sym_nnz, std::string("nnz"));
+    compare_values<IT>(expected_A_sym_nnz, A_sym_nnz, std::string("nnz"));
     compare_arrays<IT>(expected_A_sym_col, A_sym_col, A_sym_nnz,
                        std::string("col"));
     compare_arrays<IT>(expected_A_sym_row_ptr, A_sym_row_ptr, A_sym_n_rows + 1,

@@ -25,7 +25,7 @@ void compare_arrays(const T *a, const T *b, int N, std::string desc) {
 }
 
 template <typename T>
-void compare_value(const T a, const T b, std::string desc) {
+void compare_values(const T a, const T b, std::string desc) {
     if (a != b) {
         // Build an error message with index and differing values
         std::ostringstream oss;

@@ -26,8 +26,8 @@
 
 #endif
 
-#define MIN_BENCH_TIME 0.0
-#define MIN_NUM_ITERS 1
+#define MIN_BENCH_TIME 1.0
+#define MIN_NUM_ITERS 1000
 #define GF_TO_F 1000000000
 #define F_TO_GF 0.000000001
 
