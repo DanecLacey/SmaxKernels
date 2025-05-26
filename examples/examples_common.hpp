@@ -370,18 +370,24 @@ struct CRSMatrix {
         this->nnz = coo_mat->nnz;
 
         this->row_ptr = new int[this->n_rows + 1];
+        int *tmp = new int[this->n_rows + 1];
         int *nnz_per_row = new int[this->n_rows];
 
         this->col = new int[this->nnz];
         this->val = new double[this->nnz];
 
-        for (int idx = 0; idx < this->nnz; ++idx) {
-            this->col[idx] = coo_mat->J[idx];
-            this->val[idx] = coo_mat->val[idx];
-        }
+#pragma omp parallel
+        {
+#pragma omp for schedule(static)
+            for (int idx = 0; idx < this->nnz; ++idx) {
+                this->col[idx] = coo_mat->J[idx];
+                this->val[idx] = coo_mat->val[idx];
+            }
 
-        for (int i = 0; i < this->n_rows; ++i) {
-            nnz_per_row[i] = 0;
+#pragma omp for schedule(static)
+            for (int i = 0; i < this->n_rows; ++i) {
+                nnz_per_row[i] = 0;
+            }
         }
 
         // count nnz per row
@@ -389,9 +395,14 @@ struct CRSMatrix {
             ++nnz_per_row[coo_mat->I[i]];
         }
 
-        this->row_ptr[0] = 0;
+        tmp[0] = 0;
         for (int i = 0; i < this->n_rows; ++i) {
-            this->row_ptr[i + 1] = this->row_ptr[i] + nnz_per_row[i];
+            tmp[i + 1] = tmp[i] + nnz_per_row[i];
+        }
+
+#pragma omp parallel for schedule(static)
+        for (int i = 0; i < this->n_rows; ++i) {
+            this->row_ptr[i] = tmp[i];
         }
 
         if (this->row_ptr[this->n_rows] != this->nnz) {
@@ -400,6 +411,7 @@ struct CRSMatrix {
         }
 
         delete[] nnz_per_row;
+        delete[] tmp;
     }
 };
 
