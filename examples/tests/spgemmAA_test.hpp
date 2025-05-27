@@ -7,10 +7,6 @@
 
 REGISTER_TEST(spgemmAA_test) {
 
-#ifdef _OPENMP
-    omp_set_num_threads(1);
-#endif
-
     using IT = uint16_t;
     using VT = float;
 

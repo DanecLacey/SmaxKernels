@@ -7,12 +7,8 @@
 
 REGISTER_TEST(spgemmAB_test) {
 
-#ifdef _OPENMP
-    omp_set_num_threads(1);
-#endif
-
-    using IT = int;
-    using VT = float;
+    using IT = int32_t;
+    using VT = double;
 
     IT A_n_rows = 3;
     IT A_n_cols = 3;

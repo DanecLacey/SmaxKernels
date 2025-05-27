@@ -167,6 +167,9 @@ struct COOMatrix {
     }
 
     void read_from_mtx(const std::string &matrix_file_name) {
+#ifdef USE_FAST_MMIO
+        // TODO: SK
+#else
         MM_typecode matcode;
         FILE *f = fopen(matrix_file_name.c_str(), "r");
         if (!f) {
@@ -249,6 +252,7 @@ struct COOMatrix {
             this->J[i] = col_data[perm[i]];
             this->val[i] = val_data[perm[i]];
         }
+#endif
 
         this->n_rows = nrows;
         this->n_cols = ncols;
@@ -401,12 +405,14 @@ struct CRSMatrix {
         }
 
 #pragma omp parallel for schedule(static)
-        for (int i = 0; i < this->n_rows; ++i) {
+        for (int i = 0; i < this->n_rows + 1; ++i) {
             this->row_ptr[i] = tmp[i];
         }
 
         if (this->row_ptr[this->n_rows] != this->nnz) {
-            printf("ERROR: converting to CRS.\n");
+            printf("ERROR: expected nnz: %d does not match: %d in "
+                   "convert_coo_to_crs.\n",
+                   this->row_ptr[this->n_rows], this->nnz);
             exit(1);
         }
 

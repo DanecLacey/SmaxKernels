@@ -14,9 +14,6 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
                       int &C_nnz, IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
 
     GET_THREAD_COUNT(int, n_threads);
-    if (n_threads > 1) {
-        SpGEMMErrorHandler::multithreaded_issue();
-    }
 
     // Enforce dimensions of C
     C_n_rows = A_n_rows;
@@ -108,7 +105,6 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
             for (int j = tl_previous_nnz; j < tl_nnz[tid]; ++j) {
                 tl_used_cols[padded_C_col[offset + j]] = false;
             }
-
         }
     }
     // clang-format on
@@ -125,8 +121,8 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
     // Compute nnz displacement array
     int *C_nnz_displacement = new int[n_threads + 1];
     C_nnz_displacement[0] = 0;
-    for (int tid = 1; tid < n_threads + 1; ++tid) {
-        C_nnz_displacement[tid] = C_nnz_displacement[tid - 1] + tl_nnz[tid - 1];
+    for (int tid = 0; tid < n_threads; ++tid) {
+        C_nnz_displacement[tid + 1] = C_nnz_displacement[tid] + tl_nnz[tid];
     }
 
     // Allocate the rest of C
@@ -140,7 +136,7 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
         GET_THREAD_ID(int, tid)
         int offset = C_nnz_displacement[tid];
         for (int i = 0; i < tl_nnz[tid]; ++i) {
-            C_col[C_nnz_displacement[tid] + i] = padded_C_col[offset + i];
+            C_col[offset + i] = padded_C_col[tl_offsets[tid] + i];
         }
     }
 

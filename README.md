@@ -2,7 +2,7 @@
 
 **S**parse **MA**trix mpi+**X** **Kernels** is a lightweight, portable C++ library providing high-performance implementations of popular sparse matrix kernels of the form `C = A op B`.
 
-## Supported Kernels, Parallel Frameworks, and Formats ## 
+## Supported Kernels and Platforms ## 
 | Sparse Kernel                                     | OpenMP    | CUDA     | MPI       | Matrix Formats |
 |--------------                                     |---------- |----------|---------- | ----------|
 | Matrix-Vector Multiplication -- **SpMV**          | ✅       | ✅       | ❌       | CRS |
