@@ -14,12 +14,12 @@ inline void basic_numerical_phase(int A_n_rows, IT *RESTRICT A_col,
                                   IT *RESTRICT C_col, IT *RESTRICT C_row_ptr,
                                   VT *RESTRICT C_val) {
 
-    GET_THREAD_COUNT(int, num_threads)
+    GET_THREAD_COUNT(int, n_threads)
 
     // Prepare thread local dense accumulators
-    VT **dense_accumulators = new VT *[num_threads];
+    VT **dense_accumulators = new VT *[n_threads];
 
-    for (int tid = 0; tid < num_threads; ++tid) {
+    for (int tid = 0; tid < n_threads; ++tid) {
         dense_accumulators[tid] = new VT[C_n_cols];
     }
 
@@ -62,6 +62,11 @@ inline void basic_numerical_phase(int A_n_rows, IT *RESTRICT A_col,
             }
         }
     }
+
+    for (int tid = 0; tid < n_threads; ++tid) {
+        delete[] dense_accumulators[tid];
+    }
+    delete[] dense_accumulators;
 }
 
 } // namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU

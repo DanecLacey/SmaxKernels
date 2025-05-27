@@ -18,13 +18,13 @@ namespace SMAX {
 
 #ifdef _OPENMP
 
-#define GET_THREAD_COUNT(Type, num_threads)                                    \
-    Type num_threads = omp_get_max_threads();
+#define GET_THREAD_COUNT(Type, n_threads)                                      \
+    Type n_threads = omp_get_max_threads();
 #define GET_THREAD_ID(Type, tid) Type tid = omp_get_thread_num();
 
 #else
 
-#define GET_THREAD_COUNT(Type, num_threads) Type num_threads = 1;
+#define GET_THREAD_COUNT(Type, n_threads) Type n_threads = 1;
 #define GET_THREAD_ID(Type, tid) Type tid = 0;
 
 #endif

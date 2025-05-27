@@ -97,17 +97,17 @@ class BenchHarness {
 };
 
 void init_pin() {
-    int num_threads = 1;
+    int n_threads = 1;
     double bogus = 0.0;
 
 #ifdef _OPENMP
 #pragma omp parallel
     {
-        num_threads = omp_get_num_threads();
+        n_threads = omp_get_num_threads();
     }
 #endif
 #pragma omp parallel for
-    for (int i = 0; i < num_threads; ++i) {
+    for (int i = 0; i < n_threads; ++i) {
         bogus += 1;
     }
 
