@@ -8,7 +8,7 @@
 REGISTER_TEST(spgemmAB_test) {
 
     using IT = int32_t;
-    using VT = double;
+    using VT = float;
 
     IT A_n_rows = 3;
     IT A_n_cols = 3;
