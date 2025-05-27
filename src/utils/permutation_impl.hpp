@@ -370,6 +370,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
 }
 
 // Testing Coloring options
+// Based on Saad Alg 3.6
 template <typename IT>
 int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                                int *perm, int *inv_perm, int *lvl) {

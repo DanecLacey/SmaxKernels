@@ -42,11 +42,11 @@ Kernel *Interface::kernel(const std::string &kernel_name) {
     }
 }
 
-int Interface::get_uc_n_levels(void) const{
+int Interface::get_n_levels(void) const{
     return this->uc->n_levels;
 }
 
-int Interface::get_uc_level_ptr_at(int idx) const{
+int Interface::get_level_ptr_at(int idx) const{
     return this->uc->lvl_ptr[idx];
 }
 

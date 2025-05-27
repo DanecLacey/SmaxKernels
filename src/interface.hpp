@@ -37,8 +37,8 @@ class Interface {
                         IntType = IntType::INT32,
                         FloatType = FloatType::FLOAT64);
 
-    int get_uc_n_levels(void) const;
-    int get_uc_level_ptr_at(int) const;
+    int get_n_levels(void) const;
+    int get_level_ptr_at(int) const;
 
     Timers *timers;
     Utils *utils;
