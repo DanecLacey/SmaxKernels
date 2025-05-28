@@ -39,9 +39,9 @@ int symbolic_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
     VT *&C_val = as_ptr_ref<VT>(args->C->val);
 
 #if 1
-    padded_symbolic_phase(A_n_rows, A_col, A_row_ptr, B_n_rows, B_n_cols, B_col,
-                          B_row_ptr, C_n_rows, C_n_cols, C_nnz, C_col,
-                          C_row_ptr, C_val);
+    padded_symbolic_phase(timers, A_n_rows, A_col, A_row_ptr, B_n_rows,
+                          B_n_cols, B_col, B_row_ptr, C_n_rows, C_n_cols, C_nnz,
+                          C_col, C_row_ptr, C_val);
 #endif
 
     IF_SMAX_TIME(timers->get("symbolic_phase")->stop());

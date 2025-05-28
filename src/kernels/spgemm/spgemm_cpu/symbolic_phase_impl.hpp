@@ -7,11 +7,16 @@
 namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU {
 
 template <typename IT, typename VT>
-inline void
-padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
-                      int B_n_rows, int B_n_cols, IT *RESTRICT B_col,
-                      IT *RESTRICT B_row_ptr, int &C_n_rows, int &C_n_cols,
-                      int &C_nnz, IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
+inline void padded_symbolic_phase(Timers *timers, int A_n_rows,
+                                  IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
+                                  int B_n_rows, int B_n_cols,
+                                  IT *RESTRICT B_col, IT *RESTRICT B_row_ptr,
+                                  int &C_n_rows, int &C_n_cols, int &C_nnz,
+                                  IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
+
+    IF_SMAX_TIME(timers->get("Setup")->start());
+
+    using LONG = unsigned long long int;
 
     GET_THREAD_COUNT(int, n_threads);
 
@@ -28,8 +33,8 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
     }
 
     // Collect upper-bound offsets for each thread
-    int *tl_ub = new int[n_threads];
-    int *tl_offsets = new int[n_threads + 1];
+    LONG *tl_ub = new LONG[n_threads];
+    LONG *tl_offsets = new LONG[n_threads + 1];
 
 #pragma omp parallel
     {
@@ -53,11 +58,11 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
     }
 
     // Allocate padded CRS arrays for C
-    int upper_nnz_bound = tl_offsets[n_threads];
-    IT *padded_C_col = new IT[upper_nnz_bound];
+    LONG upper_nnz_bound = tl_offsets[n_threads];
+    LONG *padded_C_col = new LONG[upper_nnz_bound];
     bool **used_cols = new bool *[n_threads];
-    int *tl_nnz = new int[n_threads];
-    IT *C_nnz_per_row = new IT[C_n_rows];
+    LONG *tl_nnz = new LONG[n_threads];
+    LONG *C_nnz_per_row = new LONG[C_n_rows];
 
 #pragma omp parallel
     {
@@ -76,17 +81,19 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
         }
     }
 
+    IF_SMAX_TIME(timers->get("Setup")->stop());
+    IF_SMAX_TIME(timers->get("Gustavson")->start());
 // Padded Gustavson's algorithm (symbolic)
 // clang-format off
 #pragma omp parallel
     {
         GET_THREAD_ID(int, tid)
-        int offset = tl_offsets[tid];
+        LONG offset = tl_offsets[tid];
         bool *tl_used_cols = used_cols[tid];
 
 #pragma omp for schedule(static)
         for (int i = 0; i < A_n_rows; ++i) {
-            int tl_previous_nnz = tl_nnz[tid];
+            LONG tl_previous_nnz = tl_nnz[tid];
 
             for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
                 IT left_col = A_col[j];
@@ -108,6 +115,8 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
         }
     }
     // clang-format on
+    IF_SMAX_TIME(timers->get("Gustavson")->stop());
+    IF_SMAX_TIME(timers->get("Alloc_C")->start());
 
     // Build C_row_ptr
     // NOTE: This memory is never deleted by SMAX
@@ -130,6 +139,8 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
     C_col = new IT[C_nnz];
     C_val = new VT[C_nnz];
 
+    IF_SMAX_TIME(timers->get("Alloc_C")->stop());
+    IF_SMAX_TIME(timers->get("Compress")->start());
 // Compress padded_C_col to C_col
 #pragma omp parallel
     {
@@ -139,6 +150,7 @@ padded_symbolic_phase(int A_n_rows, IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
             C_col[offset + i] = padded_C_col[tl_offsets[tid] + i];
         }
     }
+    IF_SMAX_TIME(timers->get("Compress")->stop());
 
     delete[] B_nnz_per_row;
     delete[] tl_ub;

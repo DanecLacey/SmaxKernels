@@ -10,12 +10,18 @@
 #define INIT_SPGEMM                                                            \
     SpGEMMParser *parser = new SpGEMMParser;                                   \
     SpGEMMParser::SpGEMMArgs *cli_args = parser->parse(argc, argv);            \
+    bool compute_AA = false;                                                   \
+    if (cli_args->matrix_file_name_A == cli_args->matrix_file_name_B) {        \
+        compute_AA = true;                                                     \
+    }                                                                          \
     COOMatrix *coo_mat_A = new COOMatrix;                                      \
     coo_mat_A->read_from_mtx(cli_args->matrix_file_name_A);                    \
     CRSMatrix *crs_mat_A = new CRSMatrix;                                      \
     crs_mat_A->convert_coo_to_crs(coo_mat_A);                                  \
     COOMatrix *coo_mat_B = new COOMatrix;                                      \
-    coo_mat_B->read_from_mtx(cli_args->matrix_file_name_B);                    \
+    if (!compute_AA) {                                                         \
+        coo_mat_B->read_from_mtx(cli_args->matrix_file_name_B);                \
+    }                                                                          \
     CRSMatrix *crs_mat_B = new CRSMatrix;                                      \
     crs_mat_B->convert_coo_to_crs(coo_mat_B);
 

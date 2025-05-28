@@ -6,7 +6,7 @@
 int main(int argc, char *argv[]) {
     INIT_SPMV;
     DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *y = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
+    DenseMatrix *y = new DenseMatrix(crs_mat->n_rows, 1, 0.0);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();

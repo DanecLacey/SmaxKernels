@@ -148,6 +148,10 @@ struct COOMatrix {
     std::vector<int> J;
     std::vector<double> val;
 
+    COOMatrix()
+        : n_rows(0), n_cols(0), nnz(0), is_sorted(false), is_symmetric(false),
+          I(), J(), val() {}
+
     void write_to_mtx(int my_rank, std::string file_out_name) {
         std::string file_name =
             file_out_name + "_rank_" + std::to_string(my_rank) + ".mtx";
@@ -319,6 +323,17 @@ struct CRSMatrix {
         delete[] val;
         delete[] col;
         delete[] row_ptr;
+    }
+
+    // Useful for benchmarking
+    void clear() {
+        delete[] val;
+        delete[] col;
+        delete[] row_ptr;
+        val = nullptr;
+        col = nullptr;
+        row_ptr = nullptr;
+        nnz = 0;
     }
 
     void write_to_mtx_file(std::string file_out_name) {

@@ -1,14 +1,15 @@
 #include "../examples_common.hpp"
-#include "../sptrsv_helpers.hpp"
 #include "../spmv_helpers.hpp"
+#include "../sptrsv_helpers.hpp"
 #include "validation_common.hpp"
 #include <cmath>
 
-void lx_difference(double *a, double *b, int num_elem, int norm, std::string descr){
+void lx_difference(double *a, double *b, int num_elem, int norm,
+                   std::string descr) {
     if (norm == 0) {
         double max = 0;
         for (int i = 0; i < num_elem; i++) {
-            max = (max < abs(a[i] - b[i]))?abs(a[i] - b[i]):max;
+            max = (max < abs(a[i] - b[i])) ? abs(a[i] - b[i]) : max;
         }
         std::cout << descr << " with a L-inf norm of: " << max << std::endl;
         return;
@@ -18,11 +19,13 @@ void lx_difference(double *a, double *b, int num_elem, int norm, std::string des
         val = abs(a[i] - b[i]);
         sum += pow(val, norm);
     }
-    std::cout << descr << " with a L" << norm << " norm of: " << pow(sum, 1./norm) << std::endl;
+    std::cout << descr << " with a L" << norm
+              << " norm of: " << pow(sum, 1. / norm) << std::endl;
 }
 
 int main(int argc, char *argv[]) {
     INIT_SPTRSV;
+    // INIT_SPMV;
 
     DenseMatrix *x_smax = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
     DenseMatrix *x_smax_perm = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
@@ -88,19 +91,19 @@ int main(int argc, char *argv[]) {
                          crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
                          crs_mat_D_plus_L->val),
                      "mkl_sparse_d_create_csr");
-    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
-                         &U, SPARSE_INDEX_BASE_ZERO, crs_mat_U->n_rows,
-                         crs_mat_U->n_cols, crs_mat_U->row_ptr,
-                         crs_mat_U->row_ptr + 1, crs_mat_U->col,
-                         crs_mat_U->val),
-                     "mkl_sparse_d_create_csr");
+    CHECK_MKL_STATUS(
+        mkl_sparse_d_create_csr(&U, SPARSE_INDEX_BASE_ZERO, crs_mat_U->n_rows,
+                                crs_mat_U->n_cols, crs_mat_U->row_ptr,
+                                crs_mat_U->row_ptr + 1, crs_mat_U->col,
+                                crs_mat_U->val),
+        "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
     CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
     CHECK_MKL_STATUS(mkl_sparse_optimize(U), "mkl_sparse_optimize");
 
-    CHECK_MKL_STATUS(mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, U, descr_U,
-                                       x_mkl->val, 0.0, b_mkl->val),
+    CHECK_MKL_STATUS(mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, U,
+                                     descr_U, x_mkl->val, 0.0, b_mkl->val),
                      "mkl_sparse_d_mv");
     CHECK_MKL_STATUS(mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A,
                                        descr, b_mkl->val, x_mkl->val),
@@ -109,14 +112,16 @@ int main(int argc, char *argv[]) {
     // Unpermute and compare
     smax->utils->apply_vec_perm<double>(n_rows, x_smax_perm->val, x_smax->val,
                                         inv_perm);
-    smax->utils->apply_vec_perm<double>(n_rows, b_perm->val, b->val,
-                                        inv_perm);
+    smax->utils->apply_vec_perm<double>(n_rows, b_perm->val, b->val, inv_perm);
 
     compare_spmv(n_rows, b->val, b_mkl->val, cli_args->matrix_file_name);
-    lx_difference(b_mkl->val, b->val, n_rows, 2,  "Right hand side after b = Ux");
+    lx_difference(b_mkl->val, b->val, n_rows, 2,
+                  "Right hand side after b = Ux");
     compare_sptrsv(n_rows, x_smax->val, x_mkl->val, cli_args->matrix_file_name);
-    lx_difference(x_mkl->val, x_smax->val, n_rows, 2, "Solution after Lx=b solve");
-    lx_difference(x_mkl->val, x_smax->val, n_rows, 0, "Solution after Lx=b solve");
+    lx_difference(x_mkl->val, x_smax->val, n_rows, 2,
+                  "Solution after Lx=b solve");
+    lx_difference(x_mkl->val, x_smax->val, n_rows, 0,
+                  "Solution after Lx=b solve");
 
     delete x_smax;
     delete x_mkl;

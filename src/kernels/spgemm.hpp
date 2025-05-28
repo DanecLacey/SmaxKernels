@@ -18,6 +18,10 @@ class SpGEMMKernel : public Kernel {
     SpGEMMKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {
         CREATE_SMAX_STOPWATCH(symbolic_phase)
+        CREATE_SMAX_STOPWATCH(Setup)
+        CREATE_SMAX_STOPWATCH(Gustavson)
+        CREATE_SMAX_STOPWATCH(Alloc_C)
+        CREATE_SMAX_STOPWATCH(Compress)
         CREATE_SMAX_STOPWATCH(numerical_phase)
     }
 

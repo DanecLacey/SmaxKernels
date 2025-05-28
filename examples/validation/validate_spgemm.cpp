@@ -11,7 +11,11 @@ int main(int argc, char *argv[]) {
     // Smax SpGEMM
     SMAX::Interface *smax = new SMAX::Interface();
     smax->register_kernel("my_spgemm", SMAX::KernelType::SPGEMM);
-    REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_B, crs_mat_C_smax);
+    if (compute_AA) {
+        REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_A, crs_mat_C_smax);
+    } else {
+        REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_B, crs_mat_C_smax);
+    }
     smax->kernel("my_spgemm")->run();
 
     // MKL SpGEMM
@@ -25,16 +29,25 @@ int main(int argc, char *argv[]) {
                                 crs_mat_A->n_cols, crs_mat_A->row_ptr,
                                 crs_mat_A->row_ptr + 1, crs_mat_A->col,
                                 crs_mat_A->val),
-        "mkl_sparse_d_create_csr for matrix A");
+        "mkl_sparse_d_create_csr A");
 
-    CHECK_MKL_STATUS(
-        mkl_sparse_d_create_csr(&B, SPARSE_INDEX_BASE_ZERO, crs_mat_B->n_rows,
-                                crs_mat_B->n_cols, crs_mat_B->row_ptr,
-                                crs_mat_B->row_ptr + 1, crs_mat_B->col,
-                                crs_mat_B->val),
-        "mkl_sparse_d_create_csr for matrix B");
+    if (compute_AA) {
+        CHECK_MKL_STATUS(
+            mkl_sparse_d_create_csr(&B, SPARSE_INDEX_BASE_ZERO,
+                                    crs_mat_A->n_rows, crs_mat_A->n_cols,
+                                    crs_mat_A->row_ptr, crs_mat_A->row_ptr + 1,
+                                    crs_mat_A->col, crs_mat_A->val),
+            "mkl_sparse_d_create_csr B.")
+    } else {
+        CHECK_MKL_STATUS(
+            mkl_sparse_d_create_csr(&B, SPARSE_INDEX_BASE_ZERO,
+                                    crs_mat_B->n_rows, crs_mat_B->n_cols,
+                                    crs_mat_B->row_ptr, crs_mat_B->row_ptr + 1,
+                                    crs_mat_B->col, crs_mat_B->val),
+            "mkl_sparse_d_create_csr B.")
+    }
 
-    // Perform the SpGEMM
+    // Entire (Symbolic + Numerical Phase) SpGEMM
     CHECK_MKL_STATUS(mkl_sparse_sp2m(SPARSE_OPERATION_NON_TRANSPOSE, descr, A,
                                      SPARSE_OPERATION_NON_TRANSPOSE, descr, B,
                                      SPARSE_STAGE_FULL_MULT, &C),
@@ -71,6 +84,7 @@ int main(int argc, char *argv[]) {
     // crs_mat_C_mkl->print();
     // printf("SMAX: \n");
     // crs_mat_C_smax->print();
+    smax->utils->print_timers();
 
     // Compare
     compare_spgemm(crs_mat_C_smax, crs_mat_C_mkl, cli_args->matrix_file_name_A,

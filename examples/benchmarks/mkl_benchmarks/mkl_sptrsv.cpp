@@ -24,8 +24,10 @@ int main(int argc, char *argv[]) {
                          crs_mat_D_plus_L->val),
                      "mkl_sparse_d_create_csr");
 
-    // Optimize the matrix
-    CHECK_MKL_STATUS(mkl_sparse_set_sv_hint(A, SPARSE_OPERATION_NON_TRANSPOSE, descr, 1000), "mkl_sparse_set_sv_hint");
+    // Optimize the matrix for SpTRSV
+    CHECK_MKL_STATUS(mkl_sparse_set_sv_hint(A, SPARSE_OPERATION_NON_TRANSPOSE,
+                                            descr, MKL_AGGRESSIVE_N_OPS),
+                     "mkl_sparse_set_sv_hint");
     CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
     // Make lambda, and pass to the benchmarking harness

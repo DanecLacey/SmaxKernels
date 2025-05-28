@@ -21,7 +21,12 @@ int main(int argc, char *argv[]) {
                          crs_mat_D_plus_L->val),
                      "mkl_sparse_d_create_csr");
 
-    // Optimize the matrix for SpMV
+    // Optimize the matrix for SpTRSM
+    // Assume row-major dense vectors by default
+    CHECK_MKL_STATUS(mkl_sparse_set_sm_hint(A, SPARSE_OPERATION_NON_TRANSPOSE,
+                                            descr, SPARSE_LAYOUT_ROW_MAJOR,
+                                            n_vectors, MKL_AGGRESSIVE_N_OPS),
+                     "mkl_sparse_set_sm_hint");
     CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
     // Make lambda, and pass to the benchmarking harness
