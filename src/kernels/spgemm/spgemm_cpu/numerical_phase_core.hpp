@@ -35,8 +35,8 @@ int numerical_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
     VT *&C_val = as_ptr_ref<VT>(args->C->val);
 
 #if 1
-    basic_numerical_phase(A_n_rows, A_col, A_row_ptr, A_val, B_col, B_row_ptr,
-                          B_val, C_n_cols, C_col, C_row_ptr, C_val);
+    basic_numerical_phase(timers, A_n_rows, A_col, A_row_ptr, A_val, B_col,
+                          B_row_ptr, B_val, C_n_cols, C_col, C_row_ptr, C_val);
 #endif
 
     IF_SMAX_TIME(timers->get("numerical_phase")->stop());

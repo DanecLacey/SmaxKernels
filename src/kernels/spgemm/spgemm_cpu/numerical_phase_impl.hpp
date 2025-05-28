@@ -7,12 +7,14 @@
 namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU {
 
 template <typename IT, typename VT>
-inline void basic_numerical_phase(int A_n_rows, IT *RESTRICT A_col,
-                                  IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
-                                  IT *RESTRICT B_col, IT *RESTRICT B_row_ptr,
-                                  VT *RESTRICT B_val, int C_n_cols,
-                                  IT *RESTRICT C_col, IT *RESTRICT C_row_ptr,
-                                  VT *RESTRICT C_val) {
+inline void basic_numerical_phase(Timers *timers, int A_n_rows,
+                                  IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
+                                  VT *RESTRICT A_val, IT *RESTRICT B_col,
+                                  IT *RESTRICT B_row_ptr, VT *RESTRICT B_val,
+                                  int C_n_cols, IT *RESTRICT C_col,
+                                  IT *RESTRICT C_row_ptr, VT *RESTRICT C_val) {
+
+    IF_SMAX_TIME(timers->get("Numerical_Setup")->start());
 
     GET_THREAD_COUNT(int, n_threads)
 
@@ -30,6 +32,9 @@ inline void basic_numerical_phase(int A_n_rows, IT *RESTRICT A_col,
             dense_accumulators[tid][i] = (VT)0.0;
         }
     }
+
+    IF_SMAX_TIME(timers->get("Numerical_Setup")->stop());
+    IF_SMAX_TIME(timers->get("Numerical_Gustavson")->start());
 
 // Gustavson's algorithm (numerical)
 #pragma omp parallel
@@ -62,6 +67,7 @@ inline void basic_numerical_phase(int A_n_rows, IT *RESTRICT A_col,
             }
         }
     }
+    IF_SMAX_TIME(timers->get("Numerical_Gustavson")->stop());
 
     for (int tid = 0; tid < n_threads; ++tid) {
         delete[] dense_accumulators[tid];

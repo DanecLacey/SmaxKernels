@@ -24,11 +24,13 @@ void print_spgemm_timers(const std::string &kernel_name, const Kernel *kernel_pt
     long double initialize_time = kernel_ptr->timers->get("initialize")->get_wtime();
     long double apply_time = kernel_ptr->timers->get("apply")->get_wtime();
     long double symbolic_phase_time = kernel_ptr->timers->get("symbolic_phase")->get_wtime();
-    long double setup_time = kernel_ptr->timers->get("Setup")->get_wtime();
-    long double gustavson_time = kernel_ptr->timers->get("Gustavson")->get_wtime();
+    long double symbolic_setup_time = kernel_ptr->timers->get("Symbolic_Setup")->get_wtime();
+    long double symbolic_gustavson_time = kernel_ptr->timers->get("Symbolic_Gustavson")->get_wtime();
     long double alloc_time = kernel_ptr->timers->get("Alloc_C")->get_wtime();
     long double compress_time = kernel_ptr->timers->get("Compress")->get_wtime();
     long double numerical_phase_time = kernel_ptr->timers->get("numerical_phase")->get_wtime();
+    long double numerical_setup_time = kernel_ptr->timers->get("Numerical_Setup")->get_wtime();
+    long double numerical_gustavson_time = kernel_ptr->timers->get("Numerical_Gustavson")->get_wtime();
     long double finalize_time = kernel_ptr->timers->get("finalize")->get_wtime();
     long double total_time = initialize_time + apply_time + finalize_time;
 
@@ -36,11 +38,13 @@ void print_spgemm_timers(const std::string &kernel_name, const Kernel *kernel_pt
     printer("| Initialize time:", initialize_time);
     printer("| Apply time:", apply_time);
     printer("| | Symbolic Phase time:", symbolic_phase_time);
-    printer("| | | Setup time:", setup_time);
-    printer("| | | Gustavson time:", gustavson_time);
+    printer("| | | Setup time:", symbolic_setup_time);
+    printer("| | | Gustavson time:", symbolic_gustavson_time);
     printer("| | | Alloc C time:", alloc_time);
     printer("| | | Compress time:", compress_time);
     printer("| | Numerical Phase time:", numerical_phase_time);
+    printer("| | | Setup time:", numerical_setup_time);
+    printer("| | | Gustavson time:", numerical_gustavson_time);
     printer("| Finalize time:", finalize_time);
 
 }

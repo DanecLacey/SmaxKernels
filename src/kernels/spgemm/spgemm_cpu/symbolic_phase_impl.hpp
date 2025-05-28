@@ -14,7 +14,7 @@ inline void padded_symbolic_phase(Timers *timers, int A_n_rows,
                                   int &C_n_rows, int &C_n_cols, int &C_nnz,
                                   IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
 
-    IF_SMAX_TIME(timers->get("Setup")->start());
+    IF_SMAX_TIME(timers->get("Symbolic_Setup")->start());
 
     using LONG = unsigned long long int;
 
@@ -59,7 +59,7 @@ inline void padded_symbolic_phase(Timers *timers, int A_n_rows,
 
     // Allocate padded CRS arrays for C
     LONG upper_nnz_bound = tl_offsets[n_threads];
-    LONG *padded_C_col = new LONG[upper_nnz_bound];
+    LONG *RESTRICT padded_C_col = new LONG[upper_nnz_bound];
     bool **used_cols = new bool *[n_threads];
     LONG *tl_nnz = new LONG[n_threads];
     LONG *C_nnz_per_row = new LONG[C_n_rows];
@@ -81,10 +81,10 @@ inline void padded_symbolic_phase(Timers *timers, int A_n_rows,
         }
     }
 
-    IF_SMAX_TIME(timers->get("Setup")->stop());
-    IF_SMAX_TIME(timers->get("Gustavson")->start());
+    IF_SMAX_TIME(timers->get("Symbolic_Setup")->stop());
+    IF_SMAX_TIME(timers->get("Symbolic_Gustavson")->start());
+
 // Padded Gustavson's algorithm (symbolic)
-// clang-format off
 #pragma omp parallel
     {
         GET_THREAD_ID(int, tid)
@@ -94,28 +94,34 @@ inline void padded_symbolic_phase(Timers *timers, int A_n_rows,
 #pragma omp for schedule(static)
         for (int i = 0; i < A_n_rows; ++i) {
             LONG tl_previous_nnz = tl_nnz[tid];
+            LONG local_tl_nnz = tl_nnz[tid]; // To help compiler
+            LONG local_row_nnz = 0;          // To help compiler
 
             for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
                 IT left_col = A_col[j];
-                for (IT k = B_row_ptr[left_col]; k < B_row_ptr[left_col + 1]; ++k) {
+                IT b_start = B_row_ptr[left_col];   // To help compiler
+                IT b_end = B_row_ptr[left_col + 1]; // To help compiler
+                for (IT k = b_start; k < b_end; ++k) {
                     IT right_col = B_col[k];
                     if (!tl_used_cols[right_col]) {
                         tl_used_cols[right_col] = true;
-                        padded_C_col[offset + tl_nnz[tid]] = right_col;
-                        ++tl_nnz[tid];
-                        ++C_nnz_per_row[i];
+                        padded_C_col[offset + local_tl_nnz++] = right_col;
+                        ++local_row_nnz;
                     }
                 }
             }
 
             // Reset used_cols for next row
-            for (int j = tl_previous_nnz; j < tl_nnz[tid]; ++j) {
+            for (int j = tl_previous_nnz; j < local_tl_nnz; ++j) {
                 tl_used_cols[padded_C_col[offset + j]] = false;
             }
+
+            tl_nnz[tid] = local_tl_nnz;
+            C_nnz_per_row[i] = local_row_nnz;
         }
     }
-    // clang-format on
-    IF_SMAX_TIME(timers->get("Gustavson")->stop());
+
+    IF_SMAX_TIME(timers->get("Symbolic_Gustavson")->stop());
     IF_SMAX_TIME(timers->get("Alloc_C")->start());
 
     // Build C_row_ptr
