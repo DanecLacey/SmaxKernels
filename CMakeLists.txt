@@ -130,23 +130,26 @@ set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 # GPU builds
 if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
     set(USE_CUDA 1)
-    message(STATUS "CUDA Architecture set to ${CMAKE_CUDA_ARCHITECTURES}")
+    
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
     # Set CUDA flags based on build type
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -Xcompiler=-fPIC")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 ")
     elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -Xcompiler=-fPIC")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
     endif()
-
+    
     # Include CUDA headers
     list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
-
+    
     # Set CUDA threads-per-block if not already defined
     if(NOT DEFINED CUDA_TPB)
-        set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
+    set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
     endif()
     add_compile_definitions(CUDA_TPB=${CUDA_TPB})
     message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
+    message(STATUS "CUDA Architecture set to ${CMAKE_CUDA_ARCHITECTURES}")
+    message(STATUS "CUDA compiler flags set to ${CMAKE_CUDA_FLAGS} ")
 
     # Add CUDA source file
     list(APPEND SOURCES
