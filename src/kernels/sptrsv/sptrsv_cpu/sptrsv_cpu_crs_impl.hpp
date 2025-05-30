@@ -6,35 +6,25 @@
 
 namespace SMAX::KERNELS::SPTRSV::SPTRSV_CPU {
 
-// TODO: JH
-
-// // https://icl.utk.edu/files/publications/2018/icl-utk-1067-2018.pdf
-// // https://www.nrel.gov/docs/fy22osti/80263.pdf
-// void spltsv_2stage(
-
-// ){
-//     // TODO
-// }
-
-// // Saad: Iterative Methods for Sparse Linear Systems (ch 12.4.3)
-// void spltsv_mc(
-
-// ){
-//     // TODO
-// }
-
-template <typename IT, typename VT>
-inline void naive_crs_spltrsv(int A_n_rows, int A_n_cols, IT *RESTRICT A_col,
-                              IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
-                              VT *RESTRICT D_val, VT *RESTRICT x,
-                              VT *RESTRICT y) {
+template <bool Lower, typename IT, typename VT>
+inline void naive_crs_sptrsv(int A_n_rows, int A_n_cols, IT *RESTRICT A_col,
+                             IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
+                             VT *RESTRICT D_val, VT *RESTRICT x,
+                             VT *RESTRICT y) {
 
     // clang-format off
-    for (int row_idx = 0; row_idx < A_n_rows; ++row_idx) {
+    int row_start, row_end, row_step;
+    if constexpr (Lower) {
+        row_start = 0; row_end = A_n_rows; row_step = 1;
+    } else {
+        row_start = A_n_rows - 1; row_end = -1; row_step = -1;
+    }
+    
+    for (int row = row_start; row != row_end; row += row_step) {
         VT sum = (VT)0.0;
 
         // NOTE: we assume the diagonal was sorted to the end of the row
-        for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1] - 1; ++j) {
+        for (IT j = A_row_ptr[row]; j < A_row_ptr[row + 1] - 1; ++j) {
             IT col = A_col[j];
 
             IF_SMAX_DEBUG(
@@ -42,54 +32,26 @@ inline void naive_crs_spltrsv(int A_n_rows, int A_n_cols, IT *RESTRICT A_col,
                     SpTRSVErrorHandler::col_oob<IT>(col, j, A_n_cols);
             );
             IF_SMAX_DEBUG(
-                if (col > (IT)row_idx)
-                    SpTRSVErrorHandler::super_diag(row_idx, col, A_val[j]);
+                if constexpr (Lower){
+                    if (col > (IT)row)
+                        SpTRSVErrorHandler::super_diag(row, col, A_val[j]);
+                }
+                else{
+                    if (col < (IT)row)
+                        SpTRSVErrorHandler::sub_diag(row, col, A_val[j]);
+                }
             );
 
             sum += A_val[j] * x[col];
         }
 
         IF_SMAX_DEBUG(
-            if (std::abs(D_val[row_idx]) < 1e-16)
-                SpTRSVErrorHandler::zero_diag(row_idx);
+            if (std::abs(D_val[row]) < 1e-16)
+                SpTRSVErrorHandler::zero_diag(row);
         );
 
-        x[row_idx] = (y[row_idx] - sum) / D_val[row_idx];
+        x[row] = (y[row] - sum) / D_val[row];
     }
-    // clang-format on
-}
-
-template <typename IT, typename VT>
-inline void naive_crs_sputrsv(int A_n_rows, int A_n_cols, IT *RESTRICT A_col,
-                              IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
-                              VT *RESTRICT D_val, VT *RESTRICT x,
-                              VT *RESTRICT y) {
-
-    // clang-format off
-    for (int row_idx = A_n_rows - 1; row_idx >= 0; --row_idx) {
-        VT sum = (VT)0.0;
-
-        for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1] - 1; ++j) {
-            IT col = A_col[j];
-
-            IF_SMAX_DEBUG(
-                if (col < (IT)0 || col >= (IT)A_n_cols)
-                    SpTRSVErrorHandler::col_oob<IT>(col, j, A_n_cols);
-                if (col < (IT)row_idx)
-                    SpTRSVErrorHandler::sub_diag(row_idx, col, A_val[j]);
-            );
-
-            sum += A_val[j] * x[col];
-        }
-
-        IF_SMAX_DEBUG(
-            if (D_val[row_idx] < 1e-16)
-                SpTRSVErrorHandler::zero_diag(row_idx);
-        );
-
-        x[row_idx] = (y[row_idx] - sum) / D_val[row_idx];
-    }
-    // clang-format on
 }
 
 } // namespace SMAX::KERNELS::SPTRSV::SPTRSV_CPU

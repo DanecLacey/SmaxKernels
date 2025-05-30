@@ -72,30 +72,29 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     VT *D_val = as<VT *>(args->D->val);
     int block_vector_size = args->X->n_cols;
 
-    // if (flags->mat_permuted) {
-    //     int *lvl_ptr = args->uc->lvl_ptr;
-    //     int n_levels = args->uc->n_levels;
-    //     if (flags->mat_upper_triang) {
-    //         crs_sputrsm_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col,
-    //         A_row_ptr,
-    //                                 A_val, D_val, X, Y, lvl_ptr, n_levels);
-    //     } else {
-    //         crs_spltrsm_lvl<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_col,
-    //         A_row_ptr,
-    //                                 A_val, D_val, X, Y, lvl_ptr, n_levels);
-    //     }
-
-    // } else {
-    // Lower triangular matrix is the default case
-    if (flags->mat_upper_triang) {
-        naive_crs_sputrsm<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr, A_val,
-                                  D_val, X, Y, block_vector_size);
+    if (flags->vec_row_major) {
+        // Lower triangular matrix is the default case
+        if (flags->mat_upper_triang) {
+            naive_crs_row_maj_sptrsm<false, IT, VT>(A_n_rows, A_n_cols, A_col,
+                                                    A_row_ptr, A_val, D_val, X,
+                                                    Y, block_vector_size);
+        } else {
+            // Unpermuted matrix (e.g. no lvl-set sched) is the default case
+            naive_crs_row_maj_sptrsm<true, IT, VT>(A_n_rows, A_n_cols, A_col,
+                                                   A_row_ptr, A_val, D_val, X,
+                                                   Y, block_vector_size);
+        }
     } else {
-        // Unpermuted matrix (e.g. no lvl-set sched) is the default case
-        naive_crs_spltrsm<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr, A_val,
-                                  D_val, X, Y, block_vector_size);
+        if (flags->mat_upper_triang) {
+            naive_crs_col_maj_sptrsm<false, IT, VT>(A_n_rows, A_n_cols, A_col,
+                                                    A_row_ptr, A_val, D_val, X,
+                                                    Y, block_vector_size);
+        } else {
+            naive_crs_col_maj_sptrsm<true, IT, VT>(A_n_rows, A_n_cols, A_col,
+                                                   A_row_ptr, A_val, D_val, X,
+                                                   Y, block_vector_size);
+        }
     }
-    // }
 
     IF_SMAX_TIME(timers->get("apply")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting sptrsm_apply_cpu_core"));

@@ -40,6 +40,9 @@ int main(void) {
     smax->kernel("useful_spmm")->register_B(A_n_cols, N_VECTORS, X);
     smax->kernel("useful_spmm")->register_C(A_n_rows, N_VECTORS, Y);
 
+    // Optionally, tell SMAX how to access dense block vector
+    smax->kernel("useful_spmm")->set_vec_row_major(true);
+
     // Execute all phases of this kernel
     smax->kernel("useful_spmm")->run();
 

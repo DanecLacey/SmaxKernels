@@ -52,6 +52,10 @@ class Kernel {
         std::cerr << "set_mat_lower_triang not supported for this kernel.\n";
         return 1;
     }
+    virtual int set_vec_row_major(bool) {
+        std::cerr << "set_vec_row_major not supported for this kernel.\n";
+        return 1;
+    }
 
     // Swapping utility to override
     virtual int swap_operands(void) {

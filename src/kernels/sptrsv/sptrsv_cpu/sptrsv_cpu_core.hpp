@@ -75,22 +75,22 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
         int *lvl_ptr = args->uc->lvl_ptr;
         int n_levels = args->uc->n_levels;
         if (flags->mat_upper_triang) {
-            crs_sputrsv_lvl<IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr, A_val,
-                                    D_val, x, y, lvl_ptr);
+            crs_sptrsv_lvl<false, IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr,
+                                          A_val, D_val, x, y, lvl_ptr);
         } else {
-            crs_spltrsv_lvl<IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr, A_val,
-                                    D_val, x, y, lvl_ptr);
+            crs_sptrsv_lvl<true, IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr,
+                                         A_val, D_val, x, y, lvl_ptr);
         }
 
     } else {
         // Lower triangular matrix is the default case
         if (flags->mat_upper_triang) {
-            naive_crs_sputrsv<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
-                                      A_val, D_val, x, y);
+            naive_crs_sptrsv<false, IT, VT>(A_n_rows, A_n_cols, A_col,
+                                            A_row_ptr, A_val, D_val, x, y);
         } else {
             // Unpermuted matrix (e.g. no lvl-set sched) is the default case
-            naive_crs_spltrsv<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
-                                      A_val, D_val, x, y);
+            naive_crs_sptrsv<true, IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
+                                           A_val, D_val, x, y);
         }
     }
 

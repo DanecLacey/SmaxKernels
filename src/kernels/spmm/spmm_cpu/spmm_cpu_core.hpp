@@ -53,10 +53,15 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     VT *Y = as<VT *>(args->Y->val);
     int block_vector_size = args->X->n_cols;
 
-#if 1
-    naive_crs_spmm<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr, A_val,
-                           X + X_offset, Y + Y_offset, block_vector_size);
-#endif
+    if (flags->vec_row_major) {
+        naive_crs_spmm_row_maj<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
+                                       A_val, X + X_offset, Y + Y_offset,
+                                       block_vector_size);
+    } else {
+        naive_crs_spmm_col_maj<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
+                                       A_val, X + X_offset, Y + Y_offset,
+                                       block_vector_size);
+    }
 
     IF_SMAX_TIME(timers->get("apply")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmm_apply_cpu_core"));

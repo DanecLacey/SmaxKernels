@@ -57,6 +57,11 @@ class SpTRSMKernel : public Kernel {
         return 0;
     }
 
+    int set_vec_row_major(bool flag) override {
+        this->flags->vec_row_major = flag;
+        return 0;
+    }
+
     int dispatch(CpuFunc cpu_func, const char *label) {
         IF_SMAX_DEBUG(if (!k_ctx || !args || !flags) {
             std::cerr << "Error: Null kernel state in " << label << "\n";
