@@ -23,6 +23,7 @@ enum class IntType { INT16, INT32, INT64, UINT16, UINT32, UINT64 };
 // Available floating point types
 enum class FloatType { FLOAT32, FLOAT64 };
 
+// Internal flags
 struct FlagType {
     bool is_lvl_ptr_collected = false;
     bool is_mat_permuted = false;
@@ -38,44 +39,85 @@ struct KernelContext {
         : kernel_type(kt), platform_type(pt), int_type(it), float_type(ft) {}
 };
 
-// For simplicity, assume all matrices are in CSR format
-// DL 5.5.25 TODO: Rename to SparseMatrixCRS
-struct SparseMatrix {
-    int n_rows;
-    int n_cols;
-    int nnz;
-    void *col;
-    void *row_ptr;
-    void *val;
+struct CRSMatrix {
+    int n_rows = 0;
+    int n_cols = 0;
+    int nnz = 0;
+    void *col = nullptr;
+    void *row_ptr = nullptr;
+    void *val = nullptr;
 
-    // Default constructor
-    SparseMatrix()
-        : n_rows(0), n_cols(0), nnz(0), col(nullptr), row_ptr(nullptr),
-          val(nullptr) {}
+    CRSMatrix() = default;
+
+    CRSMatrix(int _n_rows, int _n_cols, int _nnz, void *_col, void *_row_ptr,
+              void *_val)
+        : n_rows(_n_rows), n_cols(_n_cols), nnz(_nnz), col(_col),
+          row_ptr(_row_ptr), val(_val) {}
+};
+
+struct SCSMatrix {
+    int n_rows = 0;
+    int n_rows_padded = 0;
+    int n_cols = 0;
+    int C = 0;
+    int sigma = 0;
+    int n_chunks = 0;
+    int n_elements = 0;
+    int nnz = 0;
+    void *chunk_ptrs = nullptr;
+    void *chunk_lengths = nullptr;
+    void *col = nullptr;
+    void *val = nullptr;
+    void *perm = nullptr;
+    void *inv_perm = nullptr;
+
+    SCSMatrix() = default;
+
+    SCSMatrix(int _n_rows, int _n_rows_padded, int _n_cols, int _C, int _sigma,
+              int _n_chunks, int _n_elements, int _nnz, void *_chunk_ptrs,
+              void *_chunk_lengths, void *_col, void *_val, void *_perm,
+              void *_inv_perm)
+        : n_rows(_n_rows), n_rows_padded(_n_rows_padded), n_cols(_n_cols),
+          C(_C), sigma(_sigma), n_chunks(_n_chunks), n_elements(_n_elements),
+          nnz(_nnz), chunk_ptrs(_chunk_ptrs), chunk_lengths(_chunk_lengths),
+          col(_col), val(_val), perm(_perm), inv_perm(_inv_perm) {}
+};
+
+struct SparseMatrix {
+    // Format-specific representations
+    std::unique_ptr<CRSMatrix> crs;
+    std::unique_ptr<SCSMatrix> scs;
+
+    SparseMatrix() = default;
+
+    ~SparseMatrix() = default;
+};
+
+struct CRSMatrixRef {
+    void *n_rows = nullptr;
+    void *n_cols = nullptr;
+    void *nnz = nullptr;
+    void **col = nullptr;
+    void **row_ptr = nullptr;
+    void **val = nullptr;
+
+    CRSMatrixRef() = default;
+
+    CRSMatrixRef(void *_n_rows, void *_n_cols, void *_nnz, void **_col,
+                 void **_row_ptr, void **_val)
+        : n_rows(_n_rows), n_cols(_n_cols), nnz(_nnz), col(_col),
+          row_ptr(_row_ptr), val(_val) {}
 };
 
 // Workaround for SPGEMM result matrix
 struct SparseMatrixRef {
-    void *n_rows;
-    void *n_cols;
-    void *nnz;
-    void **col;
-    void **row_ptr;
-    void **val;
+    // Format-specific representations
+    std::unique_ptr<CRSMatrixRef> crs;
 
-    // Default constructor
-    SparseMatrixRef()
-        : n_rows(nullptr), n_cols(nullptr), nnz(nullptr), col(nullptr),
-          row_ptr(nullptr), val(nullptr) {}
+    SparseMatrixRef() = default;
+
+    ~SparseMatrixRef() = default;
 };
-
-// TODO
-// // Available sparse matrix storage formats
-// enum SparseMatrixStorageFormat
-// {
-//     CRS,
-//     SCS
-// };
 
 struct DenseMatrix {
     int n_rows = 0;
@@ -113,14 +155,6 @@ struct DenseMatrix {
         n_cols = cols;
     }
 };
-
-// TODO
-// // Available dense matrix storage formats
-// enum DenseMatrixStorageFormat
-// {
-//     COLWISE,
-//     ROWWISE
-// };
 
 struct UtilitiesContainer {
     int *lvl_ptr = nullptr;

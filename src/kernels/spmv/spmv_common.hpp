@@ -40,7 +40,9 @@ struct Args {
     Args &operator=(const Args &) = delete;
 };
 
-struct Flags {};
+struct Flags {
+    bool is_mat_scs = false;
+};
 
 class SpMVErrorHandler : public KernelErrorHandler {
   public:

@@ -33,13 +33,15 @@ class SpGEMMKernel : public Kernel {
         if (args.size() != 6)
             throw std::runtime_error("SpGEMMKernel register_A expects 6 args");
 
-        this->args->A->n_rows = std::get<int>(args[0]);
-        this->args->A->n_cols = std::get<int>(args[1]);
-        this->args->A->nnz = std::get<int>(args[2]);
+        this->args->A->crs = std::make_unique<CRSMatrix>();
 
-        this->args->A->col = std::get<void *>(args[3]);
-        this->args->A->row_ptr = std::get<void *>(args[4]);
-        this->args->A->val = std::get<void *>(args[5]);
+        this->args->A->crs->n_rows = std::get<int>(args[0]);
+        this->args->A->crs->n_cols = std::get<int>(args[1]);
+        this->args->A->crs->nnz = std::get<int>(args[2]);
+
+        this->args->A->crs->col = std::get<void *>(args[3]);
+        this->args->A->crs->row_ptr = std::get<void *>(args[4]);
+        this->args->A->crs->val = std::get<void *>(args[5]);
 
         return 0;
     };
@@ -48,13 +50,15 @@ class SpGEMMKernel : public Kernel {
         if (args.size() != 6)
             throw std::runtime_error("SpGEMMKernel register_B expects 6 args");
 
-        this->args->B->n_rows = std::get<int>(args[0]);
-        this->args->B->n_cols = std::get<int>(args[1]);
-        this->args->B->nnz = std::get<int>(args[2]);
+        this->args->B->crs = std::make_unique<CRSMatrix>();
 
-        this->args->B->col = std::get<void *>(args[3]);
-        this->args->B->row_ptr = std::get<void *>(args[4]);
-        this->args->B->val = std::get<void *>(args[5]);
+        this->args->B->crs->n_rows = std::get<int>(args[0]);
+        this->args->B->crs->n_cols = std::get<int>(args[1]);
+        this->args->B->crs->nnz = std::get<int>(args[2]);
+
+        this->args->B->crs->col = std::get<void *>(args[3]);
+        this->args->B->crs->row_ptr = std::get<void *>(args[4]);
+        this->args->B->crs->val = std::get<void *>(args[5]);
 
         return 0;
     }
@@ -63,13 +67,15 @@ class SpGEMMKernel : public Kernel {
         if (args.size() != 6)
             throw std::runtime_error("SpGEMMKernel register_C expects 6 args");
 
-        this->args->C->n_rows = std::get<void *>(args[0]);
-        this->args->C->n_cols = std::get<void *>(args[1]);
-        this->args->C->nnz = std::get<void *>(args[2]);
+        this->args->C->crs = std::make_unique<CRSMatrixRef>();
 
-        this->args->C->col = std::get<void **>(args[3]);
-        this->args->C->row_ptr = std::get<void **>(args[4]);
-        this->args->C->val = std::get<void **>(args[5]);
+        this->args->C->crs->n_rows = std::get<void *>(args[0]);
+        this->args->C->crs->n_cols = std::get<void *>(args[1]);
+        this->args->C->crs->nnz = std::get<void *>(args[2]);
+
+        this->args->C->crs->col = std::get<void **>(args[3]);
+        this->args->C->crs->row_ptr = std::get<void **>(args[4]);
+        this->args->C->crs->val = std::get<void **>(args[5]);
 
         return 0;
     }
