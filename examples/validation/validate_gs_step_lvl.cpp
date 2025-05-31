@@ -1,8 +1,8 @@
 #include "../examples_common.hpp"
-#include "../spmv_helpers.hpp"
-#include "../sptrsv_helpers.hpp"
+#include "../gs_helpers.hpp"
 #include "validation_common.hpp"
 #include <cmath>
+#include <iostream>
 
 void lx_difference(double *a, double *b, int num_elem, int norm,
                    std::string descr) {
@@ -24,8 +24,7 @@ void lx_difference(double *a, double *b, int num_elem, int norm,
 }
 
 int main(int argc, char *argv[]) {
-    INIT_SPTRSV;
-    // INIT_SPMV;
+    INIT_GS;
 
     DenseMatrix *x_smax = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
     DenseMatrix *x_smax_perm = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
@@ -33,6 +32,8 @@ int main(int argc, char *argv[]) {
     DenseMatrix *b = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
     DenseMatrix *b_mkl = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
     DenseMatrix *b_perm = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix *tmp_rhs = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix *tmp_rhs_mkl = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
 
     int n_rows = crs_mat->n_rows;
 
@@ -50,7 +51,7 @@ int main(int argc, char *argv[]) {
 
     // Generate and apply permutation
     smax->utils->generate_perm<int>(n_rows, crs_mat->row_ptr, crs_mat->col,
-                                    perm, inv_perm, "JH");
+                                    perm, inv_perm, argv[2]);
     smax->utils->apply_mat_perm<int, double>(
         n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
         crs_mat_perm->row_ptr, crs_mat_perm->col, crs_mat_perm->val, perm,
@@ -65,10 +66,12 @@ int main(int argc, char *argv[]) {
     extract_D_L_U(*crs_mat_perm, *crs_mat_perm_D_plus_L, *crs_mat_perm_U);
 
     // Smax SPMV
-    REGISTER_SPMV_DATA("my_lvl_spmv", crs_mat_perm_U, x_smax_perm, b_perm);
+    REGISTER_GS_DATA("my_lvl_spmv", crs_mat_perm_U, x_smax_perm, tmp_rhs);
     smax->kernel("my_lvl_spmv")->run();
+    // Smax b - Ux
+    *b_perm -= *tmp_rhs;
     // Smax SpTRSV
-    REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_perm_D_plus_L, x_smax_perm,
+    REGISTER_GS_DATA("my_lvl_sptrsv", crs_mat_perm_D_plus_L, x_smax_perm,
                          b_perm);
     smax->kernel("my_lvl_sptrsv")->run();
 
@@ -103,8 +106,9 @@ int main(int argc, char *argv[]) {
     CHECK_MKL_STATUS(mkl_sparse_optimize(U), "mkl_sparse_optimize");
 
     CHECK_MKL_STATUS(mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, U,
-                                     descr_U, x_mkl->val, 0.0, b_mkl->val),
+                                     descr_U, x_mkl->val, 0.0, tmp_rhs_mkl->val),
                      "mkl_sparse_d_mv");
+    *b_mkl -= *tmp_rhs_mkl;
     CHECK_MKL_STATUS(mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A,
                                        descr, b_mkl->val, x_mkl->val),
                      "mkl_sparse_d_trsv");
@@ -114,20 +118,24 @@ int main(int argc, char *argv[]) {
                                         inv_perm);
     smax->utils->apply_vec_perm<double>(n_rows, b_perm->val, b->val, inv_perm);
 
-    compare_spmv(n_rows, b->val, b_mkl->val, cli_args->matrix_file_name);
+    compare_gs(n_rows, b->val, b_mkl->val, cli_args->matrix_file_name);
     lx_difference(b_mkl->val, b->val, n_rows, 2,
                   "Right hand side after b = Ux");
-    compare_sptrsv(n_rows, x_smax->val, x_mkl->val, cli_args->matrix_file_name);
+    compare_gs(n_rows, x_smax->val, x_mkl->val, cli_args->matrix_file_name);
     lx_difference(x_mkl->val, x_smax->val, n_rows, 2,
                   "Solution after Lx=b solve");
     lx_difference(x_mkl->val, x_smax->val, n_rows, 0,
                   "Solution after Lx=b solve");
 
     delete x_smax;
+    delete x_smax_perm;
     delete x_mkl;
     delete b;
     delete b_mkl;
+    delete b_perm;
+    delete tmp_rhs;
+    delete tmp_rhs_mkl;
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
     CHECK_MKL_STATUS(mkl_sparse_destroy(U), "mkl_sparse_destroy");
-    FINALIZE_SPTRSV;
+    FINALIZE_GS;
 }
