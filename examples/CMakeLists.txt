@@ -252,6 +252,10 @@ else()
 endif()
 # sort of ugly work around 
 if(USE_FAST_MMIO)
+    target_sources(fmmio
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/mmio.cpp
+    )
     target_compile_definitions(fmmio INTERFACE USE_FAST_MMIO)
     add_library(mmio ALIAS fmmio)
 else()
