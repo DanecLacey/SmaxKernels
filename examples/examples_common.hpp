@@ -216,7 +216,7 @@ struct COOMatrix {
         // Load
         {
             fmm::read_options options;
-            options.generalize_symmetry = false;
+            options.generalize_symmetry = true;
             std::ifstream f(matrix_file_name);
             fmm::read_matrix_market_triplet(f, header, original_rows,
                                             original_cols, original_vals,
