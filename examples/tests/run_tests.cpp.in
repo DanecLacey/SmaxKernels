@@ -1,0 +1,41 @@
+// run_tests.cpp.in
+
+@INCLUDE_HEADERS@
+
+#include <iostream>
+#include <iomanip>
+#include <string>
+
+void print_progress(int passed, int total, int width = 50) {
+    float ratio = static_cast<float>(passed) / total;
+    int filled = static_cast<int>(ratio * width);
+    std::cout << "[";
+    for (int i = 0; i < width; ++i)
+        std::cout << (i < filled ? "=" : " ");
+    std::cout << "] " << std::setw(3) << (int)(ratio * 100) << "%\n";
+}
+
+int main() {
+    auto &tests = get_test_registry();
+    int passed = 0;
+    int total = tests.size();
+    int count = 0;
+
+    for (const auto &[name, test_func] : tests) {
+        std::cout << "Running " << name << "... ";
+        try {
+            test_func();
+            std::cout << "PASSED\n";
+            ++passed;
+        } catch (const std::exception &e) {
+            std::cout << "FAILED: " << e.what() << "\n";
+        } catch (...) {
+            std::cout << "FAILED: Unknown exception\n";
+        }
+        ++count;
+        print_progress(passed, total);
+    }
+
+    std::cout << "\nTests Passed: " << passed << "/" << total << "\n";
+    return (passed == total) ? 0 : 1;
+}
