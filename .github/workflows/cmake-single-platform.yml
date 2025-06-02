@@ -2,71 +2,136 @@ name: CMake on a single platform
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "cuda_fix" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "cuda_fix" ]
 
 jobs:
-  build:
+  buildLibrary_release:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Configure build
+    - name: Configure build (Release)
       run: |
         mkdir ${{github.workspace}}/build 
         cd ${{github.workspace}}/build
-        cmake .. -DCMAKE_INSTALL_PREFIX=../install
+        cmake .. -DCMAKE_INSTALL_PREFIX=../install-Release -DCMAKE_BUILD_TYPE=Release
 
-    - name: Make
+    - name: Make (Release)
       working-directory: ${{github.workspace}}/build
       run: make install
 
     - uses: actions/upload-artifact@v4
       with: 
-        name: install-dir
-        path: ${{github.workspace}}/install/
+        name: install-dir-Release
+        path: ${{github.workspace}}/install-Release/
  
-  buildTest:
-    needs: build
+  buildTests_release:
+    needs: buildLibrary_release
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: install-dir
-          path: ${{github.workspace}}/install
+          name: install-dir-Release
+          path: ${{github.workspace}}/install-Release
 
-      - name: CMake and make
+      - name: CMake and make (Release)
         run: |
           cd examples
           mkdir build && cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=../../install
+          cmake .. -DCMAKE_INSTALL_PREFIX=../../install-Release -DCMAKE_BUILD_TYPE=Release
           make -j
 
       - uses: actions/upload-artifact@v4
         with: 
-          name: tests
+          name: tests-Release
           path: ${{github.workspace}}/examples/build/tests/
 
-  runTest:
-    needs: buildTest
+  runTests_release:
+    needs: buildTests_release
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: install-dir
-          path: ${{github.workspace}}/install
+          name: install-dir-Release
+          path: ${{github.workspace}}/install-Release
       - uses: actions/download-artifact@v4
         with:
-          name: tests
+          name: tests-Release
           path: ${{github.workspace}}/run_tests
 
-      - name: Execute Tests
+      - name: Execute Tests (Release)
+        run: |
+          cd run_tests
+          chmod +x ./run_tests
+          ./run_tests
+
+  buildLibrary_debug:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure build (Debug)
+      run: |
+        mkdir ${{github.workspace}}/build 
+        cd ${{github.workspace}}/build
+        cmake .. -DCMAKE_INSTALL_PREFIX=../install-Debug -DCMAKE_BUILD_TYPE=Debug
+
+    - name: Make (Debug)
+      working-directory: ${{github.workspace}}/build
+      run: make install
+
+    - uses: actions/upload-artifact@v4
+      with: 
+        name: install-dir-Debug
+        path: ${{github.workspace}}/install-Debug/
+ 
+  buildTests_debug:
+    needs: buildLibrary_debug
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: install-dir-Debug
+          path: ${{github.workspace}}/install-Debug
+
+      - name: CMake and make (Debug)
+        run: |
+          cd examples
+          mkdir build && cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=../../install-Debug -DCMAKE_BUILD_TYPE=Debug
+          make -j
+
+      - uses: actions/upload-artifact@v4
+        with: 
+          name: tests-Debug
+          path: ${{github.workspace}}/examples/build/tests/
+
+  runTests_debug:
+    needs: buildTests_debug
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: install-dir-Debug
+          path: ${{github.workspace}}/install-Debug
+      - uses: actions/download-artifact@v4
+        with:
+          name: tests-Debug
+          path: ${{github.workspace}}/run_tests
+
+      - name: Execute Tests (Debug)
         run: |
           cd run_tests
           chmod +x ./run_tests

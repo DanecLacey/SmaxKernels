@@ -4,7 +4,7 @@ file(GLOB ALL_CPP_FILES *.cpp)
 # Create filtered list
 set(CPP_FILES "")
 
-if(NOT (SMAX_USE_CUDA AND CUDAToolkit_FOUND))
+if(NOT (SMAX_CUDA_MODE AND CUDAToolkit_FOUND))
     set(SKIP_ME "cuda")
     foreach(file ${ALL_CPP_FILES})
         get_filename_component(FILENAME "${file}" NAME)

@@ -29,7 +29,7 @@ inline void naive_crs_col_maj_sptrsm(int A_n_rows, int A_n_cols,
 
                 IF_SMAX_DEBUG(
                     if (col < (IT)0 || col >= (IT)A_n_cols)
-                        SpTRSMErrorHandler::col_oob<IT>(col, j, A_n_cols)
+                        SpTRSMErrorHandler::col_oob<IT>(col, j, A_n_cols);
                     if constexpr (Lower){
                         if (col > (IT)row)
                             SpTRSMErrorHandler::super_diag(row, col, A_val[j]);
@@ -77,7 +77,7 @@ inline void naive_crs_row_maj_sptrsm(int A_n_rows, int A_n_cols,
 
                 IF_SMAX_DEBUG(
                     if (col < (IT)0 || col >= (IT)A_n_cols)
-                        SpTRSMErrorHandler::col_oob<IT>(col, j, A_n_cols)
+                        SpTRSMErrorHandler::col_oob<IT>(col, j, A_n_cols);
                     if constexpr (Lower){
                         if (col > (IT)row)
                             SpTRSMErrorHandler::super_diag(row, col, A_val[j]);

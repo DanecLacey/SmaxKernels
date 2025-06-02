@@ -11,21 +11,18 @@ set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # If the lib is built with CUDA, the examples must also be
-if(SMAX_USE_CUDA)
+if(SMAX_CUDA_MODE) # Detected from smax lib
     find_package(CUDAToolkit REQUIRED)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
+    endif()
+    enable_language(CUDA)
 else()
-    # The examples can be built with CUDA, even if the lib was not
+    # The examples cannot be built with CUDA if the lib was not
     find_package(CUDAToolkit QUIET)
     if (CUDAToolkit_FOUND)
-        enable_language(CUDA)
-        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-            set(CMAKE_CUDA_ARCHITECTURES 80 86)
-        endif()
-        if(NOT SMAX_USE_CUDA)
-            message(WARNING
-                "CUDA compiler found, but SMAX_USE_CUDA=${SMAX_USE_CUDA}. "
-                "CUDA examples will not be built.")
-        endif()
+        message(WARNING "CUDA compiler found, but SMAX_CUDA_MODE=${SMAX_CUDA_MODE}.
+        Building only CPU examples.")
     endif()
 endif()
 
@@ -51,64 +48,66 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # If the user didn't specify a compiler, default to g++
-if(NOT DEFINED CMAKE_CXX_COMPILER)
-    set(CMAKE_CXX_COMPILER "g++" CACHE STRING "Default compiler" FORCE)
-    message(STATUS "No compiler selected, using default: ${CMAKE_CXX_COMPILER}")
+if(NOT CMAKE_CXX_COMPILER)
+    message(STATUS "No C++ compiler set explicitly. Falling back to g++.")
+    set(CMAKE_CXX_COMPILER "g++")
 endif()
 
 # Display the selected compiler
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
-if (CUDAToolkit_FOUND)
+if (SMAX_CUDA_MODE)
     message(STATUS "CUDA Compiler ID: ${CMAKE_CUDA_COMPILER_ID}")
     message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
 endif()
 
-# Normalize compiler ID for consistent matching
-string(TOUPPER "${CMAKE_CXX_COMPILER_ID}" CPU_COMPILER_ID)
-string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID)
-
 # Compiler-specific flags
 # GPU builds
-if(GPU_COMPILER_ID STREQUAL "NVIDIA")
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -Xcompiler=-fPIC")
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g -Xcompiler=-fPIC")
+if(SMAX_CUDA_MODE)
+    string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID) # Normalize compiler ID for consistent matching
+    if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
+        set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
+        if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3")
+        elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
+        endif()
+    else()
+        message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_CUDA_MODE=${SMAX_CUDA_MODE}.")
     endif()
-else()
-    message(STATUS "No supported GPU compiler found, building for CPU only.")
 endif()
 
 # CPU builds (default)
+set(CXX_DEBUG_BASE_FLAGS "-g -O0 -Wall -Wextra -fno-omit-frame-pointer")
+set(CXX_DEBUG_EXTRA_FLAGS "")
+
+set(CXX_RELEASE_BASE_FLAGS "-O3")
+set(CXX_RELEASE_EXTRA_FLAGS "")
+
+# CPU builds (default)
+list(APPEND HEADER_DIRS ${CPU_HEADER_DIRS})
+string(TOUPPER "${CMAKE_CXX_COMPILER_ID}" CPU_COMPILER_ID) # Normalize compiler ID for consistent matching
 if(CPU_COMPILER_ID STREQUAL "GNU")
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fstrict-aliasing -O3")
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
-    endif()
+    set(CXX_RELEASE_EXTRA_FLAGS "-march=native -fstrict-aliasing")
 elseif(CPU_COMPILER_ID STREQUAL "INTEL")
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -fno-alias -O3")
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
-    endif()
+    set(CXX_RELEASE_EXTRA_FLAGS "-march=native -fno-alias")
 elseif(CPU_COMPILER_ID STREQUAL "INTELLLVM")
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost -O3")
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer -fp-model=precise")
-    endif()
+    set(CXX_RELEASE_EXTRA_FLAGS "-xHost")
+    set(CXX_DEBUG_EXTRA_FLAGS "-fp-model=precise")
 elseif(CPU_COMPILER_ID STREQUAL "CLANG")
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-alias -O3")
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -fno-omit-frame-pointer")
-    endif()
+    set(CXX_RELEASE_EXTRA_FLAGS "-fno-alias")
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_DEBUG_BASE_FLAGS} ${CXX_DEBUG_EXTRA_FLAGS}")
+elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_RELEASE_BASE_FLAGS} ${CXX_RELEASE_EXTRA_FLAGS}")
+endif()
+
+message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
 
 # Options for external library support
 option(USE_OPENMP "Enable OpenMP support" ON)

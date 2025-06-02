@@ -34,12 +34,6 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
     VT *x = as<VT *>(args->x->val);
     VT *y = as<VT *>(args->y->val);
 
-    // IT *d_A_col = as<IT *>(args->d_A->crs->col);
-    // IT *d_A_row_ptr = as<IT *>(args->d_A->crs->row_ptr);
-    // VT *d_A_val = as<VT *>(args->d_A->crs->val);
-    // VT *d_x = as<VT *>(args->d_x->val);
-    // VT *d_y = as<VT *>(args->d_y->val);
-
     // Get typed pointers from device
     transfer_HtoD<IT>(A_col, args->d_A->crs->col, A_nnz);
     transfer_HtoD<IT>(A_row_ptr, args->d_A->crs->row_ptr, A_n_rows + 1);
@@ -80,11 +74,9 @@ int apply_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
     VT *d_x = as<VT *>(args->d_x->val);
     VT *d_y = as<VT *>(args->d_y->val);
 
-#if 1
     naive_crs_spmv_cuda_launcher<IT, VT>(d_A_n_rows, d_A_col, d_A_row_ptr,
                                          d_A_val, d_x + x_offset,
                                          d_y + y_offset);
-#endif
 
     IF_SMAX_TIME(timers->get("apply")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_apply_cuda_core"));
