@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../common.hpp"
-#if USE_CUDA
+#if CUDA_MODE
 #include "spmv_cuda/spmv_cuda_core.cuh"
 #endif
 
@@ -13,7 +13,7 @@ namespace SMAX::KERNELS::SPMV {
 template <typename IT, typename VT> struct Init_CUDA {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags, int A_offset, int x_offset, int y_offset) {
-#if USE_CUDA
+#if CUDA_MODE
         return SPMV_CUDA::initialize_cuda_core<IT, VT>(
             timers, k_ctx, args, flags, A_offset, x_offset, y_offset);
 #else
@@ -25,7 +25,7 @@ template <typename IT, typename VT> struct Init_CUDA {
 template <typename IT, typename VT> struct Apply_CUDA {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags, int A_offset, int x_offset, int y_offset) {
-#if USE_CUDA
+#if CUDA_MODE
         return SPMV_CUDA::apply_cuda_core<IT, VT>(timers, k_ctx, args, flags,
                                                   A_offset, x_offset, y_offset);
 #else
@@ -37,7 +37,7 @@ template <typename IT, typename VT> struct Apply_CUDA {
 template <typename IT, typename VT> struct Finalize_CUDA {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags, int A_offset, int x_offset, int y_offset) {
-#if USE_CUDA
+#if CUDA_MODE
         return SPMV_CUDA::finalize_cuda_core<IT, VT>(
             timers, k_ctx, args, flags, A_offset, x_offset, y_offset);
 #else
@@ -112,7 +112,7 @@ int dispatch_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
 // These invoke the dispatcher function with the correct template parameters
 int initialize_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
                     Flags *flags, int A_offset, int x_offset, int y_offset) {
-#if USE_CUDA
+#if CUDA_MODE
     return dispatch_cuda<Init_CUDA>(timers, k_ctx, args, flags, A_offset,
                                     x_offset, y_offset);
 #else
@@ -128,7 +128,7 @@ int initialize_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
 }
 int apply_cuda(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
                int A_offset, int x_offset, int y_offset) {
-#if USE_CUDA
+#if CUDA_MODE
     return dispatch_cuda<Apply_CUDA>(timers, k_ctx, args, flags, A_offset,
                                      x_offset, y_offset);
 #else
@@ -144,7 +144,7 @@ int apply_cuda(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
 }
 int finalize_cuda(Timers *timers, KernelContext *k_ctx, Args *args,
                   Flags *flags, int A_offset, int x_offset, int y_offset) {
-#if USE_CUDA
+#if CUDA_MODE
     return dispatch_cuda<Finalize_CUDA>(timers, k_ctx, args, flags, A_offset,
                                         x_offset, y_offset);
 #else

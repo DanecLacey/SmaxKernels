@@ -7,7 +7,7 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
+  buildLibrary_release:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,7 +17,7 @@ jobs:
       run: |
         mkdir ${{github.workspace}}/build 
         cd ${{github.workspace}}/build
-        cmake .. -DCMAKE_INSTALL_PREFIX=../install
+        cmake .. -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_BUILD_TYPE=Release
 
     - name: Make
       working-directory: ${{github.workspace}}/build
@@ -28,8 +28,8 @@ jobs:
         name: install-dir
         path: ${{github.workspace}}/install/
  
-  buildTest:
-    needs: build
+  buildTests_release:
+    needs: buildLibrary_release
     runs-on: ubuntu-latest
 
     steps:
@@ -43,7 +43,7 @@ jobs:
         run: |
           cd examples
           mkdir build && cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=../../install
+          cmake .. -DCMAKE_PREFIX_PATH=../../install -DCMAKE_BUILD_TYPE=Release
           make -j
 
       - uses: actions/upload-artifact@v4
@@ -51,8 +51,73 @@ jobs:
           name: tests
           path: ${{github.workspace}}/examples/build/tests/
 
-  runTest:
-    needs: buildTest
+  runTests_release:
+    needs: buildTests_release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: install-dir
+          path: ${{github.workspace}}/install
+      - uses: actions/download-artifact@v4
+        with:
+          name: tests
+          path: ${{github.workspace}}/run_tests
+
+      - name: Execute Tests
+        run: |
+          cd run_tests
+          chmod +x ./run_tests
+          ./run_tests
+
+  buildLibrary_debug:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure build
+      run: |
+        mkdir ${{github.workspace}}/build 
+        cd ${{github.workspace}}/build
+        cmake .. -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_BUILD_TYPE=Debug
+
+    - name: Make
+      working-directory: ${{github.workspace}}/build
+      run: make install
+
+    - uses: actions/upload-artifact@v4
+      with: 
+        name: install-dir
+        path: ${{github.workspace}}/install/
+ 
+  buildTests_debug:
+    needs: buildLibrary_debug
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: install-dir
+          path: ${{github.workspace}}/install
+
+      - name: CMake and make
+        run: |
+          cd examples
+          mkdir build && cd build
+          cmake .. -DCMAKE_PREFIX_PATH=../../install -DCMAKE_BUILD_TYPE=Debug
+          make -j
+
+      - uses: actions/upload-artifact@v4
+        with: 
+          name: tests
+          path: ${{github.workspace}}/examples/build/tests/
+
+  runTests_debug:
+    needs: buildTests_debug
     runs-on: ubuntu-latest
 
     steps:

@@ -13,14 +13,19 @@ set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Optional: restrict required version
-find_package(CUDAToolkit QUIET)
-if(CUDAToolkit_FOUND)
+option(USE_CUDA "Enable CUDA support" OFF)
+if(USE_CUDA)
+    find_package(CUDAToolkit QUIET)
+    if(CUDAToolkit_FOUND)
 
-    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 80 86)
+        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
+        endif()
+
+        enable_language(CUDA)
+    else()
+        message(FATAL_ERROR "CUDAToolkit not found, even though USE_CUDA=ON.")
     endif()
-
-    enable_language(CUDA)
 endif()
 
 # List of source files for building the library
@@ -104,9 +109,9 @@ else()
 endif()
 
 # If the user didn't specify a compiler, default to g++
-if(NOT DEFINED CMAKE_CXX_COMPILER)
-    set(CMAKE_CXX_COMPILER "g++" CACHE STRING "Default compiler" FORCE)
-    message(STATUS "No compiler selected, using default: ${CMAKE_CXX_COMPILER}")
+if(NOT CMAKE_CXX_COMPILER)
+    message(STATUS "No C++ compiler set explicitly. Falling back to g++.")
+    set(CMAKE_CXX_COMPILER "g++")
 endif()
 
 
@@ -128,36 +133,38 @@ set(HEADERS ${COMMON_HEADERS} ${KERNEL_HEADERS})
 set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 
 # GPU builds
-if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
-    set(USE_CUDA 1)
-    
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
-    # Set CUDA flags based on build type
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 ")
-    elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
-    endif()
-    
-    # Include CUDA headers
-    list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
-    
-    # Set CUDA threads-per-block if not already defined
-    if(NOT DEFINED CUDA_TPB)
-    set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
-    endif()
-    add_compile_definitions(CUDA_TPB=${CUDA_TPB})
-    message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
-    message(STATUS "CUDA Architecture set to ${CMAKE_CUDA_ARCHITECTURES}")
-    message(STATUS "CUDA compiler flags set to ${CMAKE_CUDA_FLAGS} ")
+if(USE_CUDA)
+    if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")   
+        set(CUDA_MODE 1) # All checks pass, and we can use CUDA kernels!
+        set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
+        # Set CUDA flags based on build type
+        if(CMAKE_BUILD_TYPE STREQUAL "Release")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 ")
+        elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
+        endif()
+        
+        # Include CUDA headers
+        list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
+        
+        # Set CUDA threads-per-block if not already defined
+        if(NOT DEFINED CUDA_TPB)
+        set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
+        endif()
+        add_compile_definitions(CUDA_TPB=${CUDA_TPB})
+        message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
+        message(STATUS "CUDA Architecture set to ${CMAKE_CUDA_ARCHITECTURES}")
+        message(STATUS "CUDA compiler flags set to ${CMAKE_CUDA_FLAGS} ")
 
-    # Add CUDA source file
-    list(APPEND SOURCES
-        src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
-    )
+        # Add CUDA source file
+        list(APPEND SOURCES
+            src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
+        )
+    else()
+        message(FATAL_ERROR "No supported GPU compiler found, even though USE_CUDA=ON.")
+    endif()
 else()
-    set(USE_CUDA 0)
-    message(WARNING "No supported GPU compiler found, building for CPU only.")
+    set(CUDA_MODE 0)
 endif()
 
 set(CXX_DEBUG_BASE_FLAGS "-g -O0 -Wall -Wextra -fno-omit-frame-pointer")
@@ -193,7 +200,7 @@ message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
 add_library(${LIBRARY_NAME} SHARED ${SOURCES})
 
 target_compile_definitions(${LIBRARY_NAME} PUBLIC
-    USE_CUDA=${USE_CUDA}
+    CUDA_MODE=${CUDA_MODE}
     DEBUG_MODE=${DEBUG_MODE}
 )
 
@@ -258,7 +265,8 @@ if(USE_OPENMP)
     if(OpenMP_CXX_FOUND)
         message(STATUS "OpenMP found, enabling OpenMP support.")
         set(OpenMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        target_link_libraries(${LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
     else()
         message(FATAL_ERROR "OpenMP requested but not found.")
     endif()

@@ -56,7 +56,7 @@ void solve(DenseMatrix *x_old, DenseMatrix *x_new, DenseMatrix *b,
 }
 
 int main(void) {
-#if SMAX_USE_CUDA
+#if SMAX_CUDA_MODE
     printf("Using CUDA kernels.\n");
     constexpr SMAX::PlatformType Platform = SMAX::PlatformType::CUDA;
 #else
