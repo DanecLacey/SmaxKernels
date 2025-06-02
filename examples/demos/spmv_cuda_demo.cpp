@@ -1,8 +1,7 @@
 /**
  * @file
  * @brief Basic example demonstrating how to use the SMAX library to perform
- * sparse matrix-vector multiplication (SpMV). Since SMAX performs "A op B = C",
- * the use will always register something for A, B, and C.
+ * sparse matrix-vector multiplication (SpMV) using the CUDA platform.
  */
 
 #include "../examples_common.hpp"

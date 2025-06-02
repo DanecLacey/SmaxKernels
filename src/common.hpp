@@ -56,11 +56,11 @@ struct CRSMatrix {
 };
 
 struct SCSMatrix {
+    int C = 0;
+    int sigma = 0;
     int n_rows = 0;
     int n_rows_padded = 0;
     int n_cols = 0;
-    int C = 0;
-    int sigma = 0;
     int n_chunks = 0;
     int n_elements = 0;
     int nnz = 0;

@@ -34,11 +34,11 @@ class SpMVKernel : public Kernel {
             this->args->d_A->scs = std::make_unique<SCSMatrix>();
 #endif
 
-            this->args->A->scs->n_rows = std::get<int>(args[0]);
-            this->args->A->scs->n_rows_padded = std::get<int>(args[1]);
-            this->args->A->scs->n_cols = std::get<int>(args[2]);
-            this->args->A->scs->C = std::get<int>(args[3]);
-            this->args->A->scs->sigma = std::get<int>(args[4]);
+            this->args->A->scs->C = std::get<int>(args[0]);
+            this->args->A->scs->sigma = std::get<int>(args[1]);
+            this->args->A->scs->n_rows = std::get<int>(args[2]);
+            this->args->A->scs->n_rows_padded = std::get<int>(args[3]);
+            this->args->A->scs->n_cols = std::get<int>(args[4]);
             this->args->A->scs->n_chunks = std::get<int>(args[5]);
             this->args->A->scs->n_elements = std::get<int>(args[6]);
             this->args->A->scs->nnz = std::get<int>(args[7]);
