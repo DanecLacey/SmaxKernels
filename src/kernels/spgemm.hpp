@@ -46,7 +46,7 @@ class SpGEMMKernel : public Kernel {
         return 0;
     };
 
-    int _register_B(const std::vector<Variant> &args) {
+    int _register_B(const std::vector<Variant> &args) override {
         if (args.size() != 6)
             throw std::runtime_error("SpGEMMKernel register_B expects 6 args");
 
@@ -63,7 +63,7 @@ class SpGEMMKernel : public Kernel {
         return 0;
     }
 
-    int _register_C(const std::vector<Variant> &args) {
+    int _register_C(const std::vector<Variant> &args) override {
         if (args.size() != 6)
             throw std::runtime_error("SpGEMMKernel register_C expects 6 args");
 

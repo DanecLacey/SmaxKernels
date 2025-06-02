@@ -37,7 +37,7 @@ class SpTRSMKernel : public Kernel {
         return 0;
     };
 
-    int _register_B(const std::vector<Variant> &args) {
+    int _register_B(const std::vector<Variant> &args) override {
         if (args.size() != 3)
             throw std::runtime_error("SpTRSMKernel register_B expects 3 args");
 
@@ -48,7 +48,7 @@ class SpTRSMKernel : public Kernel {
         return 0;
     }
 
-    int _register_C(const std::vector<Variant> &args) {
+    int _register_C(const std::vector<Variant> &args) override {
         if (args.size() != 3)
             throw std::runtime_error("SpTRSMKernel register_C expects 3 args");
 
