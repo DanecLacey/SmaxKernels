@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -206,6 +207,10 @@ struct COOMatrix {
     }
 
     void read_from_mtx(const std::string &matrix_file_name) {
+#ifdef DEBUG_MODE
+        std::cout << "Reading matrix from file: " << matrix_file_name
+                  << std::endl;
+#endif
 #ifdef USE_FAST_MMIO
         std::vector<int> original_rows;
         std::vector<int> original_cols;
@@ -326,6 +331,11 @@ struct COOMatrix {
         this->is_sorted = 1;    // TODO: verify
         this->is_symmetric = 0; // TODO: determine based on matcode?
 #endif
+
+#ifdef DEBUG_MODE
+        std::cout << "Completed reading matrix from file: " << matrix_file_name
+                  << std::endl;
+#endif
     }
 
     void print(void) {
@@ -378,8 +388,6 @@ struct CRSMatrix {
         val = new double[nnz];
         col = new int[nnz];
         row_ptr = new int[n_rows + 1];
-
-        row_ptr[0] = 0;
     }
 
     ~CRSMatrix() {
