@@ -43,7 +43,7 @@ jobs:
         run: |
           cd examples
           mkdir build && cd build
-          cmake .. -DCMAKE_PREFIX_PATH=../../install-Release -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_INSTALL_PREFIX=../../install-Release -DCMAKE_BUILD_TYPE=Release
           make -j
 
       - uses: actions/upload-artifact@v4
@@ -108,7 +108,7 @@ jobs:
         run: |
           cd examples
           mkdir build && cd build
-          cmake .. -DCMAKE_PREFIX_PATH=../../install-Debug -DCMAKE_BUILD_TYPE=Debug
+          cmake .. -DCMAKE_INSTALL_PREFIX=../../install-Debug -DCMAKE_BUILD_TYPE=Debug
           make -j
 
       - uses: actions/upload-artifact@v4
