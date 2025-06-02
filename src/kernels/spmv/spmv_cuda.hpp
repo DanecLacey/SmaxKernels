@@ -17,6 +17,14 @@ template <typename IT, typename VT> struct Init_CUDA {
         return SPMV_CUDA::initialize_cuda_core<IT, VT>(
             timers, k_ctx, args, flags, A_offset, x_offset, y_offset);
 #else
+        // suppress compiler warnings
+        (void)timers;
+        (void)k_ctx;
+        (void)args;
+        (void)flags;
+        (void)A_offset;
+        (void)x_offset;
+        (void)y_offset;
         return 1; // TODO: Handle error properly
 #endif
     }
@@ -29,6 +37,14 @@ template <typename IT, typename VT> struct Apply_CUDA {
         return SPMV_CUDA::apply_cuda_core<IT, VT>(timers, k_ctx, args, flags,
                                                   A_offset, x_offset, y_offset);
 #else
+        // suppress compiler warnings
+        (void)timers;
+        (void)k_ctx;
+        (void)args;
+        (void)flags;
+        (void)A_offset;
+        (void)x_offset;
+        (void)y_offset;
         return 1; // TODO: Handle error properly
 #endif
     }
@@ -41,6 +57,14 @@ template <typename IT, typename VT> struct Finalize_CUDA {
         return SPMV_CUDA::finalize_cuda_core<IT, VT>(
             timers, k_ctx, args, flags, A_offset, x_offset, y_offset);
 #else
+        // suppress compiler warnings
+        (void)timers;
+        (void)k_ctx;
+        (void)args;
+        (void)flags;
+        (void)A_offset;
+        (void)x_offset;
+        (void)y_offset;
         return 1; // TODO: Handle error properly
 #endif
     }

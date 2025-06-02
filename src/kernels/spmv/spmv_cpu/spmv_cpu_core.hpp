@@ -2,6 +2,7 @@
 
 #include "../../../common.hpp"
 #include "spmv_cpu_crs_impl.hpp"
+#include "spmv_cpu_scs_impl.hpp"
 
 namespace SMAX::KERNELS::SPMV::SPMV_CPU {
 
@@ -42,28 +43,34 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     (void)flags;
     (void)A_offset;
 
-    IF_SMAX_DEBUG_3(std::cout << "A_col pointer before deref: " << args->A->col
-                              << std::endl);
-    IF_SMAX_DEBUG_3(std::cout << "x pointer before deref: " << args->x
-                              << std::endl);
-
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
-    int A_n_rows = args->A->crs->n_rows;
-    int A_n_cols = args->A->crs->n_cols;
-    IT *A_col = as<IT *>(args->A->crs->col);
-    IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
-    VT *A_val = as<VT *>(args->A->crs->val);
     VT *x = as<VT *>(args->x->val);
     VT *y = as<VT *>(args->y->val);
 
-#if 1
-    IF_SMAX_DEBUG_3(std::cout << "A_col pointer after deref: " << A_col
-                              << std::endl);
-    IF_SMAX_DEBUG_3(std::cout << "x pointer after deref: " << x << std::endl);
-    naive_crs_spmv<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr, A_val,
-                           x + x_offset, y + y_offset);
-#endif
+    // clang-format off
+    if (flags->is_mat_scs) {
+        naive_scs_spmv<IT, VT>(
+            args->A->scs->C,
+            args->A->scs->n_cols,
+            args->A->scs->n_chunks,
+            as<IT *>(args->A->scs->chunk_ptr),
+            as<IT *>(args->A->scs->chunk_lengths),
+            as<IT *>(args->A->scs->col),
+            as<VT *>(args->A->scs->val),
+            x + x_offset,
+            y + y_offset);
+    } else {
+        naive_crs_spmv<IT, VT>(
+            args->A->crs->n_rows,
+            args->A->crs->n_cols,
+            as<IT *>(args->A->crs->col),
+            as<IT *>(args->A->crs->row_ptr),
+            as<VT *>(args->A->crs->val),
+            x + x_offset,
+            y + y_offset);
+    }
+    // clang-format on
 
     IF_SMAX_TIME(timers->get("apply")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_apply_cpu_core"));

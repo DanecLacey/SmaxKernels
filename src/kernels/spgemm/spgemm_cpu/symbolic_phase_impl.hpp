@@ -112,7 +112,7 @@ inline void padded_symbolic_phase(Timers *timers, int A_n_rows,
             }
 
             // Reset used_cols for next row
-            for (int j = tl_previous_nnz; j < local_tl_nnz; ++j) {
+            for (LONG j = tl_previous_nnz; j < local_tl_nnz; ++j) {
                 tl_used_cols[padded_C_col[offset + j]] = false;
             }
 
@@ -152,7 +152,7 @@ inline void padded_symbolic_phase(Timers *timers, int A_n_rows,
     {
         GET_THREAD_ID(int, tid)
         int offset = C_nnz_displacement[tid];
-        for (int i = 0; i < tl_nnz[tid]; ++i) {
+        for (LONG i = 0; i < tl_nnz[tid]; ++i) {
             C_col[offset + i] = padded_C_col[tl_offsets[tid] + i];
         }
     }

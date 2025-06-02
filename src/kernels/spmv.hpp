@@ -43,7 +43,7 @@ class SpMVKernel : public Kernel {
             this->args->A->scs->n_elements = std::get<int>(args[6]);
             this->args->A->scs->nnz = std::get<int>(args[7]);
 
-            this->args->A->scs->chunk_ptrs = std::get<void *>(args[8]);
+            this->args->A->scs->chunk_ptr = std::get<void *>(args[8]);
             this->args->A->scs->chunk_lengths = std::get<void *>(args[9]);
             this->args->A->scs->col = std::get<void *>(args[10]);
             this->args->A->scs->val = std::get<void *>(args[11]);
