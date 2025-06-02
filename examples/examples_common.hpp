@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mmio.hpp"
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -11,6 +11,15 @@
 
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+
+#ifdef USE_FAST_MMIO
+#include "mmio.hpp"
+#include <fast_matrix_market/fast_matrix_market.hpp>
+#include <fstream>
+namespace fmm = fast_matrix_market;
+#else
+#include "mmio.hpp"
 #endif
 
 #define PRINT_WIDTH 18
@@ -82,6 +91,33 @@
             working_file << std::left << std::setw(PRINT_WIDTH) << "WARNING";  \
     } while (0)
 #endif
+
+template <typename IT>
+std::vector<IT> compute_sort_permutation(const std::vector<IT> &rows,
+                                         const std::vector<IT> &cols) {
+    std::vector<IT> perm(rows.size());
+    std::iota(perm.begin(), perm.end(), 0);
+    std::stable_sort(perm.begin(), perm.end(),
+                     [&](std::size_t i, std::size_t j) {
+                         if (rows[i] != rows[j])
+                             return rows[i] < rows[j];
+                         if (cols[i] != cols[j])
+                             return cols[i] < cols[j];
+                         return false;
+                     });
+    return perm;
+}
+
+template <typename IT, typename VT>
+std::vector<VT> apply_permutation(std::vector<IT> &perm,
+                                  std::vector<VT> &original) {
+    std::vector<VT> sorted;
+    sorted.reserve(original.size());
+    std::transform(perm.begin(), perm.end(), std::back_inserter(sorted),
+                   [&](auto i) { return original[i]; });
+    original = std::vector<VT>();
+    return sorted;
+}
 
 inline void sort_perm(int *arr, int *perm, int len, bool rev = false) {
     if (rev == false) {
@@ -171,8 +207,40 @@ struct COOMatrix {
     }
 
     void read_from_mtx(const std::string &matrix_file_name) {
+#ifdef DEBUG_MODE
+        std::cout << "Reading matrix from file: " << matrix_file_name
+                  << std::endl;
+#endif
 #ifdef USE_FAST_MMIO
-        // TODO: SK
+        std::vector<int> original_rows;
+        std::vector<int> original_cols;
+        std::vector<double> original_vals;
+
+        fmm::matrix_market_header header;
+
+        // Load
+        {
+            fmm::read_options options;
+            options.generalize_symmetry = true;
+            std::ifstream f(matrix_file_name);
+            fmm::read_matrix_market_triplet(f, header, original_rows,
+                                            original_cols, original_vals,
+                                            options);
+        }
+
+        // Find sort permutation
+        auto perm = compute_sort_permutation(original_rows, original_cols);
+
+        // Apply permutation
+        this->I = apply_permutation(perm, original_rows);
+        this->J = apply_permutation(perm, original_cols);
+        this->val = apply_permutation(perm, original_vals);
+
+        this->n_rows = header.nrows;
+        this->n_cols = header.ncols;
+        this->nnz = header.nnz;
+        this->is_sorted = true;
+        this->is_symmetric = (header.symmetry != fmm::symmetry_type::general);
 #else
         MM_typecode matcode;
         FILE *f = fopen(matrix_file_name.c_str(), "r");
@@ -256,13 +324,18 @@ struct COOMatrix {
             this->J[i] = col_data[perm[i]];
             this->val[i] = val_data[perm[i]];
         }
-#endif
 
         this->n_rows = nrows;
         this->n_cols = ncols;
         this->nnz = nnz;
         this->is_sorted = 1;    // TODO: verify
         this->is_symmetric = 0; // TODO: determine based on matcode?
+#endif
+
+#ifdef DEBUG_MODE
+        std::cout << "Completed reading matrix from file: " << matrix_file_name
+                  << std::endl;
+#endif
     }
 
     void print(void) {
@@ -315,8 +388,6 @@ struct CRSMatrix {
         val = new double[nnz];
         col = new int[nnz];
         row_ptr = new int[n_rows + 1];
-
-        row_ptr[0] = 0;
     }
 
     ~CRSMatrix() {
