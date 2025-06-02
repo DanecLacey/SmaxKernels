@@ -532,6 +532,13 @@ struct DenseMatrix {
 
     ~DenseMatrix() { delete[] val; }
 
+    DenseMatrix& operator-= (const DenseMatrix& mat){
+        for (int i = 0; i < n_cols * n_rows; i++) {
+            val[i] = val[i] - mat.val[i];
+        }
+        return *this;
+    }
+
     void print() {
         std::cout << "N_rows: " << this->n_rows << std::endl;
         std::cout << "N_cols: " << this->n_cols << std::endl;

@@ -21,10 +21,10 @@ int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     if (!flags->diag_collected) {
         // Cast void pointers to the correct types with "as"
         // Dereference to get usable data
-        int A_n_rows = args->A->n_rows;
-        IT *A_col = as<IT *>(args->A->col);
-        IT *A_row_ptr = as<IT *>(args->A->row_ptr);
-        VT *A_val = as<VT *>(args->A->val);
+        int A_n_rows = args->A->crs->n_rows;
+        IT *A_col = as<IT *>(args->A->crs->col);
+        IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
+        VT *A_val = as<VT *>(args->A->crs->val);
 
         // Resize D to match A_n_rows x 1
         args->D->allocate_internal(A_n_rows, 1, sizeof(VT));
@@ -62,11 +62,11 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
-    int A_n_rows = args->A->n_rows;
-    int A_n_cols = args->A->n_cols;
-    IT *A_col = as<IT *>(args->A->col);
-    IT *A_row_ptr = as<IT *>(args->A->row_ptr);
-    VT *A_val = as<VT *>(args->A->val);
+    int A_n_rows = args->A->crs->n_rows;
+    int A_n_cols = args->A->crs->n_cols;
+    IT *A_col = as<IT *>(args->A->crs->col);
+    IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
+    VT *A_val = as<VT *>(args->A->crs->val);
     VT *x = as<VT *>(args->x->val);
     VT *y = as<VT *>(args->y->val);
     VT *D_val = as<VT *>(args->D->val);
@@ -75,22 +75,22 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
         int *lvl_ptr = args->uc->lvl_ptr;
         int n_levels = args->uc->n_levels;
         if (flags->mat_upper_triang) {
-            crs_sputrsv_lvl<IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr, A_val,
-                                    D_val, x, y, lvl_ptr);
+            crs_sptrsv_lvl<false, IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr,
+                                          A_val, D_val, x, y, lvl_ptr);
         } else {
-            crs_spltrsv_lvl<IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr, A_val,
-                                    D_val, x, y, lvl_ptr);
+            crs_sptrsv_lvl<true, IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr,
+                                         A_val, D_val, x, y, lvl_ptr);
         }
 
     } else {
         // Lower triangular matrix is the default case
         if (flags->mat_upper_triang) {
-            naive_crs_sputrsv<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
-                                      A_val, D_val, x, y);
+            naive_crs_sptrsv<false, IT, VT>(A_n_rows, A_n_cols, A_col,
+                                            A_row_ptr, A_val, D_val, x, y);
         } else {
             // Unpermuted matrix (e.g. no lvl-set sched) is the default case
-            naive_crs_spltrsv<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
-                                      A_val, D_val, x, y);
+            naive_crs_sptrsv<true, IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
+                                           A_val, D_val, x, y);
         }
     }
 

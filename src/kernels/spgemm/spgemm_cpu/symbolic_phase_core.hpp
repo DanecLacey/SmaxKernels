@@ -20,23 +20,23 @@ int symbolic_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
-    int A_n_rows = args->A->n_rows;
-    IT *A_col = as<IT *>(args->A->col);
-    IT *A_row_ptr = as<IT *>(args->A->row_ptr);
+    int A_n_rows = args->A->crs->n_rows;
+    IT *A_col = as<IT *>(args->A->crs->col);
+    IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
 
-    int B_n_rows = args->B->n_rows;
-    int B_n_cols = args->B->n_cols;
-    IT *B_col = as<IT *>(args->B->col);
-    IT *B_row_ptr = as<IT *>(args->B->row_ptr);
+    int B_n_rows = args->B->crs->n_rows;
+    int B_n_cols = args->B->crs->n_cols;
+    IT *B_col = as<IT *>(args->B->crs->col);
+    IT *B_row_ptr = as<IT *>(args->B->crs->row_ptr);
 
     // Since we want to reallocate the data pointed to by _C,
     // we need references to each of the pointers
-    int &C_n_rows = *static_cast<int *>(args->C->n_rows);
-    int &C_n_cols = *static_cast<int *>(args->C->n_cols);
-    int &C_nnz = *static_cast<int *>(args->C->nnz);
-    IT *&C_col = as_ptr_ref<IT>(args->C->col);
-    IT *&C_row_ptr = as_ptr_ref<IT>(args->C->row_ptr);
-    VT *&C_val = as_ptr_ref<VT>(args->C->val);
+    int &C_n_rows = *static_cast<int *>(args->C->crs->n_rows);
+    int &C_n_cols = *static_cast<int *>(args->C->crs->n_cols);
+    int &C_nnz = *static_cast<int *>(args->C->crs->nnz);
+    IT *&C_col = as_ptr_ref<IT>(args->C->crs->col);
+    IT *&C_row_ptr = as_ptr_ref<IT>(args->C->crs->row_ptr);
+    VT *&C_val = as_ptr_ref<VT>(args->C->crs->val);
 
 #if 1
     padded_symbolic_phase(timers, A_n_rows, A_col, A_row_ptr, B_n_rows,

@@ -140,6 +140,10 @@ template <typename IT>
 int Utils::generate_perm_jh(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                             int *perm, int *inv_perm, int *lvl) {
 
+    // suppress compiler warnings
+    (void)perm;
+    (void)inv_perm;
+
     int max_level = 0;
 
     // Compute levels for each row in A + A^T
@@ -161,6 +165,10 @@ int Utils::generate_perm_jh(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
 template <typename IT>
 int Utils::generate_perm_DFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                              int *perm, int *inv_perm, int *lvl) {
+
+    // suppress compiler warnings
+    (void)perm;
+    (void)inv_perm;
 
     printf("Using DFS to generate permutations will not work currently. There "
            "are known bugs...\n");
@@ -228,6 +236,9 @@ int Utils::generate_perm_DFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
 template <typename IT>
 int Utils::generate_perm_BFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                              int *perm, int *inv_perm, int *lvl) {
+
+    // suppress compiler warnings
+    (void)inv_perm;
 
     std::vector<bool> visited(A_n_rows, false);
 
@@ -374,6 +385,10 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
 template <typename IT>
 int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                                int *perm, int *inv_perm, int *lvl) {
+
+    // suppress compiler warnings
+    (void)perm;
+    (void)inv_perm;
 
     int *color = lvl;
     int *usable_colors = new int[A_n_rows];

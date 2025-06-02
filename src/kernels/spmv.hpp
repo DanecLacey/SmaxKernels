@@ -23,21 +23,57 @@ class SpMVKernel : public Kernel {
     ~SpMVKernel() {}
 
     int _register_A(const std::vector<Variant> &args) override {
-        if (args.size() != 6)
-            throw std::runtime_error("SpMVKernel register_A expects 6 args");
+        if (flags->is_mat_scs) {
+            if (args.size() != 14)
+                throw std::runtime_error(
+                    "SpMVKernel register_A expects 14 Sell-C-sigma args");
 
-        this->args->A->n_rows = std::get<int>(args[0]);
-        this->args->A->n_cols = std::get<int>(args[1]);
-        this->args->A->nnz = std::get<int>(args[2]);
+            this->args->A->scs = std::make_unique<SCSMatrix>();
+#if CUDA_MODE
+            // Make device version of matrix
+            this->args->d_A->scs = std::make_unique<SCSMatrix>();
+#endif
 
-        this->args->A->col = std::get<void *>(args[3]);
-        this->args->A->row_ptr = std::get<void *>(args[4]);
-        this->args->A->val = std::get<void *>(args[5]);
+            this->args->A->scs->C = std::get<int>(args[0]);
+            this->args->A->scs->sigma = std::get<int>(args[1]);
+            this->args->A->scs->n_rows = std::get<int>(args[2]);
+            this->args->A->scs->n_rows_padded = std::get<int>(args[3]);
+            this->args->A->scs->n_cols = std::get<int>(args[4]);
+            this->args->A->scs->n_chunks = std::get<int>(args[5]);
+            this->args->A->scs->n_elements = std::get<int>(args[6]);
+            this->args->A->scs->nnz = std::get<int>(args[7]);
+
+            this->args->A->scs->chunk_ptr = std::get<void *>(args[8]);
+            this->args->A->scs->chunk_lengths = std::get<void *>(args[9]);
+            this->args->A->scs->col = std::get<void *>(args[10]);
+            this->args->A->scs->val = std::get<void *>(args[11]);
+            this->args->A->scs->perm = std::get<void *>(args[12]);
+            this->args->A->scs->inv_perm = std::get<void *>(args[13]);
+
+        } else {
+            if (args.size() != 6)
+                throw std::runtime_error(
+                    "SpMVKernel register_A expects 6 CRS args");
+
+            this->args->A->crs = std::make_unique<CRSMatrix>();
+#if CUDA_MODE
+            // Make device version of matrix
+            this->args->d_A->crs = std::make_unique<CRSMatrix>();
+#endif
+
+            this->args->A->crs->n_rows = std::get<int>(args[0]);
+            this->args->A->crs->n_cols = std::get<int>(args[1]);
+            this->args->A->crs->nnz = std::get<int>(args[2]);
+
+            this->args->A->crs->col = std::get<void *>(args[3]);
+            this->args->A->crs->row_ptr = std::get<void *>(args[4]);
+            this->args->A->crs->val = std::get<void *>(args[5]);
+        }
 
         return 0;
     };
 
-    int _register_B(const std::vector<Variant> &args) {
+    int _register_B(const std::vector<Variant> &args) override {
         if (args.size() != 2)
             throw std::runtime_error("SpMVKernel register_B expects 2 args");
 
@@ -47,13 +83,18 @@ class SpMVKernel : public Kernel {
         return 0;
     }
 
-    int _register_C(const std::vector<Variant> &args) {
+    int _register_C(const std::vector<Variant> &args) override {
         if (args.size() != 2)
             throw std::runtime_error("SpMVKernel register_C expects 2 args");
 
         this->args->y->n_rows = std::get<int>(args[0]);
         this->args->y->val = std::get<void *>(args[1]);
 
+        return 0;
+    }
+
+    int set_mat_scs(bool flag) override {
+        this->flags->is_mat_scs = flag;
         return 0;
     }
 

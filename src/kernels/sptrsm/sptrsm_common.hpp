@@ -39,6 +39,7 @@ struct Flags {
     bool mat_upper_triang = false;
     bool mat_lower_triang = false;
     bool diag_collected = false;
+    bool vec_row_major = false;
 };
 
 class SpTRSMErrorHandler : public KernelErrorHandler {
@@ -58,6 +59,11 @@ class SpTRSMErrorHandler : public KernelErrorHandler {
     template <typename IT, typename VT>
     static void super_diag(int row_idx, IT col, VT val) {
         KernelErrorHandler::super_diag<IT>(row_idx, col, val, "SpTRSM");
+    }
+
+    template <typename IT, typename VT>
+    static void sub_diag(int row_idx, IT col, VT val) {
+        KernelErrorHandler::sub_diag<IT>(row_idx, col, val, "SpTRSM");
     }
 
     template <typename IT>

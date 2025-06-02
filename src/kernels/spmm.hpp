@@ -25,18 +25,20 @@ class SpMMKernel : public Kernel {
         if (args.size() != 6)
             throw std::runtime_error("SpMMKernel register_A expects 6 args");
 
-        this->args->A->n_rows = std::get<int>(args[0]);
-        this->args->A->n_cols = std::get<int>(args[1]);
-        this->args->A->nnz = std::get<int>(args[2]);
+        this->args->A->crs = std::make_unique<CRSMatrix>();
 
-        this->args->A->col = std::get<void *>(args[3]);
-        this->args->A->row_ptr = std::get<void *>(args[4]);
-        this->args->A->val = std::get<void *>(args[5]);
+        this->args->A->crs->n_rows = std::get<int>(args[0]);
+        this->args->A->crs->n_cols = std::get<int>(args[1]);
+        this->args->A->crs->nnz = std::get<int>(args[2]);
+
+        this->args->A->crs->col = std::get<void *>(args[3]);
+        this->args->A->crs->row_ptr = std::get<void *>(args[4]);
+        this->args->A->crs->val = std::get<void *>(args[5]);
 
         return 0;
     };
 
-    int _register_B(const std::vector<Variant> &args) {
+    int _register_B(const std::vector<Variant> &args) override {
         if (args.size() != 3)
             throw std::runtime_error("SpMMKernel register_B expects 3 args");
 
@@ -47,7 +49,7 @@ class SpMMKernel : public Kernel {
         return 0;
     }
 
-    int _register_C(const std::vector<Variant> &args) {
+    int _register_C(const std::vector<Variant> &args) override {
         if (args.size() != 3)
             throw std::runtime_error("SpMMKernel register_C expects 3 args");
 
@@ -55,6 +57,11 @@ class SpMMKernel : public Kernel {
         this->args->Y->n_cols = std::get<int>(args[1]);
         this->args->Y->val = std::get<void *>(args[2]);
 
+        return 0;
+    }
+
+    int set_vec_row_major(bool flag) override {
+        this->flags->vec_row_major = flag;
         return 0;
     }
 

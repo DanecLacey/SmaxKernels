@@ -7,13 +7,12 @@
 namespace SMAX::KERNELS::SPMM::SPMM_CPU {
 
 template <typename IT, typename VT>
-inline void naive_crs_spmm(int A_n_rows, int A_n_cols, IT *RESTRICT A_col,
-                           IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
-                           VT *RESTRICT X, VT *RESTRICT Y,
-                           int block_vector_size) {
+inline void naive_crs_spmm_col_maj(int A_n_rows, int A_n_cols,
+                                   IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
+                                   VT *RESTRICT A_val, VT *RESTRICT X,
+                                   VT *RESTRICT Y, int block_vector_size) {
 
     // clang-format off
-// Assuming colwise layout for now
 #pragma omp parallel for schedule(static)
     for (int row = 0; row < A_n_rows; ++row) {
         VT tmp[block_vector_size];
@@ -42,6 +41,47 @@ inline void naive_crs_spmm(int A_n_rows, int A_n_cols, IT *RESTRICT A_col,
 
         for (int vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
             Y[row + (vec_idx * A_n_rows)] = tmp[vec_idx];
+        }
+    }
+}
+// clang-format on
+
+template <typename IT, typename VT>
+inline void naive_crs_spmm_row_maj(int A_n_rows, int A_n_cols,
+                                   IT *RESTRICT A_col, IT *RESTRICT A_row_ptr,
+                                   VT *RESTRICT A_val, VT *RESTRICT X,
+                                   VT *RESTRICT Y, int block_vector_size) {
+
+    // clang-format off
+#pragma omp parallel for schedule(static)
+    for (int row = 0; row < A_n_rows; ++row) {
+        VT tmp[block_vector_size];
+
+        for (int vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
+            tmp[vec_idx] = VT{};
+        }
+
+        for (IT j = A_row_ptr[row]; j < A_row_ptr[row + 1]; ++j) {
+            IT col = A_col[j];
+#pragma omp simd
+            for (int vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
+
+                tmp[vec_idx] += A_val[j] * X[col * block_vector_size + vec_idx];
+
+                IF_SMAX_DEBUG(
+                    if (col < 0 || col >= (IT)A_n_cols)
+                        SpMMErrorHandler::col_oob<IT>(col, j, A_n_cols);
+                );
+                IF_SMAX_DEBUG_3(
+                    SpMMErrorHandler::print_crs_elem<IT, VT>(
+                        A_val[j], col, X[(A_n_rows * vec_idx) + col], j,
+                        (A_n_rows * vec_idx) + col);
+                );
+            }
+        }
+
+        for (int vec_idx = 0; vec_idx < block_vector_size; ++vec_idx) {
+            Y[row * block_vector_size + vec_idx] = tmp[vec_idx];
         }
     }
 }

@@ -44,19 +44,24 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
-    int A_n_rows = args->A->n_rows;
-    int A_n_cols = args->A->n_cols;
-    IT *A_col = as<IT *>(args->A->col);
-    IT *A_row_ptr = as<IT *>(args->A->row_ptr);
-    VT *A_val = as<VT *>(args->A->val);
+    int A_n_rows = args->A->crs->n_rows;
+    int A_n_cols = args->A->crs->n_cols;
+    IT *A_col = as<IT *>(args->A->crs->col);
+    IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
+    VT *A_val = as<VT *>(args->A->crs->val);
     VT *X = as<VT *>(args->X->val);
     VT *Y = as<VT *>(args->Y->val);
     int block_vector_size = args->X->n_cols;
 
-#if 1
-    naive_crs_spmm<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr, A_val,
-                           X + X_offset, Y + Y_offset, block_vector_size);
-#endif
+    if (flags->vec_row_major) {
+        naive_crs_spmm_row_maj<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
+                                       A_val, X + X_offset, Y + Y_offset,
+                                       block_vector_size);
+    } else {
+        naive_crs_spmm_col_maj<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
+                                       A_val, X + X_offset, Y + Y_offset,
+                                       block_vector_size);
+    }
 
     IF_SMAX_TIME(timers->get("apply")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmm_apply_cpu_core"));

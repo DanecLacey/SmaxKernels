@@ -21,6 +21,18 @@ class Utils {
 
     void print_timers();
 
+    template <typename IT, typename VT>
+    int convert_crs_to_scs(const int A_crs_n_rows, const int A_crs_n_cols,
+                           const int A_crs_nnz, const IT *A_crs_col,
+                           const IT *A_crs_row_ptr, const VT *A_crs_val,
+                           const int A_scs_C, const int A_scs_sigma,
+                           int &A_scs_n_rows, int &A_scs_n_rows_padded,
+                           int &A_scs_n_cols, int &A_scs_n_chunks,
+                           int &A_scs_n_elements, int &A_scs_nnz,
+                           IT *&A_scs_chunk_ptr, IT *&A_scs_chunk_lengths,
+                           IT *&A_scs_col, VT *&A_scs_val, IT *&A_scs_perm,
+                           IT *&A_scs_inv_perm);
+
     template <typename IT>
     int build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
                             IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz);
@@ -57,5 +69,6 @@ class Utils {
 } // namespace SMAX
 
 // DL 06.05.2025 NOTE: Don't love forward declaring the class.. Works for now
-#include "utils/permutation_impl.hpp"
+#include "utils/convert_formats.hpp"
+#include "utils/permutations.hpp"
 #include "utils/timers.hpp"

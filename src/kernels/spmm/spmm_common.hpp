@@ -31,7 +31,9 @@ struct Args {
     Args &operator=(const Args &) = delete;
 };
 
-struct Flags {};
+struct Flags {
+    bool vec_row_major = false;
+};
 
 class SpMMErrorHandler : public KernelErrorHandler {
   public:

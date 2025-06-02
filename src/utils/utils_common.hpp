@@ -38,6 +38,12 @@ class UtilsErrorHandler : public ErrorHandler {
         oss << "Please choose a type in: " << available_types << ".\n";
         utils_fatal(oss.str());
     }
+
+    static void not_implemented(const std::string &util_name) {
+        std::ostringstream oss;
+        oss << "This utility is not yet implemented.";
+        utils_fatal("[" + util_name + "] " + oss.str());
+    }
 };
 
 template <typename IT>
