@@ -73,12 +73,12 @@ struct SCSMatrix {
 
     SCSMatrix() = default;
 
-    SCSMatrix(int _n_rows, int _n_rows_padded, int _n_cols, int _C, int _sigma,
+    SCSMatrix(int _C, int _sigma, int _n_rows, int _n_rows_padded, int _n_cols,
               int _n_chunks, int _n_elements, int _nnz, void *_chunk_ptrs,
               void *_chunk_lengths, void *_col, void *_val, void *_perm,
               void *_inv_perm)
-        : n_rows(_n_rows), n_rows_padded(_n_rows_padded), n_cols(_n_cols),
-          C(_C), sigma(_sigma), n_chunks(_n_chunks), n_elements(_n_elements),
+        : C(_C), sigma(_sigma), n_rows(_n_rows), n_rows_padded(_n_rows_padded),
+          n_cols(_n_cols), n_chunks(_n_chunks), n_elements(_n_elements),
           nnz(_nnz), chunk_ptrs(_chunk_ptrs), chunk_lengths(_chunk_lengths),
           col(_col), val(_val), perm(_perm), inv_perm(_inv_perm) {}
 };
