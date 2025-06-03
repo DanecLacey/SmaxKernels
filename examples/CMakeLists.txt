@@ -116,6 +116,8 @@ option(USE_LIKWID "Enable LIKWID support" OFF)
 option(USE_EIGEN "Enable Eigen support" OFF)
 option(USE_MKL "Enable MKL support" OFF)
 option(USE_PETSC "Enable PETSC support" OFF)
+option(USE_FAST_MMIO "Enable fast matrix market support" OFF)
+include(cmake/CPM.cmake)
 
 # === OpenMP Support ===
 if(USE_OPENMP)
@@ -144,7 +146,7 @@ if(USE_MPI)
         include_directories(${MPI_CXX_INCLUDE_PATH})
 
         # Optional: switch compiler to MPI wrapper if needed
-        if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
             set(CMAKE_CXX_COMPILER "mpic++")
         elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
             set(CMAKE_CXX_COMPILER "mpiicpc")
@@ -180,7 +182,6 @@ if(USE_EIGEN)
         message(STATUS "Using system-installed Eigen (Eigen3::Eigen)")
     else()
         message(STATUS "Eigen not found locally, fetching via CPM")
-        include(cmake/CPM.cmake)
         include(cmake/eigen.cmake)
     endif()
 
@@ -239,9 +240,27 @@ else()
     message(WARNING "Validation checks not built. MKL is required.")
 endif()
 
-# Sort of an ugly workaround
-add_library(mmio STATIC mmio.cpp)
-target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+
+# === fast mmio Support ===
+if(USE_FAST_MMIO)
+    message(STATUS "Fast MMIO support is enabled.")
+    include(cmake/fastmmio.cmake) 
+else()
+    message(STATUS "Fast MMIO support is disabled.")
+endif()
+# sort of ugly work around 
+if(USE_FAST_MMIO)
+    target_sources(fmmio
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/mmio.cpp
+    )
+    target_compile_definitions(fmmio INTERFACE USE_FAST_MMIO)
+    add_library(mmio ALIAS fmmio)
+else()
+    add_library(mmio STATIC mmio.cpp)
+    target_include_directories(mmio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 
 add_subdirectory(tests)
 add_custom_target(tests DEPENDS ${test_targets})
