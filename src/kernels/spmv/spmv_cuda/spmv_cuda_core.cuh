@@ -3,6 +3,7 @@
 #include "../../../common.hpp"
 #include "../../../platforms/cuda/cuda.cuh"
 #include "spmv_cuda_crs_impl.cuh"
+#include "spmv_cuda_scs_impl.cuh"
 
 namespace SMAX::KERNELS::SPMV::SPMV_CUDA {
 
@@ -34,9 +35,8 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
         int A_n_chunks = args->A->scs->n_chunks;
         IT *A_chunk_ptr = as<IT *>(args->A->scs->chunk_ptr);
         IT *A_chunk_lengths = as<IT *>(args->A->scs->chunk_lengths);
-        IT *A_col = as<IT *>(args->A->crs->col);
-        IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
-        VT *A_val = as<VT *>(args->A->crs->val);
+        IT *A_col = as<IT *>(args->A->scs->col);
+        VT *A_val = as<VT *>(args->A->scs->val);
 
         // Copy typed pointers from host to device
         transfer_HtoD<IT>(A_chunk_ptr, args->d_A->scs->chunk_ptr,
@@ -102,8 +102,8 @@ int apply_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
             as<IT *>(args->d_A->scs->chunk_lengths),
             as<IT *>(args->d_A->scs->col),
             as<VT *>(args->d_A->scs->val),
-            as<VT *>(args->d_A->scs->x) + x_offset,
-            as<VT *>(args->d_A->scs->y) + y_offset);
+            as<VT *>(args->d_x->val) + x_offset,
+            as<VT *>(args->d_y->val) + y_offset);
     }
     else{
         naive_crs_spmv_cuda_launcher<IT, VT>(

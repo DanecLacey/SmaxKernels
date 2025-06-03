@@ -2,9 +2,9 @@ name: CMake on a single platform
 
 on:
   push:
-    branches: [ "master", "cuda_fix" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "master", "cuda_fix" ]
+    branches: [ "master" ]
 
 jobs:
   buildLibrary_release:

@@ -159,6 +159,7 @@ if(USE_CUDA)
         # Add CUDA source file
         list(APPEND SOURCES
             src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
+            src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cu
         )
     else()
         message(FATAL_ERROR "No supported GPU compiler found, even though USE_CUDA=ON.")

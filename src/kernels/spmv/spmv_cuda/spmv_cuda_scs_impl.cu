@@ -20,7 +20,7 @@ __global__ void naive_scs_spmv_cuda(const int C, const int n_chunks,
 
         for (int j = 0; j < chunk_lengths[c]; ++j) {
             int offset = cs + j * C + idx;
-            tmp += values[offset] * x[col_idxs[offset]];
+            tmp += val[offset] * x[col[offset]];
         }
 
         y[row] = tmp;
@@ -36,7 +36,7 @@ void naive_scs_spmv_cuda_launcher(const int C, const int n_chunks,
                                   VT *RESTRICT y) {
 
     // CUDA_TPB selected at compile time
-    int blocks = (A_n_rows + CUDA_TPB - 1) / CUDA_TPB;
+    int blocks = (C * n_chunks + CUDA_TPB - 1) / CUDA_TPB;
 
     // clang-format off
     naive_scs_spmv_cuda<IT, VT><<<blocks, CUDA_TPB>>>(C, n_chunks, chunk_ptr, chunk_lengths, col, val, x, y);
