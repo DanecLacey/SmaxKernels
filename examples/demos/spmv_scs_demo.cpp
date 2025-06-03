@@ -31,7 +31,6 @@ int main(void) {
     int *A_scs_col = nullptr;
     double *A_scs_val = nullptr;
     int *A_scs_perm = nullptr;
-    int *A_scs_inv_perm = nullptr;
 
     double *x = new double[A_crs_n_cols];
     for (int i = 0; i < A_crs_n_cols; ++i) {
@@ -48,7 +47,7 @@ int main(void) {
         A_crs_n_rows, A_crs_n_cols, A_crs_nnz, A_crs_col, A_crs_row, A_crs_val,
         A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded, A_scs_n_cols,
         A_scs_n_chunks, A_scs_n_elements, A_scs_nnz, A_scs_chunk_ptr,
-        A_scs_chunk_lengths, A_scs_col, A_scs_val, A_scs_perm, A_scs_inv_perm);
+        A_scs_chunk_lengths, A_scs_col, A_scs_val, A_scs_perm);
 
     // Register kernel tag, platform, and metadata
     smax->register_kernel("SCS_spmv", SMAX::KernelType::SPMV);
@@ -58,10 +57,11 @@ int main(void) {
     smax->kernel("SCS_spmv")->set_mat_scs(true);
 
     smax->kernel("SCS_spmv")
-        ->register_A(A_scs_n_rows, A_scs_n_rows_padded, A_scs_n_cols, A_scs_C,
-                     A_scs_sigma, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,
+        ->register_A(A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded,
+                     A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,
                      A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
-                     A_scs_perm, A_scs_inv_perm);
+                     A_scs_perm);
+
     smax->kernel("SCS_spmv")->register_B(A_scs_n_cols, x);
     smax->kernel("SCS_spmv")->register_C(A_scs_n_rows, y);
 
@@ -80,7 +80,6 @@ int main(void) {
     delete[] A_scs_col;
     delete[] A_scs_val;
     delete[] A_scs_perm;
-    delete[] A_scs_inv_perm;
     delete[] x;
     delete[] y;
     delete smax;

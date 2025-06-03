@@ -24,9 +24,9 @@ class SpMVKernel : public Kernel {
 
     int _register_A(const std::vector<Variant> &args) override {
         if (flags->is_mat_scs) {
-            if (args.size() != 14)
+            if (args.size() != 13)
                 throw std::runtime_error(
-                    "SpMVKernel register_A expects 14 Sell-C-sigma args");
+                    "SpMVKernel register_A expects 13 Sell-C-sigma args");
 
             this->args->A->scs = std::make_unique<SCSMatrix>();
 #if CUDA_MODE
@@ -48,7 +48,6 @@ class SpMVKernel : public Kernel {
             this->args->A->scs->col = std::get<void *>(args[10]);
             this->args->A->scs->val = std::get<void *>(args[11]);
             this->args->A->scs->perm = std::get<void *>(args[12]);
-            this->args->A->scs->inv_perm = std::get<void *>(args[13]);
 
         } else {
             if (args.size() != 6)
