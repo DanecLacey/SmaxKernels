@@ -5,7 +5,7 @@
 ## Supported Kernels and Platforms ## 
 | Sparse Kernel                                     | OpenMP    | CUDA     | MPI       | Matrix Formats |
 |--------------                                     |---------- |----------|---------- | ----------|
-| Matrix-Vector Multiplication -- **SpMV**          | ✅       | ✅       | ❌       | CRS |
+| Matrix-Vector Multiplication -- **SpMV**          | ✅       | ✅       | ❌       | CRS, Sell-C-sigma |
 | Matrix-Multiple Vector Multiplication -- **SpMM** | ✅       | ❌       | ❌       | CRS |
 | Matrix-Sparse Matrix Multiplication -- **SpGEMM** | ✅       | ❌       | ❌       | CRS |
 | Triangular Solve -- **SpTRSV**                    | ✅       | ❌       | ❌       | CRS |

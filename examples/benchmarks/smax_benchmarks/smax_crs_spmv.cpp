@@ -4,7 +4,7 @@
 #include "smax_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
@@ -14,11 +14,11 @@ int main(int argc, char *argv[]) {
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_spmv", SMAX::KernelType::SPMV);
-    REGISTER_SPMV_DATA("my_spmv", crs_mat, x, y);
+    smax->register_kernel("my_crs_spmv", SMAX::KernelType::SPMV);
+    REGISTER_SPMV_DATA("my_crs_spmv", crs_mat, x, y);
 
     // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = "smax_spmv";
+    std::string bench_name = "smax_crs_spmv";
     double runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
     std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
-        smax->kernel("my_spmv")->run();
+        smax->kernel("my_crs_spmv")->run();
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
     };
 
