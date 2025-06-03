@@ -18,7 +18,7 @@ int main(void) {
     double *A_crs_val = new double[A_crs_nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
 
     // Declare Sell-c-sigma operand
-    int A_scs_C = 1;     // Defined by user
+    int A_scs_C = 2;     // Defined by user
     int A_scs_sigma = 1; // Defined by user
     int A_scs_n_rows = 0;
     int A_scs_n_rows_padded = 0;
@@ -32,14 +32,6 @@ int main(void) {
     double *A_scs_val = nullptr;
     int *A_scs_perm = nullptr;
 
-    double *x = new double[A_crs_n_cols];
-    for (int i = 0; i < A_crs_n_cols; ++i) {
-        x[i] = 1.0;
-    }
-
-    // Initialize result
-    double *y = new double[A_crs_n_rows];
-
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
 
@@ -48,6 +40,14 @@ int main(void) {
         A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded, A_scs_n_cols,
         A_scs_n_chunks, A_scs_n_elements, A_scs_nnz, A_scs_chunk_ptr,
         A_scs_chunk_lengths, A_scs_col, A_scs_val, A_scs_perm);
+
+    double *x = new double[A_scs_n_rows_padded];
+    for (int i = 0; i < A_scs_n_rows_padded; ++i) {
+        x[i] = 1.0;
+    }
+
+    // Initialize result
+    double *y = new double[A_scs_n_rows_padded];
 
     // Register kernel tag, platform, and metadata
     smax->register_kernel("SCS_spmv", SMAX::KernelType::SPMV);
