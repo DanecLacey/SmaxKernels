@@ -37,6 +37,7 @@ set(SOURCES
 # List of header files for installation
 set(COMMON_HEADERS
     src/interface.hpp
+    src/unset_defines.hpp
     src/common.hpp
     src/macros.hpp
     src/memory_utils.hpp
