@@ -23,6 +23,7 @@ namespace fmm = fast_matrix_market;
 #endif
 
 #define PRINT_WIDTH 18
+#define CACHE_LINE_ALIGNMENT 64
 
 #ifdef _OPENMP
 #define GET_THREAD_COUNT int n_threads = omp_get_max_threads();
@@ -91,6 +92,66 @@ namespace fmm = fast_matrix_market;
             working_file << std::left << std::setw(PRINT_WIDTH) << "WARNING";  \
     } while (0)
 #endif
+
+void *aligned_malloc(size_t bytesize) {
+    int errorCode;
+    void *ptr;
+
+    errorCode = posix_memalign(&ptr, CACHE_LINE_ALIGNMENT, bytesize);
+
+    if (errorCode) {
+        if (errorCode == EINVAL) {
+            fprintf(stderr,
+                    "Error: Alignment parameter is not a power of two\n");
+            exit(EXIT_FAILURE);
+        }
+        if (errorCode == ENOMEM) {
+            fprintf(stderr,
+                    "Error: Insufficient memory to fulfill the request\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (ptr == NULL) {
+        fprintf(stderr, "Error: posix_memalign failed!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return ptr;
+}
+
+// overload new and delete for alignement
+void *operator new(size_t bytesize) {
+    // printf("Overloading new operator with size: %lu\n", bytesize);
+    int errorCode;
+    void *ptr;
+    errorCode = posix_memalign(&ptr, CACHE_LINE_ALIGNMENT, bytesize);
+
+    if (errorCode) {
+        if (errorCode == EINVAL) {
+            fprintf(stderr,
+                    "Error: Alignment parameter is not a power of two\n");
+            exit(EXIT_FAILURE);
+        }
+        if (errorCode == ENOMEM) {
+            fprintf(stderr, "Error: Insufficient memory to fulfill the request "
+                            "for space\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (ptr == NULL) {
+        fprintf(stderr, "Error: posix_memalign failed!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return ptr;
+}
+
+void operator delete(void *p) {
+    // printf("Overloading delete operator\n");
+    free(p);
+}
 
 template <typename IT>
 std::vector<IT> compute_sort_permutation(const std::vector<IT> &rows,
@@ -532,7 +593,7 @@ struct DenseMatrix {
 
     ~DenseMatrix() { delete[] val; }
 
-    DenseMatrix& operator-= (const DenseMatrix& mat){
+    DenseMatrix &operator-=(const DenseMatrix &mat) {
         for (int i = 0; i < n_cols * n_rows; i++) {
             val[i] = val[i] - mat.val[i];
         }

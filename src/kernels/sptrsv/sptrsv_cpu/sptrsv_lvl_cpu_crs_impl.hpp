@@ -7,10 +7,11 @@
 namespace SMAX::KERNELS::SPTRSV::SPTRSV_CPU {
 
 template <bool Lower, typename IT, typename VT>
-inline void crs_sptrsv_lvl(int n_levels, int A_n_cols, IT *RESTRICT A_col,
-                           IT *RESTRICT A_row_ptr, VT *RESTRICT A_val,
-                           VT *RESTRICT D_val, VT *RESTRICT x, VT *RESTRICT y,
-                           int *lvl_ptr) {
+inline void
+crs_sptrsv_lvl(const int n_levels, const int A_n_cols, const IT *RESTRICT A_col,
+               const IT *RESTRICT A_row_ptr, const VT *RESTRICT A_val,
+               const VT *RESTRICT D_val, VT *RESTRICT x, const VT *RESTRICT y,
+               const int *lvl_ptr) {
 
     // DL 30.05.25 NOTE: Cannot do too much DRY due to OpenMP
     // clang-format off
@@ -19,10 +20,13 @@ inline void crs_sptrsv_lvl(int n_levels, int A_n_cols, IT *RESTRICT A_col,
 #pragma omp parallel for
             for (int row_idx = lvl_ptr[lvl_idx]; row_idx < lvl_ptr[lvl_idx + 1]; ++row_idx) {
                 VT sum = (VT)0.0;
+                IT row_start = A_row_ptr[row_idx]; // To help compiler
+                IT row_end   = A_row_ptr[row_idx + 1] - 1; // To help compiler
 
-                for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1] - 1; ++j) {
+                #pragma omp simd reduction(+:sum)
+                for (IT j = row_start; j < row_end; ++j) {
                     IT col = A_col[j];
-                    
+
                     IF_SMAX_DEBUG(
                         if (col < (IT)0 || col >= (IT)A_n_cols)
                             SpTRSVErrorHandler::col_oob<IT>(col, j, A_n_cols);
@@ -47,8 +51,11 @@ inline void crs_sptrsv_lvl(int n_levels, int A_n_cols, IT *RESTRICT A_col,
             // DL 12.05.2025 NOTE: Traversal order within a level does not matter.
             for (int row_idx = lvl_ptr[lvl_idx]; row_idx < lvl_ptr[lvl_idx + 1]; ++row_idx) {
                 VT sum = (VT)0.0;
+                IT row_start = A_row_ptr[row_idx]; // To help compiler
+                IT row_end   = A_row_ptr[row_idx + 1] - 1; // To help compiler
 
-                for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx + 1] - 1; ++j) {
+                #pragma omp simd reduction(+:sum)
+                for (IT j = row_start; j < row_end; ++j) {
                     IT col = A_col[j];
 
                     IF_SMAX_DEBUG(
