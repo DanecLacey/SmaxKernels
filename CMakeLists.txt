@@ -201,7 +201,7 @@ message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
 # Create the shared library target
 add_library(${LIBRARY_NAME} SHARED ${SOURCES})
 
-target_compile_definitions(${LIBRARY_NAME} PUBLIC
+target_compile_definitions(${LIBRARY_NAME} PRIVATE
     CUDA_MODE=${CUDA_MODE}
     DEBUG_MODE=${DEBUG_MODE}
 )
@@ -239,9 +239,9 @@ if(CUDAToolkit_FOUND)
     target_include_directories(${LIBRARY_NAME} PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
 
     # Propagate to users
-    target_compile_definitions(${LIBRARY_NAME} PUBLIC CUDA_TPB=${CUDA_TPB})
-    target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDA_INCLUDE_DIRS})
-    target_link_libraries(${LIBRARY_NAME} PUBLIC CUDA::cudart)
+    target_compile_definitions(${LIBRARY_NAME} PRIVATE CUDA_TPB=${CUDA_TPB})
+    target_include_directories(${LIBRARY_NAME} PRIVATE ${CUDA_INCLUDE_DIRS})
+    target_link_libraries(${LIBRARY_NAME} PRIVATE CUDA::cudart)
 
     # Mark .cu files as CUDA language explicitly (optional but safe)
     set_source_files_properties(
@@ -281,7 +281,7 @@ if(USE_LIKWID)
     find_package(likwid REQUIRED)
     if(likwid_FOUND)
         message(STATUS "LIKWID found, enabling LIKWID support.")
-        target_compile_definitions(${LIBRARY_NAME} PUBLIC USE_LIKWID LIKWID_PERFMON)
+        target_compile_definitions(${LIBRARY_NAME} PRIVATE USE_LIKWID LIKWID_PERFMON)
         include_directories(${LIKWID_INCLUDES})
         set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES})
     else()

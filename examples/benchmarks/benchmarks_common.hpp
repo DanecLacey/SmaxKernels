@@ -59,10 +59,6 @@ class BenchHarness {
             warmup_begin_loop_time = getTimeStamp();
             for (int k = 0; k < warmup_n_iters; ++k) {
                 callback(true);
-#ifdef DEBUG_MODE_FINE
-                std::cout << "Completed warmup_" << bench_name << " iter " << k
-                          << std::endl;
-#endif
             }
             if (counter != nullptr)
                 (*counter) += warmup_n_iters;
@@ -81,10 +77,6 @@ class BenchHarness {
             begin_loop_time = getTimeStamp();
             for (int k = 0; k < n_iters; ++k) {
                 callback(false);
-#ifdef DEBUG_MODE_FINE
-                std::cout << "Completed " << bench_name << " iter " << k
-                          << std::endl;
-#endif
             }
             if (counter != nullptr)
                 (*counter) += n_iters;

@@ -1,13 +1,5 @@
 #pragma once
 
-#ifdef DEBUG_MODE
-#undef DEBUG_MODE
-#endif
-
-#ifdef DEBUG_MODE_FINE
-#undef DEBUG_MODE_FINE
-#endif
-
 #ifdef USE_TIMERS
 #undef USE_TIMERS
 #endif
@@ -22,10 +14,6 @@
 
 #ifdef USE_OPENMP
 #undef USE_OPENMP
-#endif
-
-#ifdef USE_CUDA
-#undef USE_CUDA
 #endif
 
 #ifdef LINE_COUNT_WARNING
