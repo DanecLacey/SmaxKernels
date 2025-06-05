@@ -1,5 +1,5 @@
 #include "../../examples_common.hpp"
-#include "../../sptrsv_helpers.hpp"
+#include "../../sptrsv_lvl_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "smax_benchmarks_common.hpp"
 
@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     SMAX::Interface *smax = new SMAX::Interface();
     smax->register_kernel("my_sptrsv_lvl", SMAX::KernelType::SPTRSV);
     smax->utils->generate_perm<int>(crs_mat->n_rows, crs_mat->row_ptr,
-                                       crs_mat->col, perm, inv_perm);
+                                       crs_mat->col, perm, inv_perm, argv[2]);
     smax->kernel("my_sptrsv_lvl")->set_mat_perm(true);
     smax->utils->apply_mat_perm<int, double>(
         crs_mat->n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
