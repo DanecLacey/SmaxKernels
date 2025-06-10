@@ -1,5 +1,5 @@
 #include "../examples_common.hpp"
-#include "../sptrsv_helpers.hpp"
+#include "../sptrsv_lvl_helpers.hpp"
 #include "validation_common.hpp"
 
 int main(int argc, char *argv[]) {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
 
     // Generate and apply permutation
     smax->utils->generate_perm<int>(n_rows, crs_mat->row_ptr, crs_mat->col,
-                                    perm, inv_perm);
+                                    perm, inv_perm, argv[2]);
     smax->utils->apply_mat_perm<int, double>(
         n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
         crs_mat_perm->row_ptr, crs_mat_perm->col, crs_mat_perm->val, perm,
@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
     // Smax SpTRSV
     REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_perm_D_plus_L, x_smax_perm,
                          b_perm);
+    smax->kernel("my_lvl_sptrsv")->set_mat_perm(true);
     smax->kernel("my_lvl_sptrsv")->run();
 
     // MKL SpTRSV
