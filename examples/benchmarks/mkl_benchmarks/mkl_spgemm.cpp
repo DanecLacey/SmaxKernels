@@ -102,7 +102,9 @@ int main(int argc, char *argv[]) {
                                              &mkl_row_end, &mkl_col, &mkl_val),
                      "Failed to export matrix C.")
     // Just to get C_nnz //
-
+    std::cout << "A_n_rows: " << crs_mat_A->n_rows << std::endl;
+    std::cout << "A_nnz: " << crs_mat_A->nnz << std::endl;
+    std::cout << "C_nnz: " << mkl_row_start[mkl_n_rows] << std::endl;
     PRINT_SPGEMM_BENCH(mkl_row_start[mkl_n_rows]);
     FINALIZE_SPGEMM;
     delete bench_harness;

@@ -299,7 +299,7 @@ struct COOMatrix {
 
         this->n_rows = header.nrows;
         this->n_cols = header.ncols;
-        this->nnz = header.nnz;
+        this->nnz = this->val.size();
         this->is_sorted = true;
         this->is_symmetric = (header.symmetry != fmm::symmetry_type::general);
 #else

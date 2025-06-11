@@ -57,7 +57,9 @@ int main(int argc, char *argv[]) {
     // Just to get C_nnz //
     smax->kernel("my_spgemm")->run();
     // Just to get C_nnz //
-
+    std::cout << "A_n_rows: " << crs_mat_A->n_rows << std::endl;
+    std::cout << "A_nnz: " << crs_mat_A->nnz << std::endl;
+    std::cout << "C_nnz: " << crs_mat_C->nnz << std::endl;
     PRINT_SPGEMM_BENCH(crs_mat_C->nnz);
     FINALIZE_SPGEMM;
     delete bench_harness;
