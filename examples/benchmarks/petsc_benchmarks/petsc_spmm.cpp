@@ -4,6 +4,9 @@
 #include "petsc_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
+
+    init_pin(); // avoid counting pinning in timing
+
     INIT_SPMM;
 
     PetscErrorCode ierr;
@@ -55,8 +58,6 @@ int main(int argc, char *argv[]) {
         LIKWID_MARKER_REGISTER(bench_name.c_str());
     }
 #endif
-
-    init_pin();
 
     // Perform initial matrix-matrix multiplication to allocate Y
     ierr = MatMatMult(A, X, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y);

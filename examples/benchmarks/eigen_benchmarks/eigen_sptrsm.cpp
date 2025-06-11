@@ -4,6 +4,9 @@
 #include "eigen_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
+
+    init_pin(); // avoid counting pinning in timing
+
     INIT_SPTRSM;
 
     Eigen::MatrixXd X =
@@ -46,8 +49,6 @@ int main(int argc, char *argv[]) {
         LIKWID_MARKER_REGISTER(bench_name.c_str());
     }
 #endif
-
-    init_pin(); // Remove pinning overhead from benchmark timing
 
     std::function<void(bool)> lambda = [bench_name, &eigen_mat, &X,
                                         &B](bool warmup) {

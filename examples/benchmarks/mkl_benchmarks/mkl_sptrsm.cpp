@@ -4,6 +4,10 @@
 #include "mkl_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
+
+    // Just to take overhead of pinning away from timers
+    init_pin();
+
     INIT_SPTRSM;
     DenseMatrix *X = new DenseMatrix(crs_mat->n_cols, n_vectors, 1.0);
     DenseMatrix *B = new DenseMatrix(crs_mat->n_cols, n_vectors, 0.0);
@@ -47,9 +51,6 @@ int main(int argc, char *argv[]) {
         LIKWID_MARKER_REGISTER(bench_name.c_str());
     }
 #endif
-
-    // Just to take overhead of pinning away from timers
-    init_pin();
 
     std::function<void(bool)> lambda = [bench_name, A, descr, X, crs_mat,
                                         n_vectors, B](bool warmup) {

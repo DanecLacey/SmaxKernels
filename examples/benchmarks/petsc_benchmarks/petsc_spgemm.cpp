@@ -4,6 +4,9 @@
 #include "petsc_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
+
+    init_pin(); // avoid counting pinning in timing
+
     INIT_SPGEMM;
 
     PetscErrorCode ierr;
@@ -46,8 +49,6 @@ int main(int argc, char *argv[]) {
         LIKWID_MARKER_REGISTER(bench_name.c_str());
     }
 #endif
-
-    init_pin(); // pin threads before timing
 
     // --- 4) The kernel: reuse C and re‐compute A*B ---
     std::function<void(bool)> lambda = [bench_name, A, B, &C](bool warmup) {

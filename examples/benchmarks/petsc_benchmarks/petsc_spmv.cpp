@@ -4,6 +4,9 @@
 #include "petsc_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
+
+    init_pin(); // avoid counting pinning in timing
+
     INIT_SPMV;
 
     PetscErrorCode ierr;
@@ -46,9 +49,6 @@ int main(int argc, char *argv[]) {
         LIKWID_MARKER_REGISTER(bench_name.c_str());
     }
 #endif
-
-    // Just to take overhead of pinning away from timers
-    init_pin();
 
     std::function<void(bool)> lambda = [bench_name, A, x, y](bool warmup) {
         IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)

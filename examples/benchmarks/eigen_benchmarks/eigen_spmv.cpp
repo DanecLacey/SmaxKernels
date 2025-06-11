@@ -4,13 +4,17 @@
 #include "eigen_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
+
+    init_pin(); // avoid counting pinning in timing
+
     INIT_SPMV;
 
     Eigen::VectorXd eigen_x = Eigen::VectorXd::Constant(crs_mat->n_cols, 1.0);
     Eigen::VectorXd eigen_y = Eigen::VectorXd::Constant(crs_mat->n_rows, 0.0);
 
     // Wrap your CRS data into an Eigen SparseMatrix
-    Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
+    Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_mat(crs_mat->n_rows,
+                                                           crs_mat->n_cols);
     std::vector<Eigen::Triplet<double>> triplets;
     triplets.reserve(crs_mat->nnz);
 
@@ -42,9 +46,6 @@ int main(int argc, char *argv[]) {
         LIKWID_MARKER_REGISTER(bench_name.c_str());
     }
 #endif
-
-    // Just to take overhead of pinning away from timers
-    init_pin();
 
     std::function<void(bool)> lambda = [bench_name, eigen_mat, eigen_x,
                                         &eigen_y](bool warmup) {

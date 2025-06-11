@@ -8,6 +8,10 @@
 #define MIN_NUM_ITERS 10
 
 int main(int argc, char *argv[]) {
+
+    // Just to take overhead of pinning away from timers
+    init_pin();
+
     INIT_SPGEMM;
     CRSMatrix *crs_mat_C = new CRSMatrix();
 
@@ -39,9 +43,6 @@ int main(int argc, char *argv[]) {
         LIKWID_MARKER_REGISTER(bench_name.c_str());
     }
 #endif
-
-    // Just to take overhead of pinning away from timers
-    init_pin();
 
     // Entire (Symbolic + Numerical Phase) SpGEMM
     std::function<void(bool)> lambda = [bench_name, smax,
