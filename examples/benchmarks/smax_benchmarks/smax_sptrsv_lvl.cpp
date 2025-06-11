@@ -1,5 +1,5 @@
 #include "../../examples_common.hpp"
-#include "../../sptrsv_lvl_helpers.hpp"
+#include "../../sptrsv_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "smax_benchmarks_common.hpp"
 
@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPTRSV;
+    INIT_SPTRSV_LVL;
     DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
     DenseMatrix *b = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
     int *perm = new int[crs_mat->n_rows];

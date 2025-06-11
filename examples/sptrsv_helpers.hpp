@@ -17,6 +17,17 @@
     CRSMatrix *crs_mat_U = new CRSMatrix;                                      \
     extract_D_L_U(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
 
+#define INIT_SPTRSV_LVL                                                        \
+    SpTRSVParser *parser = new SpTRSVParser;                                   \
+    SpTRSVParser::SpTRSVArgs *cli_args = parser->parse_lvl(argc, argv);            \
+    COOMatrix *coo_mat = new COOMatrix;                                        \
+    coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
+    CRSMatrix *crs_mat = new CRSMatrix;                                        \
+    crs_mat->convert_coo_to_crs(coo_mat);                                      \
+    CRSMatrix *crs_mat_D_plus_L = new CRSMatrix;                               \
+    CRSMatrix *crs_mat_U = new CRSMatrix;                                      \
+    extract_D_L_U(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+
 #define FINALIZE_SPTRSV                                                        \
     delete cli_args;                                                           \
     delete coo_mat;                                                            \
@@ -56,6 +67,19 @@ class SpTRSVParser : public CliParser {
     SpTRSVArgs *parse(int argc, char *argv[]) override {
         if (argc != 2) {
             std::cerr << "Usage: " << argv[0] << " <matrix_file.mtx>\n";
+            std::exit(EXIT_FAILURE);
+        }
+
+        delete args_;
+        auto *sptrsv_args = new SpTRSVArgs();
+        sptrsv_args->matrix_file_name = argv[1];
+        args_ = sptrsv_args;
+        return sptrsv_args;
+    }
+
+    SpTRSVArgs *parse_lvl(int argc, char *argv[]) {
+        if (argc != 3) {
+            std::cerr << "Usage: " << argv[0] << " <matrix_file.mtx> <method>[str]\n";
             std::exit(EXIT_FAILURE);
         }
 
