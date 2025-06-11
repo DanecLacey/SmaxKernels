@@ -3,6 +3,10 @@
 #include "../benchmarks_common.hpp"
 #include "smax_benchmarks_common.hpp"
 
+// Specialize for SpGEMM
+#undef MIN_NUM_ITERS
+#define MIN_NUM_ITERS 10
+
 int main(int argc, char *argv[]) {
     INIT_SPGEMM;
     CRSMatrix *crs_mat_C = new CRSMatrix();

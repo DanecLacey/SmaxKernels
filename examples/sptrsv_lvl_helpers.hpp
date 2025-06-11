@@ -41,7 +41,7 @@
                                                                                \
     long flops_per_iter = (crs_mat_D_plus_L->nnz * SPTRSV_FLOPS_PER_NZ +       \
                            crs_mat_D_plus_L->n_rows * SPTRSV_FLOPS_PER_ROW);   \
-    long iter_per_second = static_cast<long>(n_iter / runtime);                \
+    double iter_per_second = n_iter / runtime;                                 \
                                                                                \
     std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
               << " [GF/s]" << std::endl;                                       \
@@ -55,7 +55,8 @@ class SpTRSVParser : public CliParser {
 
     SpTRSVArgs *parse(int argc, char *argv[]) override {
         if (argc != 3) {
-            std::cerr << "Usage: " << argv[0] << " <matrix_file.mtx> <perm_method>[str]\n";
+            std::cerr << "Usage: " << argv[0]
+                      << " <matrix_file.mtx> <perm_method>[str]\n";
             std::exit(EXIT_FAILURE);
         }
 

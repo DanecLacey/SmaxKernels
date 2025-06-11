@@ -53,7 +53,7 @@
     std::cout << "Iterations: " << n_iter << std::endl;                        \
                                                                                \
     long flops_per_iter = (result_nnz) * SPGEMM_FLOPS_PER_NZ;                  \
-    long iter_per_second = static_cast<long>(n_iter / runtime);                \
+    double iter_per_second = n_iter / runtime;                                 \
                                                                                \
     std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
               << " [GF/s]" << std::endl;                                       \
