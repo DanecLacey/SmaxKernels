@@ -1,9 +1,9 @@
 #include "../examples_common.hpp"
-#include "../sptrsv_lvl_helpers.hpp"
+#include "../sptrsv_helpers.hpp"
 #include "validation_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_SPTRSV;
+    INIT_SPTRSV_LVL;
 
     DenseMatrix *x_smax = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
     DenseMatrix *x_smax_perm = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
