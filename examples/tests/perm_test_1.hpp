@@ -36,9 +36,9 @@ REGISTER_TEST(perm_test_1) {
     IT *A_bfs_row_ptr = new IT[A_n_rows + 1];
     VT *A_bfs_val = new VT[A_nnz];
 
-    IT *A_jh_col = new IT[A_nnz];
-    IT *A_jh_row_ptr = new IT[A_n_rows + 1];
-    VT *A_jh_val = new VT[A_nnz];
+    IT *A_rs_col = new IT[A_nnz];
+    IT *A_rs_row_ptr = new IT[A_n_rows + 1];
+    VT *A_rs_val = new VT[A_nnz];
 
     // TODO: Fix DFS and put it back in the test
     /*
@@ -51,8 +51,8 @@ REGISTER_TEST(perm_test_1) {
     IT *perm_bfs = new IT[A_n_rows];
     IT *inv_perm_bfs = new IT[A_n_rows];
 
-    IT *perm_jh = new IT[A_n_rows];
-    IT *inv_perm_jh = new IT[A_n_rows];
+    IT *perm_rs = new IT[A_n_rows];
+    IT *inv_perm_rs = new IT[A_n_rows];
 
     /*
     IT *perm_dfs = new IT[A_n_rows];
@@ -74,15 +74,15 @@ REGISTER_TEST(perm_test_1) {
     }
     compare_arrays<IT>(expected_levels, bfs_levels, expected_max_level + 1, "BFS level sizes");
 
-    smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_jh,
-                                   inv_perm_jh, std::string("JH"));
+    smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_rs,
+                                   inv_perm_rs, std::string("RS"));
 
-    compare_values<IT>(smax->get_n_levels(), expected_max_level, "JH number of levels");
-    int *jh_levels = new int[smax->get_n_levels() + 1];
+    compare_values<IT>(smax->get_n_levels(), expected_max_level, "RS number of levels");
+    int *rs_levels = new int[smax->get_n_levels() + 1];
     for (int i = 0; i <= smax->get_n_levels(); i++){
-        jh_levels[i] = smax->get_level_ptr_at(i);
+        rs_levels[i] = smax->get_level_ptr_at(i);
     }
-    compare_arrays<IT>(expected_levels, jh_levels, expected_max_level + 1, "JH level sizes");
+    compare_arrays<IT>(expected_levels, rs_levels, expected_max_level + 1, "RS level sizes");
 
     /*
     smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_dfs,
@@ -99,8 +99,8 @@ REGISTER_TEST(perm_test_1) {
     // printf("BFS Permutation:\n");
     // print_vector<IT>(perm_bfs, A_n_rows);
 
-    // printf("JH Permutation:\n");
-    // print_vector<IT>(perm_jh, A_n_rows);
+    // printf("RS Permutation:\n");
+    // print_vector<IT>(perm_rs, A_n_rows);
 
     // printf("DFS Permutation:\n");
     // print_vector<IT>(perm_dfs, A_n_rows);
@@ -108,11 +108,11 @@ REGISTER_TEST(perm_test_1) {
     // Compare with expected permutation vectors
     // If comparison fails, throw std::runtime_error("description")
     int *expected_perm_bfs = new int[A_n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
-    int *expected_perm_jh = new int[A_n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
+    int *expected_perm_rs = new int[A_n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
     // int *expected_perm_dfs = new int[A_n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
 
     compare_arrays<IT>(expected_perm_bfs, perm_bfs, A_n_rows, "BFS level sets");
-    compare_arrays<IT>(expected_perm_jh, perm_jh, A_n_rows, "JH level sets");
+    compare_arrays<IT>(expected_perm_rs, perm_rs, A_n_rows, "RS level sets");
     // compare_arrays<IT>(expected_perm_dfs, perm_bfs, A_n_rows, "DFS level sets");
 
     // Apply permutations to A
@@ -121,8 +121,8 @@ REGISTER_TEST(perm_test_1) {
                                         perm_bfs, inv_perm_bfs);
 
     smax->utils->apply_mat_perm<IT, VT>(A_n_rows, A_row_ptr, A_col, A_val,
-                                        A_jh_row_ptr, A_jh_col, A_jh_val,
-                                        perm_jh, inv_perm_jh);
+                                        A_rs_row_ptr, A_rs_col, A_rs_val,
+                                        perm_rs, inv_perm_rs);
 
     /*
     smax->utils->apply_mat_perm<IT, VT>(A_n_rows, A_row_ptr, A_col, A_val,
@@ -131,11 +131,11 @@ REGISTER_TEST(perm_test_1) {
                                         */
 
     VT *expected_val_bfs = new VT[A_nnz]{11, 77, 21, 22, 61, 66, 32, 33, 42, 44, 52, 54, 55, 83, 84, 88};
-    VT *expected_val_jh = new VT[A_nnz]{11, 77, 21, 22, 61, 66, 32, 33, 42, 44, 52, 54, 55, 83, 84, 88};
+    VT *expected_val_rs = new VT[A_nnz]{11, 77, 21, 22, 61, 66, 32, 33, 42, 44, 52, 54, 55, 83, 84, 88};
     // VT *expected_val_dfs = new VT[A_nnz]{11, 77, 21, 22, 61, 66, 32, 33, 42, 44, 52, 54, 55, 83, 84, 88};
 
     compare_arrays(expected_val_bfs, A_bfs_val, A_nnz, "BFS actual permutation");
-    compare_arrays(expected_val_jh, A_jh_val, A_nnz, "JH actual permutation");
+    compare_arrays(expected_val_rs, A_rs_val, A_nnz, "row sweep actual permutation");
     // compare_arrays(expected_val_dfs, A_dfs_val, A_nnz, "DFS actual permutation");
 
     // Compare with expected matrices
@@ -146,9 +146,9 @@ REGISTER_TEST(perm_test_1) {
     delete[] A_bfs_col;
     delete[] A_bfs_row_ptr;
     delete[] A_bfs_val;
-    delete[] A_jh_col;
-    delete[] A_jh_row_ptr;
-    delete[] A_jh_val;
+    delete[] A_rs_col;
+    delete[] A_rs_row_ptr;
+    delete[] A_rs_val;
     /*
     delete[] A_dfs_col;
     delete[] A_dfs_row_ptr;
@@ -156,14 +156,14 @@ REGISTER_TEST(perm_test_1) {
     */
     delete[] perm_bfs;
     delete[] inv_perm_bfs;
-    delete[] perm_jh;
-    delete[] inv_perm_jh;
+    delete[] perm_rs;
+    delete[] inv_perm_rs;
     delete[] expected_perm_bfs;
-    delete[] expected_perm_jh;
+    delete[] expected_perm_rs;
     delete[] expected_val_bfs;
-    delete[] expected_val_jh;
+    delete[] expected_val_rs;
     delete[] bfs_levels;
-    delete[] jh_levels;
+    delete[] rs_levels;
     /*
     delete[] dfs_levels;
     delete[] expected_perm_dfs;
