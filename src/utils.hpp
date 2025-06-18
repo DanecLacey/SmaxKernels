@@ -1,9 +1,11 @@
 #pragma once
-
+// clang-format off
+#include "memory_utils.hpp"
 #include "common.hpp"
 #include "error_handler.hpp"
 #include "kernel.hpp"
 #include <string>
+// clang-format on
 
 namespace SMAX {
 
