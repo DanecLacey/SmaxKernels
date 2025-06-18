@@ -138,8 +138,9 @@ int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
 };
 
 template <typename IT>
-int Utils::generate_perm_row_sweep(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
-                            int *perm, int *inv_perm, int *lvl) {
+int Utils::generate_perm_row_sweep(int A_n_rows, IT *A_sym_row_ptr,
+                                   IT *A_sym_col, int *perm, int *inv_perm,
+                                   int *lvl) {
 
     // suppress compiler warnings
     (void)perm;
@@ -161,77 +162,6 @@ int Utils::generate_perm_row_sweep(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_co
 
     // Step 2.5: Submit level information to uc
     return ++max_level; // increase by one since levels are 0 indexed
-}
-
-template <typename IT>
-int Utils::generate_perm_DFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
-                             int *perm, int *inv_perm, int *lvl) {
-
-    // suppress compiler warnings
-    (void)perm;
-    (void)inv_perm;
-
-    printf("Using DFS to generate permutations will not work currently. There "
-           "are known bugs...\n");
-
-    // Simulate a DFS traversal and collect levels
-    std::vector<int> distance(A_n_rows, -1);
-    std::vector<int> depends(A_n_rows, -1);
-    int global_max_level = 0;
-
-    // Start queueing the island roots
-    std::deque<int> q; // Queue for DFS
-    for (int start = 0; start < A_n_rows; ++start) {
-        bool is_root = true;
-        for (int nnz = A_sym_row_ptr[start]; nnz < A_sym_row_ptr[start + 1];
-             ++nnz) {
-            if (A_sym_col[nnz] < start) {
-                is_root = false;
-                break;
-            }
-        }
-        if (is_root) {
-            q.push_back(start);
-            distance[start] = 0;
-        }
-    }
-
-    // TODO: JH fix DFS
-    while (!q.empty()) {
-
-        int u = q.front();
-        q.pop_front();
-
-        // Enqueue all unvisited neighbors
-        for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; jj++) {
-            int v = A_sym_col[jj];
-            if (v <= u)
-                continue;
-            if (distance[v] == -1) {
-                q.push_front(v);
-                distance[v] = distance[u] + 1;
-                depends[v] = u;
-            } else if (distance[v] <= distance[u]) {
-                distance[v] = distance[u] + 1;
-                depends[v] = u;
-            }
-        }
-    }
-
-    for (int node = 0; node < A_n_rows; node++) {
-        lvl[node] = 0;
-        int node_level = 0;
-        int dependency, dependency_old = node;
-        while (dependency = depends[dependency_old], dependency != -1) {
-            node_level++;
-            dependency_old = dependency;
-        }
-        lvl[node] = node_level + lvl[dependency_old];
-        global_max_level = std::max(global_max_level, lvl[node]);
-        depends[node] = -1;
-    }
-
-    return global_max_level + 1;
 }
 
 template <typename IT>
@@ -323,29 +253,26 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     // Step 2: Call kernel for desired traversal method
     int n_levels = 0;
     if (type == "RS") {
-        n_levels = Utils::generate_perm_row_sweep(A_n_rows, A_sym_row_ptr, A_sym_col,
-                                           perm, inv_perm, lvl);
+        n_levels = Utils::generate_perm_row_sweep(
+            A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
     } else if (type == "BFS") {
         n_levels = Utils::generate_perm_BFS(A_n_rows, A_sym_row_ptr, A_sym_col,
-                                            perm, inv_perm, lvl);
-    } else if (type == "DFS") {
-        n_levels = Utils::generate_perm_DFS(A_n_rows, A_sym_row_ptr, A_sym_col,
                                             perm, inv_perm, lvl);
     } else if (type == "SC") {
         n_levels = Utils::generate_color_perm(A_n_rows, A_sym_row_ptr,
                                               A_sym_col, perm, inv_perm, lvl);
     } else if (type == "PC") {
-        n_levels = Utils::generate_color_perm_par(A_n_rows, A_sym_row_ptr,
-                                              A_sym_col, perm, inv_perm, lvl);
+        n_levels = Utils::generate_color_perm_par(
+            A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
     } else if (type == "PC_BAL") {
-        n_levels = Utils::generate_color_perm_par(A_n_rows, A_sym_row_ptr,
-                                              A_sym_col, perm, inv_perm, lvl);
-        n_levels = Utils::generate_color_perm_bal(A_n_rows, A_sym_row_ptr,
-                                              A_sym_col, perm, inv_perm, lvl, n_levels);
+        n_levels = Utils::generate_color_perm_par(
+            A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
+        n_levels = Utils::generate_color_perm_bal(
+            A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl, n_levels);
     } else {
         // Throwing errors in lib is not nice.
         // TODO: think of a way to tell user that the wrong type is used.
-        UtilsErrorHandler::perm_type_dne(type, "BFS, RS, DFS, SC, PC, PC_BAL");
+        UtilsErrorHandler::perm_type_dne(type, "BFS, RS, SC, PC, PC_BAL");
     }
 
     // Step 3: Compute permuation - if necessary
@@ -455,11 +382,12 @@ int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
     return ++max_color;
 }
 
-// Based on ``High performance and balanced parallel graph coloring on multicore platforms''
-// C. Giannoula, A. Peppas, G. Goumas, N. Koziris
+// Based on ``High performance and balanced parallel graph coloring on multicore
+// platforms'' C. Giannoula, A. Peppas, G. Goumas, N. Koziris
 template <typename IT>
-int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
-                               int *perm, int *inv_perm, int *lvl) {
+int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr,
+                                   IT *A_sym_col, int *perm, int *inv_perm,
+                                   int *lvl) {
 
     // suppress compiler warnings
     (void)perm;
@@ -482,12 +410,14 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_co
             std::unordered_set<int> forbidden;
             std::unordered_set<int> critical;
             // std::cout << rep++ << " ";
-            for (int idx = A_sym_row_ptr[row]; idx < A_sym_row_ptr[row + 1]; idx++) {
+            for (int idx = A_sym_row_ptr[row]; idx < A_sym_row_ptr[row + 1];
+                 idx++) {
                 int col_idx = A_sym_col[idx];
                 // std::cout << "Access to " << col_idx << std::endl;
                 forbidden.insert(colors[col_idx]);
-                if ((colors[col_idx] == -1) && 
-                    ((((int)row/10) % omp_get_num_threads()) != omp_get_thread_num())) {
+                if ((colors[col_idx] == -1) &&
+                    ((((int)row / 10) % omp_get_num_threads()) !=
+                     omp_get_thread_num())) {
                     critical.insert(col_idx);
                 }
             }
@@ -503,20 +433,20 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_co
                 // BEGIN CRITICAL
 #pragma omp critical
                 {
-                bool valid = true;
-                for (const auto& crit : critical) {
-                    // std::cout << "Access to " << crit << std::endl;
-                    if (colors[crit] == spec_color) {
-                        valid = false;
-                        break;
+                    bool valid = true;
+                    for (const auto &crit : critical) {
+                        // std::cout << "Access to " << crit << std::endl;
+                        if (colors[crit] == spec_color) {
+                            valid = false;
+                            break;
+                        }
                     }
-                }
-                if (valid) {
-                    colors[row] = spec_color;
-                    max_color = std::max(spec_color, max_color);
-                    repeat = false;
-                }
-                // END CRITICAL
+                    if (valid) {
+                        colors[row] = spec_color;
+                        max_color = std::max(spec_color, max_color);
+                        repeat = false;
+                    }
+                    // END CRITICAL
                 }
             }
         }
@@ -525,14 +455,15 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_co
     return ++max_color;
 }
 
-// Based on ``High performance and balanced parallel graph coloring on multicore platforms''
-// C. Giannoula, A. Peppas, G. Goumas, N. Koziris
+// Based on ``High performance and balanced parallel graph coloring on multicore
+// platforms'' C. Giannoula, A. Peppas, G. Goumas, N. Koziris
 template <typename IT>
-int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
-                               int *perm, int *inv_perm, int *lvl, int num_colors) {
-    
+int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
+                                   IT *A_sym_col, int *perm, int *inv_perm,
+                                   int *lvl, int num_colors) {
+
     int *colors = lvl;
-    double b = A_n_rows/num_colors;
+    double b = A_n_rows / num_colors;
     int *color_size = new int[num_colors];
     for (int c = 0; c < num_colors; c++) {
         color_size = 0;
@@ -551,12 +482,14 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_co
         while (repeat) {
             std::unordered_set<int> forbidden;
             std::unordered_set<int> critical;
-            for (int idx = A_sym_row_ptr[row]; idx < A_sym_row_ptr[row + 1]; idx++) {
+            for (int idx = A_sym_row_ptr[row]; idx < A_sym_row_ptr[row + 1];
+                 idx++) {
                 int col_idx = A_sym_col[idx];
                 // std::cout << "Access to " << col_idx << std::endl;
                 forbidden.insert(colors[col_idx]);
-                if ((color_size[colors[col_idx]] > b) && 
-                    ((((int)row/10) % omp_get_num_threads()) != omp_get_thread_num())) {
+                if ((color_size[colors[col_idx]] > b) &&
+                    ((((int)row / 10) % omp_get_num_threads()) !=
+                     omp_get_thread_num())) {
                     critical.insert(col_idx);
                 }
             }
@@ -577,29 +510,28 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_co
                 // BEGIN CRITICAL
 #pragma omp critical
                 {
-                bool valid = true;
-                for (const auto& crit : critical) {
-                    // std::cout << "Access to " << crit << std::endl;
-                    if (colors[crit] == spec_color) {
-                        valid = false;
-                        break;
+                    bool valid = true;
+                    for (const auto &crit : critical) {
+                        // std::cout << "Access to " << crit << std::endl;
+                        if (colors[crit] == spec_color) {
+                            valid = false;
+                            break;
+                        }
                     }
-                }
-                if (valid) {
-                    // Atomic operations
-                    color_size[colors[row]]--;
-                    colors[row] = spec_color;
-                    color_size[colors[row]]++;
-                    repeat = false;
-                }
-                // END CRITICAL
+                    if (valid) {
+                        // Atomic operations
+                        color_size[colors[row]]--;
+                        colors[row] = spec_color;
+                        color_size[colors[row]]++;
+                        repeat = false;
+                    }
+                    // END CRITICAL
                 }
             }
         }
     }
 
     return num_colors;
-
 }
 
 template <typename IT, typename VT>
