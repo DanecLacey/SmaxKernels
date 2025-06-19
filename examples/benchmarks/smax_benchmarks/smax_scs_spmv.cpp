@@ -5,38 +5,41 @@
 
 int main(int argc, char *argv[]) {
 
+    using IT = int;
+    using VT = double;
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPMV;
+    INIT_SPMV(IT, VT);
     // TODO: Make C and sigma runtime args
     // Declare Sell-c-sigma operand
-    int A_scs_C = 4;      // Defined by user
-    int A_scs_sigma = 16; // Defined by user
-    int A_scs_n_rows = 0;
-    int A_scs_n_rows_padded = 0;
-    int A_scs_n_cols = 0;
-    int A_scs_n_chunks = 0;
-    int A_scs_n_elements = 0;
-    int A_scs_nnz = 0;
-    int *A_scs_chunk_ptr = nullptr;
-    int *A_scs_chunk_lengths = nullptr;
-    int *A_scs_col = nullptr;
-    double *A_scs_val = nullptr;
-    int *A_scs_perm = nullptr;
+    IT A_scs_C = 4;      // Defined by user
+    IT A_scs_sigma = 16; // Defined by user
+    IT A_scs_n_rows = 0;
+    IT A_scs_n_rows_padded = 0;
+    IT A_scs_n_cols = 0;
+    IT A_scs_n_chunks = 0;
+    IT A_scs_n_elements = 0;
+    IT A_scs_nnz = 0;
+    IT *A_scs_chunk_ptr = nullptr;
+    IT *A_scs_chunk_lengths = nullptr;
+    IT *A_scs_col = nullptr;
+    VT *A_scs_val = nullptr;
+    IT *A_scs_perm = nullptr;
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
 
-    smax->utils->convert_crs_to_scs<int, double>(
+    smax->utils->convert_crs_to_scs<IT, VT, IT>(
         crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, crs_mat->col,
         crs_mat->row_ptr, crs_mat->val, A_scs_C, A_scs_sigma, A_scs_n_rows,
         A_scs_n_rows_padded, A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements,
         A_scs_nnz, A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
         A_scs_perm);
 
-    DenseMatrix *x = new DenseMatrix(A_scs_n_elements, 1, 1.0);
-    DenseMatrix *y = new DenseMatrix(A_scs_n_elements, 1, 0.0);
+    DenseMatrix<VT> *x = new DenseMatrix<VT>(A_scs_n_elements, 1, 1.0);
+    DenseMatrix<VT> *y = new DenseMatrix<VT>(A_scs_n_elements, 1, 0.0);
 
     smax->register_kernel("my_scs_spmv", SMAX::KernelType::SPMV);
 

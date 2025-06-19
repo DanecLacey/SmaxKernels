@@ -5,12 +5,12 @@
 #define SPMV_OUTPUT_FILENAME "compare_spmv.txt"
 #define SPMV_FLOPS_PER_NZ 2
 
-#define INIT_SPMV                                                              \
+#define INIT_SPMV(IT, VT)                                                      \
     SpMVParser *parser = new SpMVParser;                                       \
     SpMVParser::SpMVArgs *cli_args = parser->parse(argc, argv);                \
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
-    CRSMatrix *crs_mat = new CRSMatrix;                                        \
+    CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
     crs_mat->convert_coo_to_crs(coo_mat);
 
 #define FINALIZE_SPMV                                                          \
@@ -62,7 +62,8 @@ class SpMVParser : public CliParser {
     SpMVArgs *args() const { return static_cast<SpMVArgs *>(args_); }
 };
 
-void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
+template <typename VT>
+void compare_spmv(const ULL n_rows, const VT *y_SMAX, const VT *y_MKL,
                   const std::string mtx_name) {
 
     std::fstream working_file;
@@ -101,7 +102,7 @@ void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
                  << std::left << std::setw(PRINT_WIDTH) << "---------------"
                  << std::endl;
 #elif VERBOSITY == 1
-    int n_result_digits = n_rows > 0 ? (int)log10((double)n_rows) + 1 : 1;
+    ULL n_result_digits = n_rows > 0 ? (ULL)log10((double)n_rows) + 1 : 1;
 
     working_file << std::left << std::setw(n_result_digits + 8)
                  << "row idx:" << std::left << std::setw(PRINT_WIDTH)
@@ -119,7 +120,7 @@ void compare_spmv(const int n_rows, const double *y_SMAX, const double *y_MKL,
 #endif
 
     // Print comparison
-    for (int i = 0; i < n_rows; ++i) {
+    for (ULL i = 0; i < n_rows; ++i) {
 
         relative_diff = std::abs(y_MKL[i] - y_SMAX[i]) / y_MKL[i];
         absolute_diff = std::abs(y_MKL[i] - y_SMAX[i]);

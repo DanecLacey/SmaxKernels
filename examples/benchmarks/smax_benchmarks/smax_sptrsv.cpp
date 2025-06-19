@@ -5,12 +5,15 @@
 
 int main(int argc, char *argv[]) {
 
+    using IT = int;
+    using VT = double;
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPTRSV;
-    DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *b = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
+    INIT_SPTRSV(IT, VT);
+    DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();

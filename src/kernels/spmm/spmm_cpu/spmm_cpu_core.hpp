@@ -3,12 +3,12 @@
 #include "../../../common.hpp"
 #include "spmm_cpu_crs_impl.hpp"
 
-namespace SMAX::KERNELS::SPMM::SPMM_CPU {
+namespace SMAX::KERNELS::SPMM::CPU {
 
 template <typename IT, typename VT>
 int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                        Flags *flags, int A_offset, int X_offset,
-                        int Y_offset) {
+                        Flags *flags, ULL A_offset, ULL X_offset,
+                        ULL Y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmm_initialize_cpu_core"));
     IF_SMAX_TIME(timers->get("initialize")->start());
 
@@ -30,7 +30,7 @@ int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
 template <typename IT, typename VT>
 int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                   Flags *flags, int A_offset, int X_offset, int Y_offset) {
+                   Flags *flags, ULL A_offset, ULL X_offset, ULL Y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmm_apply_cpu_core"));
     IF_SMAX_TIME(timers->get("apply")->start());
 
@@ -44,14 +44,14 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
-    int A_n_rows = args->A->crs->n_rows;
-    int A_n_cols = args->A->crs->n_cols;
+    ULL A_n_rows = args->A->crs->n_rows;
+    ULL A_n_cols = args->A->crs->n_cols;
     IT *A_col = as<IT *>(args->A->crs->col);
     IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
     VT *A_val = as<VT *>(args->A->crs->val);
     VT *X = as<VT *>(args->X->val);
     VT *Y = as<VT *>(args->Y->val);
-    int block_vector_size = args->X->n_cols;
+    ULL block_vector_size = args->X->n_cols;
 
     if (flags->vec_row_major) {
         naive_crs_spmm_row_maj<IT, VT>(A_n_rows, A_n_cols, A_col, A_row_ptr,
@@ -70,7 +70,7 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
 template <typename IT, typename VT>
 int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                      Flags *flags, int A_offset, int X_offset, int Y_offset) {
+                      Flags *flags, ULL A_offset, ULL X_offset, ULL Y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmm_finalize_cpu_core"));
     IF_SMAX_TIME(timers->get("finalize")->start());
 
@@ -90,4 +90,4 @@ int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     return 0;
 }
 
-} // namespace SMAX::KERNELS::SPMM::SPMM_CPU
+} // namespace SMAX::KERNELS::SPMM::CPU

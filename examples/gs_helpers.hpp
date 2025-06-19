@@ -6,32 +6,32 @@
 #define GS_FLOPS_PER_NZ 2
 #define GS_FLOPS_PER_ROW 2
 
-#define INIT_GS                                                            \
-    GSParser *parser = new GSParser;                                   \
-    GSParser::GSArgs *cli_args = parser->parse(argc, argv);            \
+#define INIT_GS(IT, VT)                                                        \
+    GSParser *parser = new GSParser;                                           \
+    GSParser::GSArgs *cli_args = parser->parse(argc, argv);                    \
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
-    CRSMatrix *crs_mat = new CRSMatrix;                                        \
+    CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
     crs_mat->convert_coo_to_crs(coo_mat);                                      \
-    CRSMatrix *crs_mat_D_plus_L = new CRSMatrix;                               \
-    CRSMatrix *crs_mat_U = new CRSMatrix;                                      \
-    extract_D_L_U(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;               \
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;                      \
+    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
 
-#define FINALIZE_GS                                                        \
+#define FINALIZE_GS                                                            \
     delete cli_args;                                                           \
     delete coo_mat;                                                            \
     delete crs_mat;                                                            \
     delete crs_mat_U;                                                          \
     delete crs_mat_D_plus_L;
 
-#define REGISTER_GS_DATA(kernel_name, mat, X, B)                           \
+#define REGISTER_GS_DATA(kernel_name, mat, X, B)                               \
     smax->kernel(kernel_name)                                                  \
         ->register_A(mat->n_rows, mat->n_cols, mat->nnz, mat->col,             \
                      mat->row_ptr, mat->val);                                  \
     smax->kernel(kernel_name)->register_B(mat->n_cols, X->val);                \
     smax->kernel(kernel_name)->register_C(mat->n_rows, B->val);
 
-#define PRINT_GS_BENCH                                                     \
+#define PRINT_GS_BENCH                                                         \
     std::cout << "----------------" << std::endl;                              \
     std::cout << "--" << bench_name << " Bench--" << std::endl;                \
     std::cout << cli_args->matrix_file_name << " with " << n_threads           \
@@ -39,8 +39,8 @@
     std::cout << "Runtime: " << runtime << std::endl;                          \
     std::cout << "Iterations: " << n_iter << std::endl;                        \
                                                                                \
-    long flops_per_iter = (crs_mat_D_plus_L->nnz * GS_FLOPS_PER_NZ +       \
-                           crs_mat_D_plus_L->n_rows * GS_FLOPS_PER_ROW);   \
+    long flops_per_iter = (crs_mat_D_plus_L->nnz * GS_FLOPS_PER_NZ +           \
+                           crs_mat_D_plus_L->n_rows * GS_FLOPS_PER_ROW);       \
     long iter_per_second = static_cast<long>(n_iter / runtime);                \
                                                                                \
     std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
@@ -55,7 +55,8 @@ class GSParser : public CliParser {
 
     GSArgs *parse(int argc, char *argv[]) override {
         if (argc != 3) {
-            std::cerr << "Usage: " << argv[0] << " <matrix_file.mtx> <perm_type>[str]\n";
+            std::cerr << "Usage: " << argv[0]
+                      << " <matrix_file.mtx> <perm_type>[str]\n";
             std::exit(EXIT_FAILURE);
         }
 
@@ -69,8 +70,9 @@ class GSParser : public CliParser {
     GSArgs *args() const { return static_cast<GSArgs *>(args_); }
 };
 
-void compare_gs(const int n_rows, const double *y_SMAX, const double *y_MKL,
-                    const std::string mtx_name) {
+template <typename VT>
+void compare_gs(const int n_rows, const VT *y_SMAX, const VT *y_MKL,
+                const std::string mtx_name) {
 
     std::fstream working_file;
     working_file.open(GS_OUTPUT_FILENAME,

@@ -5,32 +5,50 @@
 
 int main(int argc, char *argv[]) {
 
+#ifdef USE_MKL_ILP64
+    using IT = long long int;
+#else
+    using IT = int;
+#endif
+    using VT = double;
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPTRSM;
-    DenseMatrix *X = new DenseMatrix(crs_mat->n_cols, n_vectors, 1.0);
-    DenseMatrix *B = new DenseMatrix(crs_mat->n_cols, n_vectors, 0.0);
+    INIT_SPTRSM(IT, VT);
+    DenseMatrix<VT> *X = new DenseMatrix<VT>(crs_mat->n_cols, n_vectors, 1.0);
+    DenseMatrix<VT> *B = new DenseMatrix<VT>(crs_mat->n_cols, n_vectors, 0.0);
 
     // Create MKL sparse matrix handle
     sparse_matrix_t A;
     matrix_descr descr;
-    descr.type = SPARSE_MATRIX_TYPE_GENERAL;
+    descr.type = SPARSE_MATRIX_TYPE_TRIANGULAR;
+    descr.mode = SPARSE_FILL_MODE_LOWER; // Lower triangular
+    descr.diag = SPARSE_DIAG_NON_UNIT;   // Non-unit diagonal
 
     // Create the matrix handle from CSR data
-    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
-                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
-                         crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
-                         crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
-                         crs_mat_D_plus_L->val),
-                     "mkl_sparse_d_create_csr");
+    CHECK_MKL_STATUS(
+        mkl_sparse_d_create_csr(
+            /* handle    */ &A,
+            /* indexing  */ SPARSE_INDEX_BASE_ZERO,
+            /* rows      */ static_cast<MKL_INT>(crs_mat_D_plus_L->n_rows),
+            /* cols      */ static_cast<MKL_INT>(crs_mat_D_plus_L->n_cols),
+            /* row_start */
+            reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->row_ptr),
+            /* row_end   */
+            reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->row_ptr + 1),
+            /* col_ind   */ reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->col),
+            /* values    */ crs_mat_D_plus_L->val),
+        "mkl_sparse_d_create_csr");
 
     // Optimize the matrix for SpTRSM
     // Assume row-major dense vectors by default
-    CHECK_MKL_STATUS(mkl_sparse_set_sm_hint(A, SPARSE_OPERATION_NON_TRANSPOSE,
-                                            descr, SPARSE_LAYOUT_ROW_MAJOR,
-                                            n_vectors, MKL_AGGRESSIVE_N_OPS),
-                     "mkl_sparse_set_sm_hint");
+    // TODO: Should not fail
+    // CHECK_MKL_STATUS(mkl_sparse_set_sm_hint(A,
+    // SPARSE_OPERATION_NON_TRANSPOSE,
+    //                                         descr, SPARSE_LAYOUT_ROW_MAJOR,
+    //                                         n_vectors, MKL_AGGRESSIVE_N_OPS),
+    //                  "mkl_sparse_set_sm_hint");
     CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
     // Make lambda, and pass to the benchmarking harness

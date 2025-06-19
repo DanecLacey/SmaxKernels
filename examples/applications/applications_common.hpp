@@ -6,7 +6,7 @@
 #define PRINT_PERM_VECTOR(A, perm)                                             \
     do {                                                                       \
         printf("Using permutation vector: [");                                 \
-        for (int _i = 0; _i < (A)->n_rows; ++_i) {                             \
+        for (unsigned long long int _i = 0; _i < (A)->n_rows; ++_i) {          \
             printf("%d%s", (perm)[_i], (_i < (A)->n_rows - 1) ? ", " : "");    \
         }                                                                      \
         printf("]\n");                                                         \
@@ -17,11 +17,12 @@
         printf("iter: %d, residual_norm = %f\n", (n_iters), (residual_norm));  \
     } while (0)
 
-CRSMatrix *create1DPoissonMatrixCRS(int n) {
+CRSMatrix<int, double> *create1DPoissonMatrixCRS(int n) {
     int N = n - 2;       // internal nodes (excluding Dirichlet boundaries)
     int nnz = 3 * N - 2; // maximum possible non-zero elements
 
-    CRSMatrix *A = new CRSMatrix(N, N, nnz); // Square matrix, since Poisson
+    CRSMatrix<int, double> *A =
+        new CRSMatrix<int, double>(N, N, nnz); // Square matrix, since Poisson
 
     int val_idx = 0;
 
@@ -57,11 +58,11 @@ CRSMatrix *create1DPoissonMatrixCRS(int n) {
     return A;
 }
 
-CRSMatrix *create2DPoissonMatrixCRS(int n) {
+CRSMatrix<int, double> *create2DPoissonMatrixCRS(int n) {
     int N = n * n;       // total number of grid points
     int max_nnz = 5 * N; // 5-point stencil: up to 5 non-zeros per row
 
-    CRSMatrix *A = new CRSMatrix(N, N, max_nnz);
+    CRSMatrix<int, double> *A = new CRSMatrix<int, double>(N, N, max_nnz);
 
     int val_idx = 0;
     A->row_ptr[0] = 0;

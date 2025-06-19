@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../macros.hpp"
+#include "../../memory_utils.hpp"
 #include <iostream>
 
 #include <cuda.h>

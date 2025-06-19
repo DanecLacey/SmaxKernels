@@ -11,14 +11,14 @@ typedef struct {
     int count;
 } SellCSigmaPair;
 
-template <typename IT, typename VT>
-int Utils::convert_crs_to_scs(const int _n_rows, const int _n_cols,
-                              const int _nnz, const IT *_col,
-                              const IT *_row_ptr, const VT *_val, const int C,
-                              const int sigma, int &n_rows, int &n_rows_padded,
-                              int &n_cols, int &n_chunks, int &n_elements,
-                              int &nnz, IT *&chunk_ptr, IT *&chunk_lengths,
-                              IT *&col, VT *&val, IT *&perm) {
+template <typename IT, typename VT, typename ST>
+int Utils::convert_crs_to_scs(const ST _n_rows, const ST _n_cols, const ST _nnz,
+                              const IT *_col, const IT *_row_ptr,
+                              const VT *_val, const ST C, const ST sigma,
+                              ST &n_rows, ST &n_rows_padded, ST &n_cols,
+                              ST &n_chunks, ST &n_elements, ST &nnz,
+                              IT *&chunk_ptr, IT *&chunk_lengths, IT *&col,
+                              VT *&val, IT *&perm) {
 
     IF_SMAX_DEBUG(ErrorHandler::log("Entering convert_crs_to_scs"));
     n_rows = _n_rows;
@@ -30,18 +30,18 @@ int Utils::convert_crs_to_scs(const int _n_rows, const int _n_cols,
     // (Temporary vector) Assign an index to each row to use for row sorting
     std::vector<SellCSigmaPair> elems_per_row(n_rows_padded);
 
-    for (int i = 0; i < n_rows_padded; ++i) {
+    for (ST i = 0; i < n_rows_padded; ++i) {
         elems_per_row[i].index = i;
         elems_per_row[i].count = 0;
     }
 
     // Collect the number of elements in each row
     // NOTE: All rows from n_rows -> n_rows_padded are 0 count
-    for (int i = 0; i < n_rows; i++) {
+    for (ST i = 0; i < n_rows; i++) {
         elems_per_row[i].count = _row_ptr[i + 1] - _row_ptr[i];
     }
 
-    for (int i = 0; i < n_rows_padded; i += sigma) {
+    for (ST i = 0; i < n_rows_padded; i += sigma) {
         auto begin = &elems_per_row[i];
         auto end = (i + sigma) < n_rows_padded ? &elems_per_row[i + sigma]
                                                : &elems_per_row[n_rows_padded];
@@ -57,7 +57,7 @@ int Utils::convert_crs_to_scs(const int _n_rows, const int _n_cols,
 
     IT current_chunk_ptr = 0;
 
-    for (int chunk = 0; chunk < n_chunks; ++chunk) {
+    for (ST chunk = 0; chunk < n_chunks; ++chunk) {
         auto begin = &elems_per_row[chunk * C];
         auto end = &elems_per_row[chunk * C + C];
 
@@ -88,7 +88,7 @@ int Utils::convert_crs_to_scs(const int _n_rows, const int _n_cols,
     val = new VT[n_elements];
 
     // Initialize defaults (essential for padded elements)
-    for (int i = 0; i < n_elements; ++i) {
+    for (ST i = 0; i < n_elements; ++i) {
         val[i] = VT{};
         col[i] = IT{};
         // TODO: may need to offset when used with MPI
@@ -96,16 +96,16 @@ int Utils::convert_crs_to_scs(const int _n_rows, const int _n_cols,
     }
 
     // (Temporary vector) Keep track of how many elements we've seen in each row
-    std::vector<int> row_local_elem_count(n_rows_padded, 0);
+    std::vector<ST> row_local_elem_count(n_rows_padded, 0);
 
-    for (int i = 0; i < n_rows; ++i) {
+    for (ST i = 0; i < n_rows; ++i) {
         int old_row = i;
         for (int j = _row_ptr[i]; j < _row_ptr[i + 1]; ++j) {
-            int new_row = perm[old_row];
-            int chunk_idx = new_row / C;
-            int chunk_start = chunk_ptr[chunk_idx];
-            int chunk_row = new_row % C;
-            int idx =
+            ST new_row = perm[old_row];
+            ST chunk_idx = new_row / C;
+            ST chunk_start = chunk_ptr[chunk_idx];
+            ST chunk_row = new_row % C;
+            ST idx =
                 chunk_start + row_local_elem_count[new_row] * C + chunk_row;
             col[idx] = _col[j];
             val[idx] = _val[j];

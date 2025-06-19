@@ -11,8 +11,8 @@
 #define DOMAIN_SIZE 10
 #define X_INIT 1.0
 
-double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
-                      SMAX::Interface *smax) {
+double check_residual(DenseMatrix<double> *b, DenseMatrix<double> *tmp,
+                      DenseMatrix<double> *residual, SMAX::Interface *smax) {
 
     smax->kernel("tmp <- Ax")->run();
 
@@ -23,17 +23,19 @@ double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
     return infty_vec_norm(residual->val, b->n_rows);
 }
 
-void jacobi_iter(DenseMatrix *x_old, DenseMatrix *x_new, DenseMatrix *b,
-                 DenseMatrix *D, SMAX::Interface *smax) {
+void jacobi_iter(DenseMatrix<double> *x_old, DenseMatrix<double> *x_new,
+                 DenseMatrix<double> *b, DenseMatrix<double> *D,
+                 SMAX::Interface *smax) {
 
     smax->kernel("x_new <- Ax_old")->run();
 
     normalize_x(x_new, x_old, D, b);
 }
 
-void solve(DenseMatrix *x_old, DenseMatrix *x_new, DenseMatrix *b,
-           DenseMatrix *tmp, DenseMatrix *residual, DenseMatrix *D,
-           int &n_iters, double &residual_norm, SMAX::Interface *smax) {
+void solve(DenseMatrix<double> *x_old, DenseMatrix<double> *x_new,
+           DenseMatrix<double> *b, DenseMatrix<double> *tmp,
+           DenseMatrix<double> *residual, DenseMatrix<double> *D, int &n_iters,
+           double &residual_norm, SMAX::Interface *smax) {
 
     while (residual_norm > TOL && n_iters < MAX_ITERS) {
 
@@ -65,14 +67,15 @@ int main(void) {
 #endif
 
     // Set up problem
-    CRSMatrix *A = create2DPoissonMatrixCRS(DOMAIN_SIZE);
-    CRSMatrix *A_perm = new CRSMatrix(A->n_rows, A->n_cols, A->nnz);
-    DenseMatrix *x_new = new DenseMatrix(A->n_cols, 1, X_INIT);
-    DenseMatrix *x_old = new DenseMatrix(A->n_cols, 1, X_INIT);
-    DenseMatrix *b = new DenseMatrix(A->n_cols, 1, 1.0);
-    DenseMatrix *D = new DenseMatrix(A->n_cols, 1, 1.0);
-    DenseMatrix *tmp = new DenseMatrix(A->n_cols, 1, 0.0);
-    DenseMatrix *residual = new DenseMatrix(A->n_cols, 1, 0.0);
+    CRSMatrix<int, double> *A = create2DPoissonMatrixCRS(DOMAIN_SIZE);
+    CRSMatrix<int, double> *A_perm =
+        new CRSMatrix<int, double>(A->n_rows, A->n_cols, A->nnz);
+    DenseMatrix<double> *x_new = new DenseMatrix<double>(A->n_cols, 1, X_INIT);
+    DenseMatrix<double> *x_old = new DenseMatrix<double>(A->n_cols, 1, X_INIT);
+    DenseMatrix<double> *b = new DenseMatrix<double>(A->n_cols, 1, 1.0);
+    DenseMatrix<double> *D = new DenseMatrix<double>(A->n_cols, 1, 1.0);
+    DenseMatrix<double> *tmp = new DenseMatrix<double>(A->n_cols, 1, 0.0);
+    DenseMatrix<double> *residual = new DenseMatrix<double>(A->n_cols, 1, 0.0);
 
     int *perm = new int[A->n_rows];
     int *inv_perm = new int[A->n_rows];

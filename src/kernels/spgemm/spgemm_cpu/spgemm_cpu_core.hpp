@@ -4,7 +4,7 @@
 #include "numerical_phase_core.hpp"
 #include "symbolic_phase_core.hpp"
 
-namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU {
+namespace SMAX::KERNELS::SPGEMM::CPU {
 
 template <typename IT, typename VT>
 int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
@@ -60,4 +60,4 @@ int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     return 0;
 };
 
-} // namespace SMAX::KERNELS::SPGEMM::SPGEMM_CPU
+} // namespace SMAX::KERNELS::SPGEMM::CPU

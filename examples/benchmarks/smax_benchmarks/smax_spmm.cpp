@@ -4,13 +4,16 @@
 #include "smax_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
-    
+
+    using IT = int;
+    using VT = double;
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPMM;
-    DenseMatrix *X = new DenseMatrix(crs_mat->n_cols, n_vectors, 1.0);
-    DenseMatrix *Y = new DenseMatrix(crs_mat->n_cols, n_vectors, 0.0);
+    INIT_SPMM(IT, VT);
+    DenseMatrix<VT> *X = new DenseMatrix<VT>(crs_mat->n_cols, n_vectors, 1.0);
+    DenseMatrix<VT> *Y = new DenseMatrix<VT>(crs_mat->n_cols, n_vectors, 0.0);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();

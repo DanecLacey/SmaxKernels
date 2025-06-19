@@ -10,8 +10,8 @@
 #define CHECK_LENGTH 5
 #define DOMAIN_SIZE 10
 
-double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
-                      SMAX::Interface *smax) {
+double check_residual(DenseMatrix<double> *b, DenseMatrix<double> *tmp,
+                      DenseMatrix<double> *residual, SMAX::Interface *smax) {
 
     smax->kernel("tmp <- Ax")->run();
 
@@ -22,7 +22,7 @@ double check_residual(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
     return infty_vec_norm(residual->val, b->n_rows);
 }
 
-void gauss_seidel_iter(DenseMatrix *b, DenseMatrix *tmp,
+void gauss_seidel_iter(DenseMatrix<double> *b, DenseMatrix<double> *tmp,
                        SMAX::Interface *smax) {
 
     smax->kernel("tmp <- Ux")->run();
@@ -33,8 +33,9 @@ void gauss_seidel_iter(DenseMatrix *b, DenseMatrix *tmp,
     smax->kernel("solve x <- (D+L)^{-1}(b-Ux)")->run();
 }
 
-void solve(DenseMatrix *b, DenseMatrix *tmp, DenseMatrix *residual,
-           int &n_iters, double &residual_norm, SMAX::Interface *smax) {
+void solve(DenseMatrix<double> *b, DenseMatrix<double> *tmp,
+           DenseMatrix<double> *residual, int &n_iters, double &residual_norm,
+           SMAX::Interface *smax) {
 
     while (residual_norm > TOL && n_iters < MAX_ITERS) {
         gauss_seidel_iter(b, tmp, smax);
@@ -58,14 +59,14 @@ int main(void) {
 #endif
 
     // Set up problem
-    CRSMatrix *A = create2DPoissonMatrixCRS(DOMAIN_SIZE);
-    DenseMatrix *x = new DenseMatrix(A->n_cols, 1, 0.0);
-    DenseMatrix *b = new DenseMatrix(A->n_cols, 1, 1.0);
-    DenseMatrix *tmp = new DenseMatrix(A->n_cols, 1, 0.0);
-    DenseMatrix *residual = new DenseMatrix(A->n_cols, 1, 0.0);
-    CRSMatrix *D_plus_L = new CRSMatrix();
-    CRSMatrix *U = new CRSMatrix();
-    extract_D_L_U(*A, *D_plus_L, *U);
+    CRSMatrix<int, double> *A = create2DPoissonMatrixCRS(DOMAIN_SIZE);
+    DenseMatrix<double> *x = new DenseMatrix<double>(A->n_cols, 1, 0.0);
+    DenseMatrix<double> *b = new DenseMatrix<double>(A->n_cols, 1, 1.0);
+    DenseMatrix<double> *tmp = new DenseMatrix<double>(A->n_cols, 1, 0.0);
+    DenseMatrix<double> *residual = new DenseMatrix<double>(A->n_cols, 1, 0.0);
+    CRSMatrix<int, double> *D_plus_L = new CRSMatrix<int, double>;
+    CRSMatrix<int, double> *U = new CRSMatrix<int, double>;
+    extract_D_L_U<int, double>(*A, *D_plus_L, *U);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();

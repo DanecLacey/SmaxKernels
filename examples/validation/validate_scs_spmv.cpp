@@ -3,7 +3,15 @@
 #include "validation_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_SPMV;
+
+#ifdef USE_MKL_ILP64
+    using IT = long long int;
+#else
+    using IT = int;
+#endif
+    using VT = double;
+
+    INIT_SPMV(IT, VT);
 
     // TODO: Make C and sigma runtime args
     // Declare Sell-c-sigma operand
@@ -15,16 +23,16 @@ int main(int argc, char *argv[]) {
     int A_scs_n_chunks = 0;
     int A_scs_n_elements = 0;
     int A_scs_nnz = 0;
-    int *A_scs_chunk_ptr = nullptr;
-    int *A_scs_chunk_lengths = nullptr;
-    int *A_scs_col = nullptr;
-    double *A_scs_val = nullptr;
-    int *A_scs_perm = nullptr;
+    IT *A_scs_chunk_ptr = nullptr;
+    IT *A_scs_chunk_lengths = nullptr;
+    IT *A_scs_col = nullptr;
+    VT *A_scs_val = nullptr;
+    IT *A_scs_perm = nullptr;
 
     // Smax SpMV
     SMAX::Interface *smax = new SMAX::Interface();
 
-    smax->utils->convert_crs_to_scs<int, double>(
+    smax->utils->convert_crs_to_scs<IT, VT, int>(
         crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, crs_mat->col,
         crs_mat->row_ptr, crs_mat->val, A_scs_C, A_scs_sigma, A_scs_n_rows,
         A_scs_n_rows_padded, A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements,
@@ -32,15 +40,16 @@ int main(int argc, char *argv[]) {
         A_scs_perm);
 
 #ifdef DEBUG_MODE
-    print_vector<int>(A_scs_perm, A_scs_n_rows);
+    print_vector<IT>(A_scs_perm, A_scs_n_rows);
 #endif
 
-    DenseMatrix *x = new DenseMatrix(A_scs_n_elements, 1, 1.0);
-    DenseMatrix *y_smax = new DenseMatrix(A_scs_n_elements, 1, 0.0);
-    DenseMatrix *y_mkl = new DenseMatrix(A_scs_n_elements, 1, 0.0);
-    DenseMatrix *y_mkl_perm = new DenseMatrix(A_scs_n_elements, 1, 0.0);
+    DenseMatrix<VT> *x = new DenseMatrix<VT>(A_scs_n_elements, 1, 1.0);
+    DenseMatrix<VT> *y_smax = new DenseMatrix<VT>(A_scs_n_elements, 1, 0.0);
+    DenseMatrix<VT> *y_mkl = new DenseMatrix<VT>(A_scs_n_elements, 1, 0.0);
+    DenseMatrix<VT> *y_mkl_perm = new DenseMatrix<VT>(A_scs_n_elements, 1, 0.0);
 
-    smax->register_kernel("my_scs_spmv", SMAX::KernelType::SPMV);
+    register_kernel<IT, VT>(smax, std::string("my_scs_spmv"),
+                            SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
 
     // A is expected to be in the SCS format
     smax->kernel("my_scs_spmv")->set_mat_scs(true);
@@ -60,11 +69,17 @@ int main(int argc, char *argv[]) {
     descr.type = SPARSE_MATRIX_TYPE_GENERAL;
 
     // Create the matrix handle from CSR data
-    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
-                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat->n_rows,
-                         crs_mat->n_cols, crs_mat->row_ptr,
-                         crs_mat->row_ptr + 1, crs_mat->col, crs_mat->val),
-                     "mkl_sparse_d_create_csr");
+    CHECK_MKL_STATUS(
+        mkl_sparse_d_create_csr(
+            /* handle    */ &A,
+            /* indexing  */ SPARSE_INDEX_BASE_ZERO,
+            /* rows      */ static_cast<MKL_INT>(crs_mat->n_rows),
+            /* cols      */ static_cast<MKL_INT>(crs_mat->n_cols),
+            /* row_start */ reinterpret_cast<MKL_INT *>(crs_mat->row_ptr),
+            /* row_end   */ reinterpret_cast<MKL_INT *>(crs_mat->row_ptr + 1),
+            /* col_ind   */ reinterpret_cast<MKL_INT *>(crs_mat->col),
+            /* values    */ crs_mat->val),
+        "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
     CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
@@ -75,13 +90,13 @@ int main(int argc, char *argv[]) {
 
     // Apply SCS permutation to result vector from MKL for consistency
     // TODO: need a standard apply_perm
-    for (int i = 0; i < crs_mat->n_rows; ++i) {
+    for (ULL i = 0; i < crs_mat->n_rows; ++i) {
         y_mkl_perm->val[A_scs_perm[i]] = y_mkl->val[i];
     }
 
     // Compare
-    compare_spmv(crs_mat->n_rows, y_smax->val, y_mkl_perm->val,
-                 cli_args->matrix_file_name);
+    compare_spmv<VT>(crs_mat->n_rows, y_smax->val, y_mkl_perm->val,
+                     cli_args->matrix_file_name);
 
     delete x;
     delete y_smax;

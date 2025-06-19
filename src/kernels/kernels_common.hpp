@@ -17,7 +17,7 @@ class KernelErrorHandler : public ErrorHandler {
     }
 
     template <typename IT>
-    static void col_oob(IT col_value, int j, int max_cols,
+    static void col_oob(IT col_value, ULL j, ULL max_cols,
                         const std::string &kernel_name) {
         std::ostringstream oss;
         oss << "Column index " << col_value << " at position " << j
@@ -26,7 +26,7 @@ class KernelErrorHandler : public ErrorHandler {
     }
 
     template <typename IT, typename VT>
-    static void super_diag(int row_idx, IT col, VT val,
+    static void super_diag(ULL row_idx, IT col, VT val,
                            const std::string &kernel_name) {
         std::ostringstream oss;
         oss << "Nonzero:" << val << " detected above diagonal at (" << row_idx
@@ -35,7 +35,7 @@ class KernelErrorHandler : public ErrorHandler {
     }
 
     template <typename IT, typename VT>
-    static void sub_diag(int row_idx, IT col, VT val,
+    static void sub_diag(ULL row_idx, IT col, VT val,
                          const std::string &kernel_name) {
         std::ostringstream oss;
         oss << "Nonzero:" << val << " detected below diagonal at (" << row_idx

@@ -5,16 +5,20 @@
 
 int main(int argc, char *argv[]) {
 
+    using IT = int;
+    using VT = double;
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPMV;
-    DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *y = new DenseMatrix(crs_mat->n_rows, 1, 0.0);
+    INIT_SPMV(IT, VT);
+    DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *y = new DenseMatrix<VT>(crs_mat->n_rows, 1, 0.0);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_crs_spmv", SMAX::KernelType::SPMV);
+    register_kernel<IT, VT>(smax, std::string("my_crs_spmv"),
+                            SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
     REGISTER_SPMV_DATA("my_crs_spmv", crs_mat, x, y);
 
     // Make lambda, and pass to the benchmarking harness

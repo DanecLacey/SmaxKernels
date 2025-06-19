@@ -8,10 +8,18 @@
 #define MIN_NUM_ITERS 10
 
 int main(int argc, char *argv[]) {
+
+#ifdef USE_MKL_ILP64
+    using IT = long long int;
+#else
+    using IT = int;
+#endif
+    using VT = double;
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPGEMM;
+    INIT_SPGEMM(IT, VT);
 
     // Create MKL sparse matrix handles for matrices A and B
     sparse_matrix_t A, B, C;
@@ -19,26 +27,43 @@ int main(int argc, char *argv[]) {
     descr.type = SPARSE_MATRIX_TYPE_GENERAL;
 
     CHECK_MKL_STATUS(
-        mkl_sparse_d_create_csr(&A, SPARSE_INDEX_BASE_ZERO, crs_mat_A->n_rows,
-                                crs_mat_A->n_cols, crs_mat_A->row_ptr,
-                                crs_mat_A->row_ptr + 1, crs_mat_A->col,
-                                crs_mat_A->val),
-        "mkl_sparse_d_create_csr A.")
+        mkl_sparse_d_create_csr(
+            /* handle    */ &A,
+            /* indexing  */ SPARSE_INDEX_BASE_ZERO,
+            /* rows      */ static_cast<MKL_INT>(crs_mat_A->n_rows),
+            /* cols      */ static_cast<MKL_INT>(crs_mat_A->n_cols),
+            /* row_start */ reinterpret_cast<MKL_INT *>(crs_mat_A->row_ptr),
+            /* row_end   */ reinterpret_cast<MKL_INT *>(crs_mat_A->row_ptr + 1),
+            /* col_ind   */ reinterpret_cast<MKL_INT *>(crs_mat_A->col),
+            /* values    */ crs_mat_A->val),
+        "mkl_sparse_d_create_csr");
 
     if (compute_AA) {
         CHECK_MKL_STATUS(
-            mkl_sparse_d_create_csr(&B, SPARSE_INDEX_BASE_ZERO,
-                                    crs_mat_A->n_rows, crs_mat_A->n_cols,
-                                    crs_mat_A->row_ptr, crs_mat_A->row_ptr + 1,
-                                    crs_mat_A->col, crs_mat_A->val),
-            "mkl_sparse_d_create_csr B.")
+            mkl_sparse_d_create_csr(
+                /* handle    */ &B,
+                /* indexing  */ SPARSE_INDEX_BASE_ZERO,
+                /* rows      */ static_cast<MKL_INT>(crs_mat_A->n_rows),
+                /* cols      */ static_cast<MKL_INT>(crs_mat_A->n_cols),
+                /* row_start */ reinterpret_cast<MKL_INT *>(crs_mat_A->row_ptr),
+                /* row_end   */
+                reinterpret_cast<MKL_INT *>(crs_mat_A->row_ptr + 1),
+                /* col_ind   */ reinterpret_cast<MKL_INT *>(crs_mat_A->col),
+                /* values    */ crs_mat_A->val),
+            "mkl_sparse_d_create_csr");
     } else {
         CHECK_MKL_STATUS(
-            mkl_sparse_d_create_csr(&B, SPARSE_INDEX_BASE_ZERO,
-                                    crs_mat_B->n_rows, crs_mat_B->n_cols,
-                                    crs_mat_B->row_ptr, crs_mat_B->row_ptr + 1,
-                                    crs_mat_B->col, crs_mat_B->val),
-            "mkl_sparse_d_create_csr B.")
+            mkl_sparse_d_create_csr(
+                /* handle    */ &B,
+                /* indexing  */ SPARSE_INDEX_BASE_ZERO,
+                /* rows      */ static_cast<MKL_INT>(crs_mat_B->n_rows),
+                /* cols      */ static_cast<MKL_INT>(crs_mat_B->n_cols),
+                /* row_start */ reinterpret_cast<MKL_INT *>(crs_mat_B->row_ptr),
+                /* row_end   */
+                reinterpret_cast<MKL_INT *>(crs_mat_B->row_ptr + 1),
+                /* col_ind   */ reinterpret_cast<MKL_INT *>(crs_mat_B->col),
+                /* values    */ crs_mat_B->val),
+            "mkl_sparse_d_create_csr");
     }
 
     // No optimization hints exist for SpGEMM
@@ -104,7 +129,8 @@ int main(int argc, char *argv[]) {
     // Just to get C_nnz //
     std::cout << "A_n_rows: " << crs_mat_A->n_rows << std::endl;
     std::cout << "A_nnz: " << crs_mat_A->nnz << std::endl;
-    std::cout << "C_nnz: " << mkl_row_start[mkl_n_rows] << std::endl;
+    // std::cout << "C_nnz: " << mkl_row_start[mkl_n_rows] << std::endl; // ?
+    std::cout << "C_nnz: " << mkl_row_end[mkl_n_rows - 1] << std::endl;
     PRINT_SPGEMM_BENCH(mkl_row_start[mkl_n_rows]);
     FINALIZE_SPGEMM;
     delete bench_harness;

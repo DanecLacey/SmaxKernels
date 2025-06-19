@@ -14,18 +14,6 @@
 #include <omp.h>
 #endif
 
-#ifdef _OPENMP
-
-#define GET_THREAD_COUNT int n_threads = omp_get_max_threads();
-#define GET_THREAD_ID int tid = omp_get_thread_num();
-
-#else
-
-#define GET_THREAD_COUNT int n_threads = 1;
-#define GET_THREAD_ID int tid = 0;
-
-#endif
-
 #define MIN_BENCH_TIME 1.0
 #define MIN_NUM_ITERS 100
 #define GF_TO_F 1000000000

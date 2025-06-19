@@ -23,12 +23,12 @@ class Utils {
 
     void print_timers();
 
-    template <typename IT, typename VT>
-    int convert_crs_to_scs(const int _n_rows, const int _n_cols, const int _nnz,
+    template <typename IT, typename VT, typename ST>
+    int convert_crs_to_scs(const ST _n_rows, const ST _n_cols, const ST _nnz,
                            const IT *_col, const IT *_row_ptr, const VT *_val,
-                           const int C, const int sigma, int &n_rows,
-                           int &n_rows_padded, int &n_cols, int &n_chunks,
-                           int &n_elements, int &nnz, IT *&chunk_ptr,
+                           const ST C, const ST sigma, ST &n_rows,
+                           ST &n_rows_padded, ST &n_cols, ST &n_chunks,
+                           ST &n_elements, ST &nnz, IT *&chunk_ptr,
                            IT *&chunk_lengths, IT *&col, VT *&val, IT *&perm);
 
     template <typename IT>
@@ -36,12 +36,8 @@ class Utils {
                             IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz);
 
     template <typename IT>
-    int generate_perm_row_sweep(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                         int *inv_perm, int *lvl);
-
-    template <typename IT>
-    int generate_perm_DFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                          int *inv_perm, int *lvl);
+    int generate_perm_row_sweep(int A_n_rows, IT *A_row_ptr, IT *A_col,
+                                int *perm, int *inv_perm, int *lvl);
 
     template <typename IT>
     int generate_perm_BFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
@@ -52,12 +48,13 @@ class Utils {
                             int *inv_perm, int *lvl);
 
     template <typename IT>
-    int generate_color_perm_par(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                            int *inv_perm, int *lvl);
+    int generate_color_perm_par(int A_n_rows, IT *A_row_ptr, IT *A_col,
+                                int *perm, int *inv_perm, int *lvl);
 
     template <typename IT>
-    int generate_color_perm_bal(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                            int *inv_perm, int *lvl, int num_colors);
+    int generate_color_perm_bal(int A_n_rows, IT *A_row_ptr, IT *A_col,
+                                int *perm, int *inv_perm, int *lvl,
+                                int num_colors);
 
     template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,

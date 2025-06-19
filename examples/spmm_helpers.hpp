@@ -5,14 +5,14 @@
 #define SPMM_OUTPUT_FILENAME "compare_spmm.txt"
 #define SPMM_FLOPS_PER_NZ 2
 
-#define INIT_SPMM                                                              \
+#define INIT_SPMM(IT, VT)                                                      \
     SpMMParser *parser = new SpMMParser;                                       \
     SpMMParser::SpMMArgs *cli_args = parser->parse(argc, argv);                \
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
-    CRSMatrix *crs_mat = new CRSMatrix;                                        \
+    CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
     crs_mat->convert_coo_to_crs(coo_mat);                                      \
-    int n_vectors = cli_args->block_vector_size;
+    ULL n_vectors = cli_args->block_vector_size;
 
 #define FINALIZE_SPMM                                                          \
     delete parser;                                                             \
@@ -65,8 +65,9 @@ class SpMMParser : public CliParser {
     SpMMArgs *args() const { return static_cast<SpMMArgs *>(args_); }
 };
 
-void compare_spmm(const int n_rows, const int n_vectors, const double *y_SMAX,
-                  const double *y_MKL, const std::string mtx_name) {
+template <typename VT>
+void compare_spmm(const ULL n_rows, const ULL n_vectors, const VT *y_SMAX,
+                  const VT *y_MKL, const std::string mtx_name) {
 
     std::fstream working_file;
     working_file.open(SPMM_OUTPUT_FILENAME,
@@ -103,7 +104,7 @@ void compare_spmm(const int n_rows, const int n_vectors, const double *y_SMAX,
                  << std::left << std::setw(PRINT_WIDTH) << "---------------"
                  << std::endl;
 #elif VERBOSITY == 1
-    int n_result_digits = n_rows > 0 ? (int)log10((double)n_rows) + 1 : 1;
+    ULL n_result_digits = n_rows > 0 ? (ULL)log10((double)n_rows) + 1 : 1;
 
     working_file << std::left << std::setw(n_result_digits + 8)
                  << "vec idx:" << std::left << std::setw(n_result_digits + 8)
@@ -123,8 +124,8 @@ void compare_spmm(const int n_rows, const int n_vectors, const double *y_SMAX,
 #endif
 
     // Print comparison
-    int vec_count = 0;
-    for (int i = 0; i < n_rows * n_vectors; ++i) {
+    ULL vec_count = 0;
+    for (ULL i = 0; i < n_rows * n_vectors; ++i) {
 
         relative_diff = std::abs(y_MKL[i] - y_SMAX[i]) / y_MKL[i];
         absolute_diff = std::abs(y_MKL[i] - y_SMAX[i]);

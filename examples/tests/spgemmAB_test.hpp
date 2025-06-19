@@ -9,6 +9,7 @@ REGISTER_TEST(spgemmAB_test) {
 
     using IT = int32_t;
     using VT = float;
+    using ULL = unsigned long long int;
 
     int A_n_rows = 3;
     int A_n_cols = 3;
@@ -24,16 +25,16 @@ REGISTER_TEST(spgemmAB_test) {
     IT *B_row_ptr = new IT[A_n_rows + 1]{0, 2, 4, 5};
     VT *B_val = new VT[A_nnz]{1.1, 1.3, 2.1, 2.2, 3.1};
 
-    int C_n_rows = 0;
-    int C_n_cols = 0;
-    int C_nnz = 0;
+    ULL C_n_rows = 0;
+    ULL C_n_cols = 0;
+    ULL C_nnz = 0;
     IT *C_col = nullptr;
     IT *C_row_ptr = nullptr;
     VT *C_val = nullptr;
 
-    int expected_C_n_rows = 3;
-    int expected_C_n_cols = 3;
-    int expected_C_nnz = 7;
+    ULL expected_C_n_rows = 3;
+    ULL expected_C_n_cols = 3;
+    ULL expected_C_nnz = 7;
     IT *expected_C_col = new IT[expected_C_nnz]{0, 2, 1, 0, 1, 0, 2};
     IT *expected_C_row_ptr = new IT[expected_C_n_rows + 1]{0, 3, 5, 7};
     VT *expected_C_val = new VT[expected_C_nnz]{
@@ -57,9 +58,9 @@ REGISTER_TEST(spgemmAB_test) {
     // Function to test
     smax->kernel("my_spgemm_AB")->run();
 
-    compare_values<int>(expected_C_n_rows, C_n_rows, std::string("n_rows"));
-    compare_values<int>(expected_C_n_cols, C_n_cols, std::string("n_cols"));
-    compare_values<int>(expected_C_nnz, C_nnz, std::string("nnz"));
+    compare_values<ULL>(expected_C_n_rows, C_n_rows, std::string("n_rows"));
+    compare_values<ULL>(expected_C_n_cols, C_n_cols, std::string("n_cols"));
+    compare_values<ULL>(expected_C_nnz, C_nnz, std::string("nnz"));
     compare_arrays<IT>(expected_C_col, C_col, C_nnz, std::string("col"));
     compare_arrays<IT>(expected_C_row_ptr, C_row_ptr, C_n_rows + 1,
                        std::string("row_ptr"));

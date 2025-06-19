@@ -15,7 +15,7 @@ class SpMVKernel : public Kernel {
     std::unique_ptr<SPMV::Flags> flags;
 
     using Func = int (*)(Timers *, KernelContext *, SPMV::Args *, SPMV::Flags *,
-                         int, int, int);
+                         ULL, ULL, ULL);
 
     SpMVKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
@@ -34,14 +34,14 @@ class SpMVKernel : public Kernel {
             this->args->d_A->scs = std::make_unique<SCSMatrix>();
 #endif
 
-            this->args->A->scs->C = std::get<int>(args[0]);
-            this->args->A->scs->sigma = std::get<int>(args[1]);
-            this->args->A->scs->n_rows = std::get<int>(args[2]);
-            this->args->A->scs->n_rows_padded = std::get<int>(args[3]);
-            this->args->A->scs->n_cols = std::get<int>(args[4]);
-            this->args->A->scs->n_chunks = std::get<int>(args[5]);
-            this->args->A->scs->n_elements = std::get<int>(args[6]);
-            this->args->A->scs->nnz = std::get<int>(args[7]);
+            this->args->A->scs->C = get_ull(args[0]);
+            this->args->A->scs->sigma = get_ull(args[1]);
+            this->args->A->scs->n_rows = get_ull(args[2]);
+            this->args->A->scs->n_rows_padded = get_ull(args[3]);
+            this->args->A->scs->n_cols = get_ull(args[4]);
+            this->args->A->scs->n_chunks = get_ull(args[5]);
+            this->args->A->scs->n_elements = get_ull(args[6]);
+            this->args->A->scs->nnz = get_ull(args[7]);
 
             this->args->A->scs->chunk_ptr = std::get<void *>(args[8]);
             this->args->A->scs->chunk_lengths = std::get<void *>(args[9]);
@@ -60,9 +60,9 @@ class SpMVKernel : public Kernel {
             this->args->d_A->crs = std::make_unique<CRSMatrix>();
 #endif
 
-            this->args->A->crs->n_rows = std::get<int>(args[0]);
-            this->args->A->crs->n_cols = std::get<int>(args[1]);
-            this->args->A->crs->nnz = std::get<int>(args[2]);
+            this->args->A->crs->n_rows = get_ull(args[0]);
+            this->args->A->crs->n_cols = get_ull(args[1]);
+            this->args->A->crs->nnz = get_ull(args[2]);
 
             this->args->A->crs->col = std::get<void *>(args[3]);
             this->args->A->crs->row_ptr = std::get<void *>(args[4]);
@@ -76,7 +76,7 @@ class SpMVKernel : public Kernel {
         if (args.size() != 2)
             throw std::runtime_error("SpMVKernel register_B expects 2 args");
 
-        this->args->x->n_rows = std::get<int>(args[0]);
+        this->args->x->n_rows = get_ull(args[0]);
         this->args->x->val = std::get<void *>(args[1]);
 
         return 0;
@@ -86,7 +86,7 @@ class SpMVKernel : public Kernel {
         if (args.size() != 2)
             throw std::runtime_error("SpMVKernel register_C expects 2 args");
 
-        this->args->y->n_rows = std::get<int>(args[0]);
+        this->args->y->n_rows = get_ull(args[0]);
         this->args->y->val = std::get<void *>(args[1]);
 
         return 0;
@@ -98,8 +98,8 @@ class SpMVKernel : public Kernel {
     }
 
     // Dispatch kernel based on platform
-    int dispatch(Func func, const char *label, int A_offset, int x_offset,
-                 int y_offset) {
+    int dispatch(Func func, const char *label, ULL A_offset, ULL x_offset,
+                 ULL y_offset) {
         IF_SMAX_DEBUG(if (!k_ctx || !args || !flags) {
             std::cerr << "Error: Null kernel state in " << label << "\n";
             return 1;
@@ -109,7 +109,7 @@ class SpMVKernel : public Kernel {
                     x_offset, y_offset);
     }
 
-    int initialize(int A_offset, int x_offset, int y_offset) override {
+    int initialize(ULL A_offset, ULL x_offset, ULL y_offset) override {
         switch (this->k_ctx->platform_type) {
         case PlatformType::CPU: {
             return dispatch(SPMV::initialize_cpu, "spmv_finalize", A_offset,
@@ -125,7 +125,7 @@ class SpMVKernel : public Kernel {
         }
     }
 
-    int apply(int A_offset, int x_offset, int y_offset) override {
+    int apply(ULL A_offset, ULL x_offset, ULL y_offset) override {
         switch (this->k_ctx->platform_type) {
         case PlatformType::CPU: {
             return dispatch(SPMV::apply_cpu, "spmv_apply", A_offset, x_offset,
@@ -141,7 +141,7 @@ class SpMVKernel : public Kernel {
         }
     }
 
-    int finalize(int A_offset, int x_offset, int y_offset) override {
+    int finalize(ULL A_offset, ULL x_offset, ULL y_offset) override {
         switch (this->k_ctx->platform_type) {
         case PlatformType::CPU: {
             return dispatch(SPMV::finalize_cpu, "spmv_finalize", A_offset,

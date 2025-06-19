@@ -13,8 +13,8 @@ class SpMMKernel : public Kernel {
     std::unique_ptr<SPMM::Args> args;
     std::unique_ptr<SPMM::Flags> flags;
 
-    using CpuFunc = int (*)(Timers *, KernelContext *, SPMM::Args *,
-                            SPMM::Flags *, int, int, int);
+    using Func = int (*)(Timers *, KernelContext *, SPMM::Args *, SPMM::Flags *,
+                         ULL, ULL, ULL);
 
     SpMMKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
@@ -27,9 +27,9 @@ class SpMMKernel : public Kernel {
 
         this->args->A->crs = std::make_unique<CRSMatrix>();
 
-        this->args->A->crs->n_rows = std::get<int>(args[0]);
-        this->args->A->crs->n_cols = std::get<int>(args[1]);
-        this->args->A->crs->nnz = std::get<int>(args[2]);
+        this->args->A->crs->n_rows = get_ull(args[0]);
+        this->args->A->crs->n_cols = get_ull(args[1]);
+        this->args->A->crs->nnz = get_ull(args[2]);
 
         this->args->A->crs->col = std::get<void *>(args[3]);
         this->args->A->crs->row_ptr = std::get<void *>(args[4]);
@@ -42,8 +42,8 @@ class SpMMKernel : public Kernel {
         if (args.size() != 3)
             throw std::runtime_error("SpMMKernel register_B expects 3 args");
 
-        this->args->X->n_rows = std::get<int>(args[0]);
-        this->args->X->n_cols = std::get<int>(args[1]);
+        this->args->X->n_rows = get_ull(args[0]);
+        this->args->X->n_cols = get_ull(args[1]);
         this->args->X->val = std::get<void *>(args[2]);
 
         return 0;
@@ -53,8 +53,8 @@ class SpMMKernel : public Kernel {
         if (args.size() != 3)
             throw std::runtime_error("SpMMKernel register_C expects 3 args");
 
-        this->args->Y->n_rows = std::get<int>(args[0]);
-        this->args->Y->n_cols = std::get<int>(args[1]);
+        this->args->Y->n_rows = get_ull(args[0]);
+        this->args->Y->n_cols = get_ull(args[1]);
         this->args->Y->val = std::get<void *>(args[2]);
 
         return 0;
@@ -65,8 +65,8 @@ class SpMMKernel : public Kernel {
         return 0;
     }
 
-    int dispatch(CpuFunc cpu_func, const char *label, int A_offset,
-                 int X_offset, int Y_offset) {
+    int dispatch(Func func, const char *label, ULL A_offset, ULL X_offset,
+                 ULL Y_offset) {
         IF_SMAX_DEBUG(if (!k_ctx || !args || !flags) {
             std::cerr << "Error: Null kernel state in " << label << "\n";
             return 1;
@@ -74,8 +74,8 @@ class SpMMKernel : public Kernel {
 
         switch (k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(timers, k_ctx.get(), args.get(), flags.get(),
-                            A_offset, X_offset, Y_offset);
+            return func(timers, k_ctx.get(), args.get(), flags.get(), A_offset,
+                        X_offset, Y_offset);
             break;
         }
         default:
@@ -84,17 +84,17 @@ class SpMMKernel : public Kernel {
         }
     }
 
-    int initialize(int A_offset, int X_offset, int Y_offset) override {
+    int initialize(ULL A_offset, ULL X_offset, ULL Y_offset) override {
         return dispatch(SPMM::initialize_cpu, "spmm_initialize", A_offset,
                         X_offset, Y_offset);
     }
 
-    int apply(int A_offset, int X_offset, int Y_offset) override {
+    int apply(ULL A_offset, ULL X_offset, ULL Y_offset) override {
         return dispatch(SPMM::apply_cpu, "spmm_apply", A_offset, X_offset,
                         Y_offset);
     }
 
-    int finalize(int A_offset, int X_offset, int Y_offset) override {
+    int finalize(ULL A_offset, ULL X_offset, ULL Y_offset) override {
         return dispatch(SPMM::finalize_cpu, "spmm_finalize", A_offset, X_offset,
                         Y_offset);
     }

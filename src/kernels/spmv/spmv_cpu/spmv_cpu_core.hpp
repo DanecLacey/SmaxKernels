@@ -4,12 +4,12 @@
 #include "spmv_cpu_crs_impl.hpp"
 #include "spmv_cpu_scs_impl.hpp"
 
-namespace SMAX::KERNELS::SPMV::SPMV_CPU {
+namespace SMAX::KERNELS::SPMV::CPU {
 
 template <typename IT, typename VT>
 int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                        Flags *flags, int A_offset, int x_offset,
-                        int y_offset) {
+                        Flags *flags, ULL A_offset, ULL x_offset,
+                        ULL y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_initialize_cpu_core"));
     IF_SMAX_TIME(timers->get("initialize")->start());
 
@@ -31,7 +31,7 @@ int initialize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
 template <typename IT, typename VT>
 int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                   Flags *flags, int A_offset, int x_offset, int y_offset) {
+                   Flags *flags, ULL A_offset, ULL x_offset, ULL y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_apply_cpu_core"));
     IF_SMAX_TIME(timers->get("apply")->start());
 
@@ -79,7 +79,7 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
 template <typename IT, typename VT>
 int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                      Flags *flags, int A_offset, int x_offset, int y_offset) {
+                      Flags *flags, ULL A_offset, ULL x_offset, ULL y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_finalize_cpu_core"));
     IF_SMAX_TIME(timers->get("finalize")->start());
 
@@ -99,4 +99,4 @@ int finalize_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     return 0;
 }
 
-} // namespace SMAX::KERNELS::SPMV::SPMV_CPU
+} // namespace SMAX::KERNELS::SPMV::CPU

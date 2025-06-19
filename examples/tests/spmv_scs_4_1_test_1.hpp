@@ -35,7 +35,7 @@ REGISTER_TEST(spmv_scs_4_1_test_1) {
 
     SMAX::Interface *smax = new SMAX::Interface();
 
-    smax->utils->convert_crs_to_scs<IT, VT>(
+    smax->utils->convert_crs_to_scs<IT, VT, int>(
         A_crs_n_rows, A_crs_n_cols, A_crs_nnz, A_crs_col, A_crs_row_ptr,
         A_crs_val, A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded,
         A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,

@@ -115,6 +115,12 @@ option(USE_MPI "Enable MPI support" OFF)
 option(USE_LIKWID "Enable LIKWID support" OFF)
 option(USE_EIGEN "Enable Eigen support" OFF)
 option(USE_MKL "Enable MKL support" OFF)
+if(USE_MKL)
+    # Option to select MKL integer interface:
+    #   OFF = LP64 (32-bit indices)
+    #   ON  = ILP64 (64-bit indices)
+    option(MKL_USE_ILP64 "Use MKL ILP64 interface (64-bit indices)" OFF)
+endif()
 option(USE_PETSC "Enable PETSC support" OFF)
 option(USE_FAST_MMIO "Enable fast matrix market support" OFF)
 include(cmake/CPM.cmake)
@@ -191,15 +197,24 @@ else()
     message(STATUS "Eigen support is disabled.")
 endif()
 
-
 # Enable MKL support
 if(USE_MKL)
-    # Ensure we're using LP64 interface (32-bit integers) for MKL
-    # TODO: This isn't explicitly necessary. Make more flexible.
-    set(MKL_INTERFACE lp64)
+    if(MKL_USE_ILP64)
+        set(MKL_INTERFACE ilp64)
+        add_compile_definitions(USE_MKL_ILP64)
+    else()
+        set(MKL_INTERFACE lp64)
+        add_compile_definitions(USE_MKL_LP64)
+    endif()
+
     find_package(MKL REQUIRED)
     if(MKL_FOUND)
         message(STATUS "MKL found, enabling MKL support.")
+        if(MKL_USE_ILP64)
+            message(STATUS "Building MKL with ILP64 (64-bit indices)")
+        else()
+            message(STATUS "Building MKL with LP64 (32-bit indices)")
+        endif()
     else()
         message(FATAL_ERROR "MKL requested but not found.")
     endif()
@@ -239,8 +254,6 @@ if(USE_MKL)
 else()
     message(WARNING "Validation checks not built. MKL is required.")
 endif()
-
-
 
 # === fast mmio Support ===
 if(USE_FAST_MMIO)

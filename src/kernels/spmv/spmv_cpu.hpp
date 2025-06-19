@@ -10,25 +10,25 @@ namespace SMAX::KERNELS::SPMV {
 // the correct function for the given types.
 template <typename IT, typename VT> struct Init_CPU {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
-                   Flags *flags, int A_offset, int x_offset, int y_offset) {
-        return SPMV_CPU::initialize_cpu_core<IT, VT>(
-            timers, k_ctx, args, flags, A_offset, x_offset, y_offset);
+                   Flags *flags, ULL A_offset, ULL x_offset, ULL y_offset) {
+        return CPU::initialize_cpu_core<IT, VT>(timers, k_ctx, args, flags,
+                                                A_offset, x_offset, y_offset);
     }
 };
 
 template <typename IT, typename VT> struct Apply_CPU {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
-                   Flags *flags, int A_offset, int x_offset, int y_offset) {
-        return SPMV_CPU::apply_cpu_core<IT, VT>(timers, k_ctx, args, flags,
-                                                A_offset, x_offset, y_offset);
+                   Flags *flags, ULL A_offset, ULL x_offset, ULL y_offset) {
+        return CPU::apply_cpu_core<IT, VT>(timers, k_ctx, args, flags, A_offset,
+                                           x_offset, y_offset);
     }
 };
 
 template <typename IT, typename VT> struct Finalize_CPU {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
-                   Flags *flags, int A_offset, int x_offset, int y_offset) {
-        return SPMV_CPU::finalize_cpu_core<IT, VT>(
-            timers, k_ctx, args, flags, A_offset, x_offset, y_offset);
+                   Flags *flags, ULL A_offset, ULL x_offset, ULL y_offset) {
+        return CPU::finalize_cpu_core<IT, VT>(timers, k_ctx, args, flags,
+                                              A_offset, x_offset, y_offset);
     }
 };
 
@@ -37,7 +37,7 @@ template <typename IT, typename VT> struct Finalize_CPU {
 // Dispatch kernel based on data types
 template <template <typename IT, typename VT> class Func>
 int dispatch_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
-                 int A_offset, int x_offset, int y_offset) {
+                 ULL A_offset, ULL x_offset, ULL y_offset) {
     switch (k_ctx->float_type) {
     case FloatType::FLOAT32:
         switch (k_ctx->int_type) {
@@ -97,17 +97,17 @@ int dispatch_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
 
 // These invoke the dispatcher function with the correct template parameters
 int initialize_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
-                   Flags *flags, int A_offset, int x_offset, int y_offset) {
+                   Flags *flags, ULL A_offset, ULL x_offset, ULL y_offset) {
     return dispatch_cpu<Init_CPU>(timers, k_ctx, args, flags, A_offset,
                                   x_offset, y_offset);
 }
 int apply_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
-              int A_offset, int x_offset, int y_offset) {
+              ULL A_offset, ULL x_offset, ULL y_offset) {
     return dispatch_cpu<Apply_CPU>(timers, k_ctx, args, flags, A_offset,
                                    x_offset, y_offset);
 }
 int finalize_cpu(Timers *timers, KernelContext *k_ctx, Args *args, Flags *flags,
-                 int A_offset, int x_offset, int y_offset) {
+                 ULL A_offset, ULL x_offset, ULL y_offset) {
     return dispatch_cpu<Finalize_CPU>(timers, k_ctx, args, flags, A_offset,
                                       x_offset, y_offset);
 }

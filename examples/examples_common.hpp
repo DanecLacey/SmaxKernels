@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SmaxKernels/interface.hpp"
+
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -7,6 +9,7 @@
 #include <math.h>
 #include <numeric>
 #include <set>
+#include <type_traits>
 #include <vector>
 
 #ifdef _OPENMP
@@ -22,15 +25,17 @@ namespace fmm = fast_matrix_market;
 #include "mmio.hpp"
 #endif
 
+using ULL = unsigned long long int;
+
 #define PRINT_WIDTH 18
 #define CACHE_LINE_ALIGNMENT 64
 
 #ifdef _OPENMP
-#define GET_THREAD_COUNT int n_threads = omp_get_max_threads();
-#define GET_THREAD_ID int tid = omp_get_thread_num();
+#define GET_THREAD_COUNT ULL n_threads = omp_get_max_threads();
+#define GET_THREAD_ID ULL tid = omp_get_thread_num();
 #else
-#define GET_THREAD_COUNT int n_threads = 1;
-#define GET_THREAD_ID int tid = 0;
+#define GET_THREAD_COUNT ULL n_threads = 1;
+#define GET_THREAD_ID ULL tid = 0;
 #endif
 
 #define CHECK_MKL_STATUS(status, message)                                      \
@@ -153,6 +158,56 @@ void operator delete(void *p) {
     free(p);
 }
 
+/*
+Only type supported by this helper function at this time:
+- int, long long int, unsigned long long int
+- float, double
+*/
+template <typename IT, typename VT>
+void register_kernel(SMAX::Interface *smax, std::string kernel_name,
+                     SMAX::KernelType KernelType,
+                     SMAX::PlatformType PlatformType) {
+    if constexpr (std::is_same_v<IT, int>) {
+        if constexpr (std::is_same_v<VT, float>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::INT32,
+                                  SMAX::FloatType::FLOAT32);
+        } else if constexpr (std::is_same_v<VT, double>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::INT32,
+                                  SMAX::FloatType::FLOAT64);
+        } else {
+            std::cout << "VT not recognized" << std::endl;
+        }
+    } else if constexpr (std::is_same_v<IT, long long>) {
+        if constexpr (std::is_same_v<VT, float>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::INT64,
+                                  SMAX::FloatType::FLOAT32);
+        } else if constexpr (std::is_same_v<VT, double>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::INT64,
+                                  SMAX::FloatType::FLOAT64);
+        } else {
+            std::cout << "VT not recognized" << std::endl;
+        }
+    } else if constexpr (std::is_same_v<IT, unsigned long long>) {
+        if constexpr (std::is_same_v<VT, float>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::UINT64,
+                                  SMAX::FloatType::FLOAT32);
+        } else if constexpr (std::is_same_v<VT, double>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::UINT64,
+                                  SMAX::FloatType::FLOAT64);
+        } else {
+            std::cout << "VT not recognized" << std::endl;
+        }
+    } else {
+        std::cout << "IT not recognized" << std::endl;
+    }
+};
+
 template <typename IT>
 std::vector<IT> compute_sort_permutation(const std::vector<IT> &rows,
                                          const std::vector<IT> &cols) {
@@ -192,12 +247,12 @@ inline void sort_perm(int *arr, int *perm, int len, bool rev = false) {
     }
 }
 
-double compute_euclid_dist(const int n_rows, const double *y_SMAX,
+double compute_euclid_dist(const ULL n_rows, const double *y_SMAX,
                            const double *y_MKL) {
     double tmp = 0.0;
 
 #pragma omp parallel for reduction(+ : tmp)
-    for (int i = 0; i < n_rows; ++i) {
+    for (ULL i = 0; i < n_rows; ++i) {
         tmp += (y_SMAX[i] - y_MKL[i]) * (y_SMAX[i] - y_MKL[i]);
     }
 
@@ -234,9 +289,9 @@ class CliParser {
 };
 
 struct COOMatrix {
-    long n_rows{};
-    long n_cols{};
-    long nnz{};
+    ULL n_rows{};
+    ULL n_cols{};
+    ULL nnz{};
 
     bool is_sorted{};
     bool is_symmetric{};
@@ -253,7 +308,7 @@ struct COOMatrix {
         std::string file_name =
             file_out_name + "_rank_" + std::to_string(my_rank) + ".mtx";
 
-        for (int nz_idx = 0; nz_idx < nnz; ++nz_idx) {
+        for (ULL nz_idx = 0; nz_idx < nnz; ++nz_idx) {
             ++I[nz_idx];
             ++J[nz_idx];
         }
@@ -348,6 +403,8 @@ struct COOMatrix {
         std::vector<int> row_data, col_data;
         std::vector<double> val_data;
 
+        // Unpacks symmetric matrices
+        // TODO: You should be able to work with symmetric matrices!
         if (symm_flag) {
             for (int i = 0; i < nnz; ++i) {
                 row_data.push_back(row_unsorted[i]);
@@ -362,7 +419,7 @@ struct COOMatrix {
             free(row_unsorted);
             free(col_unsorted);
             free(val_unsorted);
-            nnz = static_cast<int>(val_data.size());
+            nnz = static_cast<ULL>(val_data.size());
         } else {
             row_data.assign(row_unsorted, row_unsorted + nnz);
             col_data.assign(col_unsorted, col_unsorted + nnz);
@@ -407,15 +464,15 @@ struct COOMatrix {
         std::cout << "N_cols: " << this->n_cols << std::endl;
 
         std::cout << "Values: ";
-        for (int i = 0; i < this->nnz; ++i)
+        for (ULL i = 0; i < this->nnz; ++i)
             std::cout << this->val[i] << " ";
 
         std::cout << "\nCol: ";
-        for (int i = 0; i < this->nnz; ++i)
+        for (ULL i = 0; i < this->nnz; ++i)
             std::cout << this->J[i] << " ";
 
         std::cout << "\nRow: ";
-        for (int i = 0; i < this->nnz; ++i)
+        for (ULL i = 0; i < this->nnz; ++i)
             std::cout << this->I[i] << " ";
 
         std::cout << std::endl;
@@ -423,13 +480,13 @@ struct COOMatrix {
     }
 };
 
-struct CRSMatrix {
-    int nnz;
-    int n_rows;
-    int n_cols;
-    double *val;
-    int *col;
-    int *row_ptr;
+template <typename IT, typename VT> struct CRSMatrix {
+    ULL nnz;
+    ULL n_rows;
+    ULL n_cols;
+    VT *val;
+    IT *col;
+    IT *row_ptr;
 
     CRSMatrix() {
         this->n_rows = 0;
@@ -441,14 +498,14 @@ struct CRSMatrix {
         row_ptr = nullptr;
     }
 
-    CRSMatrix(int n_rows, int n_cols, int nnz) {
+    CRSMatrix(ULL n_rows, ULL n_cols, ULL nnz) {
         this->n_rows = n_rows;
         this->nnz = nnz;
         this->n_cols = n_cols;
 
-        val = new double[nnz];
-        col = new int[nnz];
-        row_ptr = new int[n_rows + 1];
+        val = new VT[nnz];
+        col = new IT[nnz];
+        row_ptr = new IT[n_rows + 1];
     }
 
     ~CRSMatrix() {
@@ -474,8 +531,8 @@ struct CRSMatrix {
         std::vector<int> temp_cols(nnz);
         std::vector<double> temp_values(nnz);
 
-        int elem_num = 0;
-        for (int row = 0; row < n_rows; ++row) {
+        ULL elem_num = 0;
+        for (ULL row = 0; row < n_rows; ++row) {
             for (int idx = row_ptr[row]; idx < row_ptr[row + 1]; ++idx) {
                 temp_rows[elem_num] =
                     row + 1; // +1 to adjust for 1 based indexing in mm-format
@@ -500,15 +557,15 @@ struct CRSMatrix {
         std::cout << "N_cols: " << this->n_cols << std::endl;
 
         std::cout << "Values: ";
-        for (int i = 0; i < this->nnz; ++i)
+        for (ULL i = 0; i < this->nnz; ++i)
             std::cout << this->val[i] << " ";
 
         std::cout << "\nCol Indices: ";
-        for (int i = 0; i < this->nnz; ++i)
+        for (ULL i = 0; i < this->nnz; ++i)
             std::cout << this->col[i] << " ";
 
         std::cout << "\nRow Ptr: ";
-        for (int i = 0; i < this->n_rows + 1; ++i)
+        for (ULL i = 0; i < this->n_rows + 1; ++i)
             std::cout << this->row_ptr[i] << " ";
 
         std::cout << std::endl;
@@ -520,46 +577,46 @@ struct CRSMatrix {
         this->n_cols = coo_mat->n_cols;
         this->nnz = coo_mat->nnz;
 
-        this->row_ptr = new int[this->n_rows + 1];
-        int *tmp = new int[this->n_rows + 1];
-        int *nnz_per_row = new int[this->n_rows];
+        this->row_ptr = new IT[this->n_rows + 1];
+        ULL *tmp = new ULL[this->n_rows + 1];
+        ULL *nnz_per_row = new ULL[this->n_rows];
 
-        this->col = new int[this->nnz];
-        this->val = new double[this->nnz];
+        this->col = new IT[this->nnz];
+        this->val = new VT[this->nnz];
 
 #pragma omp parallel
         {
 #pragma omp for schedule(static)
-            for (int idx = 0; idx < this->nnz; ++idx) {
+            for (ULL idx = 0; idx < this->nnz; ++idx) {
                 this->col[idx] = coo_mat->J[idx];
                 this->val[idx] = coo_mat->val[idx];
             }
 
 #pragma omp for schedule(static)
-            for (int i = 0; i < this->n_rows; ++i) {
+            for (ULL i = 0; i < this->n_rows; ++i) {
                 nnz_per_row[i] = 0;
             }
         }
 
         // count nnz per row
-        for (int i = 0; i < this->nnz; ++i) {
+        for (ULL i = 0; i < this->nnz; ++i) {
             ++nnz_per_row[coo_mat->I[i]];
         }
 
         tmp[0] = 0;
-        for (int i = 0; i < this->n_rows; ++i) {
+        for (ULL i = 0; i < this->n_rows; ++i) {
             tmp[i + 1] = tmp[i] + nnz_per_row[i];
         }
 
 #pragma omp parallel for schedule(static)
-        for (int i = 0; i < this->n_rows + 1; ++i) {
+        for (ULL i = 0; i < this->n_rows + 1; ++i) {
             this->row_ptr[i] = tmp[i];
         }
 
-        if (this->row_ptr[this->n_rows] != this->nnz) {
-            printf("ERROR: expected nnz: %d does not match: %d in "
+        if (static_cast<ULL>(this->row_ptr[this->n_rows]) != this->nnz) {
+            printf("ERROR: expected nnz: %lld does not match: %lld in "
                    "convert_coo_to_crs.\n",
-                   this->row_ptr[this->n_rows], this->nnz);
+                   static_cast<ULL>(this->row_ptr[this->n_rows]), this->nnz);
             exit(1);
         }
 
@@ -568,10 +625,10 @@ struct CRSMatrix {
     }
 };
 
-struct DenseMatrix {
-    int n_rows;
-    int n_cols;
-    double *val;
+template <typename VT> struct DenseMatrix {
+    ULL n_rows;
+    ULL n_cols;
+    VT *val;
 
     DenseMatrix() {
         this->n_rows = 0;
@@ -579,14 +636,14 @@ struct DenseMatrix {
         val = nullptr;
     }
 
-    DenseMatrix(int n_rows, int n_cols, double _val) {
+    DenseMatrix(ULL n_rows, ULL n_cols, VT _val) {
         this->n_rows = n_rows;
         this->n_cols = n_cols;
 
-        val = new double[n_rows * n_cols];
+        val = new VT[n_rows * n_cols];
 
         // Initialize all elements to val
-        for (int i = 0; i < n_rows * n_cols; ++i) {
+        for (ULL i = 0; i < n_rows * n_cols; ++i) {
             val[i] = _val;
         }
     }
@@ -594,7 +651,7 @@ struct DenseMatrix {
     ~DenseMatrix() { delete[] val; }
 
     DenseMatrix &operator-=(const DenseMatrix &mat) {
-        for (int i = 0; i < n_cols * n_rows; i++) {
+        for (ULL i = 0; i < n_cols * n_rows; i++) {
             val[i] = val[i] - mat.val[i];
         }
         return *this;
@@ -605,7 +662,7 @@ struct DenseMatrix {
         std::cout << "N_cols: " << this->n_cols << std::endl;
 
         std::cout << "Values: ";
-        for (int i = 0; i < this->n_rows * this->n_cols; ++i)
+        for (ULL i = 0; i < this->n_rows * this->n_cols; ++i)
             std::cout << this->val[i] << " ";
 
         std::cout << std::endl;
@@ -613,17 +670,19 @@ struct DenseMatrix {
     }
 };
 
-void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
+template <typename IT, typename VT>
+void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
+                   CRSMatrix<IT, VT> &U) {
     // Count nnz
-    for (int i = 0; i < A.n_rows; ++i) {
-        int row_start = A.row_ptr[i];
-        int row_end = A.row_ptr[i + 1];
+    for (ULL i = 0; i < A.n_rows; ++i) {
+        IT row_start = A.row_ptr[i];
+        IT row_end = A.row_ptr[i + 1];
 
         // Loop over each non-zero entry in the current row
-        for (int idx = row_start; idx < row_end; ++idx) {
-            int col = A.col[idx];
+        for (IT idx = row_start; idx < row_end; ++idx) {
+            IT col = A.col[idx];
 
-            if (col <= i) {
+            if (static_cast<ULL>(col) <= i) {
                 ++D_plus_L.nnz;
             } else {
                 ++U.nnz;
@@ -632,33 +691,33 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
     }
 
     // Allocate heap space and assign known metadata
-    D_plus_L.val = new double[D_plus_L.nnz];
-    D_plus_L.col = new int[D_plus_L.nnz];
-    D_plus_L.row_ptr = new int[A.n_rows + 1];
+    D_plus_L.val = new VT[D_plus_L.nnz];
+    D_plus_L.col = new IT[D_plus_L.nnz];
+    D_plus_L.row_ptr = new IT[A.n_rows + 1];
     D_plus_L.row_ptr[0] = 0;
     D_plus_L.n_rows = A.n_rows;
     D_plus_L.n_cols = A.n_cols;
 
-    U.val = new double[U.nnz];
-    U.col = new int[U.nnz];
-    U.row_ptr = new int[A.n_rows + 1];
+    U.val = new VT[U.nnz];
+    U.col = new IT[U.nnz];
+    U.row_ptr = new IT[A.n_rows + 1];
     U.row_ptr[0] = 0;
     U.n_rows = A.n_rows;
     U.n_cols = A.n_cols;
 
     // Assign nonzeros
-    int D_plus_L_count = 0;
-    int U_count = 0;
-    for (int i = 0; i < A.n_rows; ++i) {
-        int row_start = A.row_ptr[i];
-        int row_end = A.row_ptr[i + 1];
+    ULL D_plus_L_count = 0;
+    ULL U_count = 0;
+    for (ULL i = 0; i < A.n_rows; ++i) {
+        IT row_start = A.row_ptr[i];
+        IT row_end = A.row_ptr[i + 1];
 
         // Loop over each non-zero entry in the current row
-        for (int idx = row_start; idx < row_end; ++idx) {
-            int col = A.col[idx];
-            double val = A.val[idx];
+        for (IT idx = row_start; idx < row_end; ++idx) {
+            IT col = A.col[idx];
+            VT val = A.val[idx];
 
-            if (col <= i) {
+            if (static_cast<ULL>(col) <= i) {
                 // Diagonal or lower triangular part (D + L)
                 D_plus_L.val[D_plus_L_count] = val;
                 D_plus_L.col[D_plus_L_count++] = col;
@@ -675,27 +734,27 @@ void extract_D_L_U(const CRSMatrix &A, CRSMatrix &D_plus_L, CRSMatrix &U) {
     }
 }
 
-void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
-                          int *A_col, double *A_val, int &D_plus_L_n_rows,
-                          int &D_plus_L_n_cols, int &D_plus_L_nnz,
-                          int *&D_plus_L_row_ptr, int *&D_plus_L_col,
-                          double *&D_plus_L_val, int &U_n_rows, int &U_n_cols,
-                          int &U_nnz, int *&U_row_ptr, int *&U_col,
-                          double *&U_val) {
+template <typename IT, typename VT>
+void extract_D_L_U_arrays(ULL A_n_rows, ULL A_n_cols, ULL A_nnz, IT *A_row_ptr,
+                          IT *A_col, VT *A_val, ULL &D_plus_L_n_rows,
+                          ULL &D_plus_L_n_cols, ULL &D_plus_L_nnz,
+                          IT *&D_plus_L_row_ptr, IT *&D_plus_L_col,
+                          VT *&D_plus_L_val, ULL &U_n_rows, ULL &U_n_cols,
+                          ULL &U_nnz, IT *&U_row_ptr, IT *&U_col, VT *&U_val) {
 
     // supress warnings
     (void)A_nnz;
 
     // Count nnz
-    for (int i = 0; i < A_n_rows; ++i) {
-        int row_start = A_row_ptr[i];
-        int row_end = A_row_ptr[i + 1];
+    for (ULL i = 0; i < A_n_rows; ++i) {
+        IT row_start = A_row_ptr[i];
+        IT row_end = A_row_ptr[i + 1];
 
         // Loop over each non-zero entry in the current row
-        for (int idx = row_start; idx < row_end; ++idx) {
-            int col = A_col[idx];
+        for (IT idx = row_start; idx < row_end; ++idx) {
+            IT col = A_col[idx];
 
-            if (col <= i) {
+            if (static_cast<ULL>(col) <= i) {
                 ++D_plus_L_nnz;
             } else {
                 ++U_nnz;
@@ -704,33 +763,33 @@ void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
     }
 
     // Allocate heap space and assign known metadata
-    D_plus_L_val = new double[D_plus_L_nnz];
-    D_plus_L_col = new int[D_plus_L_nnz];
-    D_plus_L_row_ptr = new int[A_n_rows + 1];
+    D_plus_L_val = new VT[D_plus_L_nnz];
+    D_plus_L_col = new IT[D_plus_L_nnz];
+    D_plus_L_row_ptr = new IT[A_n_rows + 1];
     D_plus_L_row_ptr[0] = 0;
     D_plus_L_n_rows = A_n_rows;
     D_plus_L_n_cols = A_n_cols;
 
-    U_val = new double[U_nnz];
-    U_col = new int[U_nnz];
-    U_row_ptr = new int[A_n_rows + 1];
+    U_val = new VT[U_nnz];
+    U_col = new IT[U_nnz];
+    U_row_ptr = new IT[A_n_rows + 1];
     U_row_ptr[0] = 0;
     U_n_rows = A_n_rows;
     U_n_cols = A_n_cols;
 
     // Assign nonzeros
-    int D_plus_L_count = 0;
-    int U_count = 0;
-    for (int i = 0; i < A_n_rows; ++i) {
-        int row_start = A_row_ptr[i];
-        int row_end = A_row_ptr[i + 1];
+    ULL D_plus_L_count = 0;
+    ULL U_count = 0;
+    for (ULL i = 0; i < A_n_rows; ++i) {
+        IT row_start = A_row_ptr[i];
+        IT row_end = A_row_ptr[i + 1];
 
         // Loop over each non-zero entry in the current row
-        for (int idx = row_start; idx < row_end; ++idx) {
-            int col = A_col[idx];
-            double val = A_val[idx];
+        for (IT idx = row_start; idx < row_end; ++idx) {
+            IT col = A_col[idx];
+            VT val = A_val[idx];
 
-            if (col <= i) {
+            if (static_cast<ULL>(col) <= i) {
                 // Diagonal or lower triangular part (D + L)
                 D_plus_L_val[D_plus_L_count] = val;
                 D_plus_L_col[D_plus_L_count++] = col;
@@ -747,21 +806,21 @@ void extract_D_L_U_arrays(int A_n_rows, int A_n_cols, int A_nnz, int *A_row_ptr,
     }
 }
 
-template <typename VT> void print_vector(VT *vec, int n_rows) {
+template <typename VT> void print_vector(VT *vec, ULL n_rows) {
     printf("Vector: [");
-    for (int i = 0; i < n_rows; ++i) {
+    for (ULL i = 0; i < n_rows; ++i) {
         std::cout << vec[i] << ", ";
     }
     printf("]\n\n");
 }
 
-template <typename VT> void print_exact_vector(VT *vec, int n_rows) {
+template <typename VT> void print_exact_vector(VT *vec, ULL n_rows) {
 #include <iomanip>
 #include <iostream>
 #include <limits>
 
     printf("Vector: [");
-    for (int i = 0; i < n_rows; ++i) {
+    for (ULL i = 0; i < n_rows; ++i) {
         std::cout << std::fixed
                   << std::setprecision(
                          std::numeric_limits<double>::max_digits10)
@@ -771,26 +830,28 @@ template <typename VT> void print_exact_vector(VT *vec, int n_rows) {
 }
 
 template <typename IT, typename VT>
-void print_matrix(int n_rows, int n_cols, int nnz, IT *col, IT *row_ptr,
+void print_matrix(ULL n_rows, ULL n_cols, ULL nnz, IT *col, IT *row_ptr,
                   VT *val, bool symbolic = false) {
-    printf("n_rows = %i\n", n_rows);
-    printf("n_cols = %i\n", n_cols);
-    printf("nnz = %i\n", nnz);
+
+    std::cout << "n_rows = " << n_rows << std::endl;
+    std::cout << "n_cols = " << n_cols << std::endl;
+    std::cout << "nnz = " << nnz << std::endl;
+
     printf("col = [");
-    for (int i = 0; i < nnz; ++i) {
+    for (ULL i = 0; i < nnz; ++i) {
         std::cout << col[i] << ", ";
     }
     printf("]\n");
 
     printf("row_ptr = [");
-    for (int i = 0; i <= n_rows; ++i) {
+    for (ULL i = 0; i <= n_rows; ++i) {
         std::cout << row_ptr[i] << ", ";
     }
     printf("]\n");
 
     if (!symbolic) {
         printf("val = [");
-        for (int i = 0; i < nnz; ++i) {
+        for (ULL i = 0; i < nnz; ++i) {
             std::cout << val[i] << ", ";
         }
         printf("]\n");

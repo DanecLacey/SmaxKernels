@@ -4,16 +4,16 @@
 #include "SmaxKernels/interface.hpp"
 #include <iostream>
 
-void peel_diag_crs(CRSMatrix *A, DenseMatrix *D) {
+void peel_diag_crs(CRSMatrix<int, double> *A, DenseMatrix<double> *D) {
 
-    for (int row_idx = 0; row_idx < A->n_rows; ++row_idx) {
+    for (ULL row_idx = 0; row_idx < A->n_rows; ++row_idx) {
         int row_start = A->row_ptr[row_idx];
         int row_end = A->row_ptr[row_idx + 1] - 1;
         int diag_j = -1; // Init diag col
 
         // find the diag in this row_idx (since row need not be col sorted)
         for (int j = row_start; j <= row_end; ++j) {
-            if (A->col[j] == row_idx) {
+            if (static_cast<ULL>(A->col[j]) == row_idx) {
                 diag_j = j;
                 D->val[row_idx] = A->val[j]; // extract
                 if (std::abs(D->val[row_idx]) < 1e-16) {
@@ -35,13 +35,13 @@ void peel_diag_crs(CRSMatrix *A, DenseMatrix *D) {
     };
 }
 
-void normalize_x(DenseMatrix *x_new, DenseMatrix *x_old, DenseMatrix *D,
-                 DenseMatrix *b) {
+void normalize_x(DenseMatrix<double> *x_new, DenseMatrix<double> *x_old,
+                 DenseMatrix<double> *D, DenseMatrix<double> *b) {
 
-    int n_rows = b->n_rows;
+    ULL n_rows = b->n_rows;
 
     // #pragma omp parallel for
-    for (int row_idx = 0; row_idx < n_rows; ++row_idx) {
+    for (ULL row_idx = 0; row_idx < n_rows; ++row_idx) {
         double diag_contrib = D->val[row_idx] * x_old->val[row_idx];
         double offdiag_sum = x_new->val[row_idx] - diag_contrib;
 

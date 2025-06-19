@@ -5,12 +5,12 @@
 #include "spmv_cuda_crs_impl.cuh"
 #include "spmv_cuda_scs_impl.cuh"
 
-namespace SMAX::KERNELS::SPMV::SPMV_CUDA {
+namespace SMAX::KERNELS::SPMV::CUDA {
 
 template <typename IT, typename VT>
 int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                         Flags *flags, int A_offset, int x_offset,
-                         int y_offset) {
+                         Flags *flags, ULL A_offset, ULL x_offset,
+                         ULL y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_initialize_cuda_core"));
     IF_SMAX_TIME(timers->get("initialize")->start());
 
@@ -25,14 +25,14 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
     (void)x_offset;
     (void)y_offset;
 
-    int vector_size;
+    ULL vector_size;
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
     if (flags->is_mat_scs) {
-        int A_n_elements = args->A->scs->n_elements;
-        int A_n_rows_padded = args->A->scs->n_rows_padded;
-        int A_n_chunks = args->A->scs->n_chunks;
+        ULL A_n_elements = args->A->scs->n_elements;
+        ULL A_n_rows_padded = args->A->scs->n_rows_padded;
+        ULL A_n_chunks = args->A->scs->n_chunks;
         IT *A_chunk_ptr = as<IT *>(args->A->scs->chunk_ptr);
         IT *A_chunk_lengths = as<IT *>(args->A->scs->chunk_lengths);
         IT *A_col = as<IT *>(args->A->scs->col);
@@ -51,8 +51,8 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
         args->d_A->scs->C = args->A->scs->C;
         vector_size = A_n_rows_padded;
     } else {
-        int A_n_rows = args->A->crs->n_rows;
-        int A_nnz = args->A->crs->nnz;
+        ULL A_n_rows = args->A->crs->n_rows;
+        ULL A_nnz = args->A->crs->nnz;
         IT *A_col = as<IT *>(args->A->crs->col);
         IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
         VT *A_val = as<VT *>(args->A->crs->val);
@@ -81,7 +81,7 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
 template <typename IT, typename VT>
 int apply_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                    Flags *flags, int A_offset, int x_offset, int y_offset) {
+                    Flags *flags, ULL A_offset, ULL x_offset, ULL y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_apply_cuda_core"));
     IF_SMAX_TIME(timers->get("apply")->start());
 
@@ -123,7 +123,7 @@ int apply_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
 template <typename IT, typename VT>
 int finalize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
-                       Flags *flags, int A_offset, int x_offset, int y_offset) {
+                       Flags *flags, ULL A_offset, ULL x_offset, ULL y_offset) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spmv_finalize_cuda_core"));
     IF_SMAX_TIME(timers->get("finalize")->start());
 
@@ -138,12 +138,12 @@ int finalize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
     (void)x_offset;
     (void)y_offset;
 
-    int vector_size;
+    ULL vector_size;
     if (flags->is_mat_scs) {
-        int A_n_rows_padded = args->A->scs->n_rows_padded;
+        ULL A_n_rows_padded = args->A->scs->n_rows_padded;
         vector_size = A_n_rows_padded;
     } else {
-        int A_n_rows = args->A->crs->n_rows;
+        ULL A_n_rows = args->A->crs->n_rows;
         vector_size = A_n_rows;
     }
 
@@ -156,4 +156,4 @@ int finalize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
     return 0;
 }
 
-} // namespace SMAX::KERNELS::SPMV::SPMV_CUDA
+} // namespace SMAX::KERNELS::SPMV::CUDA

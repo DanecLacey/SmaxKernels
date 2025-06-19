@@ -6,27 +6,27 @@
 #define SPTRSV_FLOPS_PER_NZ 2
 #define SPTRSV_FLOPS_PER_ROW 2
 
-#define INIT_SPTRSV                                                            \
+#define INIT_SPTRSV(IT, VT)                                                    \
     SpTRSVParser *parser = new SpTRSVParser;                                   \
     SpTRSVParser::SpTRSVArgs *cli_args = parser->parse(argc, argv);            \
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
-    CRSMatrix *crs_mat = new CRSMatrix;                                        \
+    CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
     crs_mat->convert_coo_to_crs(coo_mat);                                      \
-    CRSMatrix *crs_mat_D_plus_L = new CRSMatrix;                               \
-    CRSMatrix *crs_mat_U = new CRSMatrix;                                      \
-    extract_D_L_U(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;               \
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;                      \
+    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
 
-#define INIT_SPTRSV_LVL                                                        \
+#define INIT_SPTRSV_LVL(IT, VT)                                                \
     SpTRSVParser *parser = new SpTRSVParser;                                   \
-    SpTRSVParser::SpTRSVArgs *cli_args = parser->parse_lvl(argc, argv);            \
+    SpTRSVParser::SpTRSVArgs *cli_args = parser->parse_lvl(argc, argv);        \
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
-    CRSMatrix *crs_mat = new CRSMatrix;                                        \
+    CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
     crs_mat->convert_coo_to_crs(coo_mat);                                      \
-    CRSMatrix *crs_mat_D_plus_L = new CRSMatrix;                               \
-    CRSMatrix *crs_mat_U = new CRSMatrix;                                      \
-    extract_D_L_U(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;               \
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;                      \
+    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
 
 #define FINALIZE_SPTRSV                                                        \
     delete cli_args;                                                           \
@@ -79,7 +79,8 @@ class SpTRSVParser : public CliParser {
 
     SpTRSVArgs *parse_lvl(int argc, char *argv[]) {
         if (argc != 3) {
-            std::cerr << "Usage: " << argv[0] << " <matrix_file.mtx> <method>[str]\n";
+            std::cerr << "Usage: " << argv[0]
+                      << " <matrix_file.mtx> <method>[str]\n";
             std::exit(EXIT_FAILURE);
         }
 
@@ -93,7 +94,8 @@ class SpTRSVParser : public CliParser {
     SpTRSVArgs *args() const { return static_cast<SpTRSVArgs *>(args_); }
 };
 
-void compare_sptrsv(const int n_rows, const double *y_SMAX, const double *y_MKL,
+template <typename VT>
+void compare_sptrsv(const ULL n_rows, const VT *y_SMAX, const VT *y_MKL,
                     const std::string mtx_name) {
 
     std::fstream working_file;
@@ -132,7 +134,7 @@ void compare_sptrsv(const int n_rows, const double *y_SMAX, const double *y_MKL,
                  << std::left << std::setw(PRINT_WIDTH) << "---------------"
                  << std::endl;
 #elif VERBOSITY == 1
-    int n_result_digits = n_rows > 0 ? (int)log10((double)n_rows) + 1 : 1;
+    ULL n_result_digits = n_rows > 0 ? (ULL)log10((double)n_rows) + 1 : 1;
 
     working_file << std::left << std::setw(n_result_digits + 8)
                  << "row idx:" << std::left << std::setw(PRINT_WIDTH)
@@ -150,7 +152,7 @@ void compare_sptrsv(const int n_rows, const double *y_SMAX, const double *y_MKL,
 #endif
 
     // Print comparison
-    for (int i = 0; i < n_rows; ++i) {
+    for (ULL i = 0; i < n_rows; ++i) {
 
         relative_diff = std::abs(y_MKL[i] - y_SMAX[i]) / y_MKL[i];
         absolute_diff = std::abs(y_MKL[i] - y_SMAX[i]);

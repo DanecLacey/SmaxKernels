@@ -11,23 +11,21 @@ namespace SMAX::KERNELS::SPGEMM {
 template <typename IT, typename VT> struct Init {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags) {
-        return SPGEMM_CPU::initialize_cpu_core<IT, VT>(timers, k_ctx, args,
-                                                       flags);
+        return CPU::initialize_cpu_core<IT, VT>(timers, k_ctx, args, flags);
     }
 };
 
 template <typename IT, typename VT> struct Apply {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags) {
-        return SPGEMM_CPU::apply_cpu_core<IT, VT>(timers, k_ctx, args, flags);
+        return CPU::apply_cpu_core<IT, VT>(timers, k_ctx, args, flags);
     }
 };
 
 template <typename IT, typename VT> struct Finalize {
     int operator()(Timers *timers, KernelContext *k_ctx, Args *args,
                    Flags *flags) {
-        return SPGEMM_CPU::finalize_cpu_core<IT, VT>(timers, k_ctx, args,
-                                                     flags);
+        return CPU::finalize_cpu_core<IT, VT>(timers, k_ctx, args, flags);
     }
 };
 

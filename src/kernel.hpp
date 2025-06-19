@@ -32,9 +32,9 @@ class Kernel {
     virtual ~Kernel() { delete this->timers; };
 
     // Methods to override
-    virtual int initialize(int A_offset, int B_offset, int C_offset) = 0;
-    virtual int apply(int A_offset, int B_offset, int C_offset) = 0;
-    virtual int finalize(int A_offset, int B_offset, int C_offset) = 0;
+    virtual int initialize(ULL A_offset, ULL B_offset, ULL C_offset) = 0;
+    virtual int apply(ULL A_offset, ULL B_offset, ULL C_offset) = 0;
+    virtual int finalize(ULL A_offset, ULL B_offset, ULL C_offset) = 0;
     virtual int _register_A(const std::vector<Variant> &args) = 0;
     virtual int _register_B(const std::vector<Variant> &args) = 0;
     virtual int _register_C(const std::vector<Variant> &args) = 0;
@@ -68,10 +68,12 @@ class Kernel {
     }
 
     // User-facing helpers
-    int run(int A_offset = 0, int B_offset = 0, int C_offset = 0) {
+    int run(ULL A_offset = 0, ULL B_offset = 0, ULL C_offset = 0) {
         // DL 09.05.2025 NOTE: Since only a single memory address is
         // registered, the offsets are to access other parts of memory at
         // runtime (e.g. register A to kernel, but A[i*n_rows] needed)
+        // DL 18.06.2025 NOTE: an int can be automatically promoted to unsigned
+        // long long int when passed by value, so this is okay
         CHECK_ERROR(initialize(A_offset, B_offset, C_offset), "initialize");
         CHECK_ERROR(apply(A_offset, B_offset, C_offset), "apply");
         CHECK_ERROR(finalize(A_offset, B_offset, C_offset), "finalize");

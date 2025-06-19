@@ -44,6 +44,7 @@ This project is very much still in development, and many features may be unfinis
 * This project requires C++17 features
 * It is assumed that all optional third party libraries are installed in `$INSTALL_PATH`
 * The PETSc library is found via. the PkgConfig module. So if benchmarking PETSc kernels, you should configure PETSc with `--with-pkg-config=1` when building.
+* 2025-06-19: It is strongly recommended to use intel compilers when interating with tests in `examples/validation` for ABI compatability. 
 
 ## Contributing ##
 Pull requests and issues are welcome. Please open an issue first to propose changes or feature additions.

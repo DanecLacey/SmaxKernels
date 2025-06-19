@@ -12,8 +12,8 @@ class SpGEMMKernel : public Kernel {
     std::unique_ptr<SPGEMM::Args> args;
     std::unique_ptr<SPGEMM::Flags> flags;
 
-    using CpuFunc = int (*)(Timers *, KernelContext *, SPGEMM::Args *,
-                            SPGEMM::Flags *);
+    using Func = int (*)(Timers *, KernelContext *, SPGEMM::Args *,
+                         SPGEMM::Flags *);
 
     SpGEMMKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {
@@ -35,9 +35,9 @@ class SpGEMMKernel : public Kernel {
 
         this->args->A->crs = std::make_unique<CRSMatrix>();
 
-        this->args->A->crs->n_rows = std::get<int>(args[0]);
-        this->args->A->crs->n_cols = std::get<int>(args[1]);
-        this->args->A->crs->nnz = std::get<int>(args[2]);
+        this->args->A->crs->n_rows = get_ull(args[0]);
+        this->args->A->crs->n_cols = get_ull(args[1]);
+        this->args->A->crs->nnz = get_ull(args[2]);
 
         this->args->A->crs->col = std::get<void *>(args[3]);
         this->args->A->crs->row_ptr = std::get<void *>(args[4]);
@@ -52,9 +52,9 @@ class SpGEMMKernel : public Kernel {
 
         this->args->B->crs = std::make_unique<CRSMatrix>();
 
-        this->args->B->crs->n_rows = std::get<int>(args[0]);
-        this->args->B->crs->n_cols = std::get<int>(args[1]);
-        this->args->B->crs->nnz = std::get<int>(args[2]);
+        this->args->B->crs->n_rows = get_ull(args[0]);
+        this->args->B->crs->n_cols = get_ull(args[1]);
+        this->args->B->crs->nnz = get_ull(args[2]);
 
         this->args->B->crs->col = std::get<void *>(args[3]);
         this->args->B->crs->row_ptr = std::get<void *>(args[4]);
@@ -80,7 +80,7 @@ class SpGEMMKernel : public Kernel {
         return 0;
     }
 
-    int dispatch(CpuFunc cpu_func, const char *label) {
+    int dispatch(Func func, const char *label) {
         IF_SMAX_DEBUG(if (!k_ctx || !args || !flags) {
             std::cerr << "Error: Null kernel state in " << label << "\n";
             return 1;
@@ -88,7 +88,7 @@ class SpGEMMKernel : public Kernel {
 
         switch (k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(timers, k_ctx.get(), args.get(), flags.get());
+            return func(timers, k_ctx.get(), args.get(), flags.get());
             break;
         }
         default:
@@ -97,7 +97,7 @@ class SpGEMMKernel : public Kernel {
         }
     }
 
-    int initialize(int A_offset, int B_offset, int C_offset) override {
+    int initialize(ULL A_offset, ULL B_offset, ULL C_offset) override {
         // suppress unused warnings
         (void)A_offset;
         (void)B_offset;
@@ -105,7 +105,7 @@ class SpGEMMKernel : public Kernel {
         return dispatch(SPGEMM::initialize_cpu, "spgemm_initialize");
     }
 
-    int apply(int A_offset, int B_offset, int C_offset) override {
+    int apply(ULL A_offset, ULL B_offset, ULL C_offset) override {
         // suppress unused warnings
         (void)A_offset;
         (void)B_offset;
@@ -113,7 +113,7 @@ class SpGEMMKernel : public Kernel {
         return dispatch(SPGEMM::apply_cpu, "spgemm_apply");
     }
 
-    int finalize(int A_offset, int B_offset, int C_offset) override {
+    int finalize(ULL A_offset, ULL B_offset, ULL C_offset) override {
         // suppress unused warnings
         (void)A_offset;
         (void)B_offset;

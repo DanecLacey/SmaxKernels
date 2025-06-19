@@ -1,15 +1,12 @@
 #pragma once
-
+// clang-format off
+#include "memory_utils.hpp" // Comes first, so ULL defined everywhere
 #include "error_handler.hpp"
 #include "macros.hpp"
-#include "memory_utils.hpp"
 #include "stopwatch.hpp"
-
-#include <variant>
+// clang-format on
 
 namespace SMAX {
-
-using Variant = std::variant<int, void *, void **>;
 
 // Available kernels
 enum class KernelType { SPMV, SPMM, SPGEMV, SPGEMM, SPTRSV, SPTRSM };
@@ -40,30 +37,30 @@ struct KernelContext {
 };
 
 struct CRSMatrix {
-    int n_rows = 0;
-    int n_cols = 0;
-    int nnz = 0;
+    ULL n_rows = 0;
+    ULL n_cols = 0;
+    ULL nnz = 0;
     void *col = nullptr;
     void *row_ptr = nullptr;
     void *val = nullptr;
 
     CRSMatrix() = default;
 
-    CRSMatrix(int _n_rows, int _n_cols, int _nnz, void *_col, void *_row_ptr,
+    CRSMatrix(ULL _n_rows, ULL _n_cols, ULL _nnz, void *_col, void *_row_ptr,
               void *_val)
         : n_rows(_n_rows), n_cols(_n_cols), nnz(_nnz), col(_col),
           row_ptr(_row_ptr), val(_val) {}
 };
 
 struct SCSMatrix {
-    int C = 0;
-    int sigma = 0;
-    int n_rows = 0;
-    int n_rows_padded = 0;
-    int n_cols = 0;
-    int n_chunks = 0;
-    int n_elements = 0;
-    int nnz = 0;
+    ULL C = 0;
+    ULL sigma = 0;
+    ULL n_rows = 0;
+    ULL n_rows_padded = 0;
+    ULL n_cols = 0;
+    ULL n_chunks = 0;
+    ULL n_elements = 0;
+    ULL nnz = 0;
     void *chunk_ptr = nullptr;
     void *chunk_lengths = nullptr;
     void *col = nullptr;
@@ -73,8 +70,8 @@ struct SCSMatrix {
 
     SCSMatrix() = default;
 
-    SCSMatrix(int _C, int _sigma, int _n_rows, int _n_rows_padded, int _n_cols,
-              int _n_chunks, int _n_elements, int _nnz, void *_chunk_ptr,
+    SCSMatrix(ULL _C, ULL _sigma, ULL _n_rows, ULL _n_rows_padded, ULL _n_cols,
+              ULL _n_chunks, ULL _n_elements, ULL _nnz, void *_chunk_ptr,
               void *_chunk_lengths, void *_col, void *_val, void *_perm,
               void *_inv_perm)
         : C(_C), sigma(_sigma), n_rows(_n_rows), n_rows_padded(_n_rows_padded),
@@ -120,8 +117,8 @@ struct SparseMatrixRef {
 };
 
 struct DenseMatrix {
-    int n_rows = 0;
-    int n_cols = 0;
+    ULL n_rows = 0;
+    ULL n_cols = 0;
 
     // Library-owned storage (optional)
     void *_val_storage = nullptr;
@@ -133,7 +130,7 @@ struct DenseMatrix {
     DenseMatrix() = default;
 
     // User-managed external memory constructor
-    DenseMatrix(int rows, int cols, void *val_ptr = nullptr)
+    DenseMatrix(ULL rows, ULL cols, void *val_ptr = nullptr)
         : n_rows(rows), n_cols(cols), val(val_ptr) {}
 
     // Destructor: only delete internal storage if it's in use
@@ -144,7 +141,7 @@ struct DenseMatrix {
     }
 
     // Allocate or reallocate internal storage (library-managed only)
-    void allocate_internal(int rows, int cols, size_t elem_size) {
+    void allocate_internal(ULL rows, ULL cols, size_t elem_size) {
         if (_val_storage) {
             operator delete(_val_storage);
         }
@@ -157,6 +154,7 @@ struct DenseMatrix {
 };
 
 struct UtilitiesContainer {
+    // TODO: Update to ULL
     int *lvl_ptr = nullptr;
     int n_levels = 0;
 

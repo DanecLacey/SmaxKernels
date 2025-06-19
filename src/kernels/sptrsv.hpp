@@ -12,8 +12,8 @@ class SpTRSVKernel : public Kernel {
     std::unique_ptr<SPTRSV::Args> args;
     std::unique_ptr<SPTRSV::Flags> flags;
 
-    using CpuFunc = int (*)(Timers *, KernelContext *, SPTRSV::Args *,
-                            SPTRSV::Flags *);
+    using Func = int (*)(Timers *, KernelContext *, SPTRSV::Args *,
+                         SPTRSV::Flags *);
 
     SpTRSVKernel(std::unique_ptr<KernelContext> k_ctx)
         : Kernel(std::move(k_ctx)) {}
@@ -26,9 +26,9 @@ class SpTRSVKernel : public Kernel {
 
         this->args->A->crs = std::make_unique<CRSMatrix>();
 
-        this->args->A->crs->n_rows = std::get<int>(args[0]);
-        this->args->A->crs->n_cols = std::get<int>(args[1]);
-        this->args->A->crs->nnz = std::get<int>(args[2]);
+        this->args->A->crs->n_rows = get_ull(args[0]);
+        this->args->A->crs->n_cols = get_ull(args[1]);
+        this->args->A->crs->nnz = get_ull(args[2]);
 
         this->args->A->crs->col = std::get<void *>(args[3]);
         this->args->A->crs->row_ptr = std::get<void *>(args[4]);
@@ -41,7 +41,7 @@ class SpTRSVKernel : public Kernel {
         if (args.size() != 2)
             throw std::runtime_error("SpTRSVKernel register_B expects 2 args");
 
-        this->args->x->n_rows = std::get<int>(args[0]);
+        this->args->x->n_rows = get_ull(args[0]);
         this->args->x->val = std::get<void *>(args[1]);
 
         return 0;
@@ -51,7 +51,7 @@ class SpTRSVKernel : public Kernel {
         if (args.size() != 2)
             throw std::runtime_error("SpTRSVKernel register_C expects 2 args");
 
-        this->args->y->n_rows = std::get<int>(args[0]);
+        this->args->y->n_rows = get_ull(args[0]);
         this->args->y->val = std::get<void *>(args[1]);
 
         return 0;
@@ -71,7 +71,7 @@ class SpTRSVKernel : public Kernel {
         return 0;
     }
 
-    int dispatch(CpuFunc cpu_func, const char *label) {
+    int dispatch(Func func, const char *label) {
         IF_SMAX_DEBUG(if (!k_ctx || !args || !flags) {
             std::cerr << "Error: Null kernel state in " << label << "\n";
             return 1;
@@ -79,7 +79,7 @@ class SpTRSVKernel : public Kernel {
 
         switch (k_ctx->platform_type) {
         case PlatformType::CPU: {
-            return cpu_func(timers, k_ctx.get(), args.get(), flags.get());
+            return func(timers, k_ctx.get(), args.get(), flags.get());
             break;
         }
         default:
@@ -88,7 +88,7 @@ class SpTRSVKernel : public Kernel {
         }
     }
 
-    int initialize(int A_offset, int x_offset, int y_offset) override {
+    int initialize(ULL A_offset, ULL x_offset, ULL y_offset) override {
         // suppress unused warnings
         (void)A_offset;
         (void)x_offset;
@@ -96,7 +96,7 @@ class SpTRSVKernel : public Kernel {
         return dispatch(SPTRSV::initialize_cpu, "sptrsv_initialize");
     }
 
-    int apply(int A_offset, int x_offset, int y_offset) override {
+    int apply(ULL A_offset, ULL x_offset, ULL y_offset) override {
         // suppress unused warnings
         (void)A_offset;
         (void)x_offset;
@@ -104,7 +104,7 @@ class SpTRSVKernel : public Kernel {
         return dispatch(SPTRSV::apply_cpu, "sptrsv_apply");
     }
 
-    int finalize(int A_offset, int x_offset, int y_offset) override {
+    int finalize(ULL A_offset, ULL x_offset, ULL y_offset) override {
         // suppress unused warnings
         (void)A_offset;
         (void)x_offset;

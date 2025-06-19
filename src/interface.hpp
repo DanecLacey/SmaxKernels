@@ -26,9 +26,7 @@ class Interface {
 
     // DL 14.05.25 NOTE: "kernels" map is made of base class pointers, but every
     // object pointed to is actually a kernel-specific sub class. This just
-    // makes the interface cleaner. Kernel-specific args are still held in the
-    // base class, the sub classes are just a means of avoiding switch-case
-    // statements at runtime
+    // makes the interface cleaner.
     std::unordered_map<std::string, std::unique_ptr<Kernel>> kernels;
 
   public:

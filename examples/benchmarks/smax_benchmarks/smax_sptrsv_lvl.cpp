@@ -5,12 +5,16 @@
 
 int main(int argc, char *argv[]) {
 
+    using IT = int;
+    using VT = double;
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPTRSV_LVL;
-    DenseMatrix *x = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *b = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
+    INIT_SPTRSV_LVL(IT, VT);
+
+    DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
     int *perm = new int[crs_mat->n_rows];
     int *inv_perm = new int[crs_mat->n_rows];
     int *A_perm_col = new int[crs_mat->nnz];
@@ -21,18 +25,18 @@ int main(int argc, char *argv[]) {
     SMAX::Interface *smax = new SMAX::Interface();
     smax->register_kernel("my_sptrsv_lvl", SMAX::KernelType::SPTRSV);
     smax->utils->generate_perm<int>(crs_mat->n_rows, crs_mat->row_ptr,
-                                       crs_mat->col, perm, inv_perm, argv[2]);
+                                    crs_mat->col, perm, inv_perm, argv[2]);
     smax->kernel("my_sptrsv_lvl")->set_mat_perm(true);
-    smax->utils->apply_mat_perm<int, double>(
+    smax->utils->apply_mat_perm<IT, VT>(
         crs_mat->n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
         A_perm_row_ptr, A_perm_col, A_perm_val, perm, inv_perm);
-    extract_D_L_U_arrays(crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz,
-                         A_perm_row_ptr, A_perm_col, A_perm_val,
-                         crs_mat_D_plus_L->n_rows, crs_mat_D_plus_L->n_cols,
-                         crs_mat_D_plus_L->nnz, crs_mat_D_plus_L->row_ptr,
-                         crs_mat_D_plus_L->col, crs_mat_D_plus_L->val,
-                         crs_mat_U->n_rows, crs_mat_U->n_cols, crs_mat_U->nnz,
-                         crs_mat_U->row_ptr, crs_mat_U->col, crs_mat_U->val);
+    extract_D_L_U_arrays<IT, VT>(
+        crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, A_perm_row_ptr,
+        A_perm_col, A_perm_val, crs_mat_D_plus_L->n_rows,
+        crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->nnz,
+        crs_mat_D_plus_L->row_ptr, crs_mat_D_plus_L->col, crs_mat_D_plus_L->val,
+        crs_mat_U->n_rows, crs_mat_U->n_cols, crs_mat_U->nnz,
+        crs_mat_U->row_ptr, crs_mat_U->col, crs_mat_U->val);
     REGISTER_SPTRSV_DATA("my_sptrsv_lvl", crs_mat_D_plus_L, x, b);
 
     // Make lambda, and pass to the benchmarking harness

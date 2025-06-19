@@ -34,18 +34,15 @@
 REGISTER_TEST(build_symmetric_csr_1) {
 
     using IT = int;
-    using VT = double;
 
     // Initialize operands
     IT A_n_rows = 8;
-    IT A_n_cols = 8;
     IT A_nnz = 16;
     IT *A_col = new IT[A_nnz]{0, 0, 1, 1, 2, 1, 3, 1, 3, 4, 0, 5, 6, 2, 3, 7};
     IT *A_row_ptr = new IT[A_n_rows + 1]{0, 1, 3, 5, 7, 10, 12, 13, 16};
 
     // Declare permuted data
     IT A_sym_n_rows = 8;
-    IT A_sym_n_cols = 8;
     IT A_sym_nnz = 0;
     IT *A_sym_col = nullptr;
     IT *A_sym_row_ptr = nullptr;

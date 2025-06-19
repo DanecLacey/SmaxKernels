@@ -44,30 +44,30 @@ struct Flags {
 
 class SpTRSMErrorHandler : public KernelErrorHandler {
   public:
-    static void zero_diag(int row_idx) {
+    static void zero_diag(ULL row_idx) {
         std::ostringstream oss;
         oss << "Zero detected on diagonal at row index: " << row_idx;
         kernel_fatal("[SpTRSM] " + oss.str());
     }
 
-    static void no_diag(int row_idx) {
+    static void no_diag(ULL row_idx) {
         std::ostringstream oss;
         oss << "No diagonal to extract at row index: " << row_idx;
         kernel_fatal("[SpTRSM] " + oss.str());
     }
 
     template <typename IT, typename VT>
-    static void super_diag(int row_idx, IT col, VT val) {
+    static void super_diag(ULL row_idx, IT col, VT val) {
         KernelErrorHandler::super_diag<IT>(row_idx, col, val, "SpTRSM");
     }
 
     template <typename IT, typename VT>
-    static void sub_diag(int row_idx, IT col, VT val) {
+    static void sub_diag(ULL row_idx, IT col, VT val) {
         KernelErrorHandler::sub_diag<IT>(row_idx, col, val, "SpTRSM");
     }
 
     template <typename IT>
-    static void col_oob(IT col_value, int j, int A_n_cols) {
+    static void col_oob(IT col_value, ULL j, ULL A_n_cols) {
         KernelErrorHandler::col_oob<IT>(col_value, j, A_n_cols, "SpTRSM");
     }
 

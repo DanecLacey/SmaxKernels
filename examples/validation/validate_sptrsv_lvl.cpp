@@ -3,42 +3,52 @@
 #include "validation_common.hpp"
 
 int main(int argc, char *argv[]) {
-    INIT_SPTRSV_LVL;
 
-    DenseMatrix *x_smax = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
-    DenseMatrix *x_smax_perm = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
-    DenseMatrix *x_mkl = new DenseMatrix(crs_mat->n_cols, 1, 0.0);
-    DenseMatrix *b = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *b_perm = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
+#ifdef USE_MKL_ILP64
+    using IT = long long int;
+#else
+    using IT = int;
+#endif
+    using VT = double;
 
-    int n_rows = crs_mat->n_rows;
+    INIT_SPTRSV_LVL(IT, VT);
+
+    DenseMatrix<VT> *x_smax = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
+    DenseMatrix<VT> *x_smax_perm = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
+    DenseMatrix<VT> *x_mkl = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
+    DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *b_perm = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+
+    ULL n_rows = crs_mat->n_rows;
 
     // Declare permutation vectors
     int *perm = new int[n_rows];
     int *inv_perm = new int[n_rows];
 
     // Declare and allocate room for permuted matrix
-    CRSMatrix *crs_mat_perm =
-        new CRSMatrix(n_rows, crs_mat->n_cols, crs_mat->nnz);
+    CRSMatrix<IT, VT> *crs_mat_perm =
+        new CRSMatrix<IT, VT>(n_rows, crs_mat->n_cols, crs_mat->nnz);
 
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_lvl_sptrsv", SMAX::KernelType::SPTRSV);
+    register_kernel<IT, VT>(smax, std::string("my_lvl_sptrsv"),
+                            SMAX::KernelType::SPTRSV, SMAX::PlatformType::CPU);
 
     // Generate and apply permutation
-    smax->utils->generate_perm<int>(n_rows, crs_mat->row_ptr, crs_mat->col,
-                                    perm, inv_perm, argv[2]);
-    smax->utils->apply_mat_perm<int, double>(
-        n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
-        crs_mat_perm->row_ptr, crs_mat_perm->col, crs_mat_perm->val, perm,
-        inv_perm);
+    smax->utils->generate_perm<IT>(n_rows, crs_mat->row_ptr, crs_mat->col, perm,
+                                   inv_perm, argv[2]);
+    smax->utils->apply_mat_perm<IT, VT>(n_rows, crs_mat->row_ptr, crs_mat->col,
+                                        crs_mat->val, crs_mat_perm->row_ptr,
+                                        crs_mat_perm->col, crs_mat_perm->val,
+                                        perm, inv_perm);
 
-    smax->utils->apply_vec_perm<double>(n_rows, b->val, b_perm->val, perm);
-    smax->utils->apply_vec_perm<double>(n_rows, x_smax->val, x_smax_perm->val,
-                                        perm);
+    smax->utils->apply_vec_perm<VT>(n_rows, b->val, b_perm->val, perm);
+    smax->utils->apply_vec_perm<VT>(n_rows, x_smax->val, x_smax_perm->val,
+                                    perm);
 
-    CRSMatrix *crs_mat_perm_D_plus_L = new CRSMatrix;
-    CRSMatrix *crs_mat_perm_U = new CRSMatrix;
-    extract_D_L_U(*crs_mat_perm, *crs_mat_perm_D_plus_L, *crs_mat_perm_U);
+    CRSMatrix<IT, VT> *crs_mat_perm_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_perm_U = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_perm_D_plus_L,
+                          *crs_mat_perm_U);
 
     // Smax SpTRSV
     REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_perm_D_plus_L, x_smax_perm,
@@ -54,12 +64,19 @@ int main(int argc, char *argv[]) {
     descr.diag = SPARSE_DIAG_NON_UNIT;   // Non-unit diagonal
 
     // Create the matrix handle from CSR data
-    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
-                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
-                         crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
-                         crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
-                         crs_mat_D_plus_L->val),
-                     "mkl_sparse_d_create_csr");
+    CHECK_MKL_STATUS(
+        mkl_sparse_d_create_csr(
+            /* handle    */ &A,
+            /* indexing  */ SPARSE_INDEX_BASE_ZERO,
+            /* rows      */ static_cast<MKL_INT>(crs_mat_D_plus_L->n_rows),
+            /* cols      */ static_cast<MKL_INT>(crs_mat_D_plus_L->n_cols),
+            /* row_start */
+            reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->row_ptr),
+            /* row_end   */
+            reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->row_ptr + 1),
+            /* col_ind   */ reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->col),
+            /* values    */ crs_mat_D_plus_L->val),
+        "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
     CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
@@ -69,10 +86,11 @@ int main(int argc, char *argv[]) {
                      "mkl_sparse_d_trsv");
 
     // Unpermute and compare
-    smax->utils->apply_vec_perm<double>(n_rows, x_smax_perm->val, x_smax->val,
-                                        inv_perm);
+    smax->utils->apply_vec_perm<VT>(n_rows, x_smax_perm->val, x_smax->val,
+                                    inv_perm);
 
-    compare_sptrsv(n_rows, x_smax->val, x_mkl->val, cli_args->matrix_file_name);
+    compare_sptrsv<VT>(n_rows, x_smax->val, x_mkl->val,
+                       cli_args->matrix_file_name);
 
     delete x_smax;
     delete x_mkl;

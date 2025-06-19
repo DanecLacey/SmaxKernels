@@ -42,11 +42,9 @@ Kernel *Interface::kernel(const std::string &kernel_name) {
     }
 }
 
-int Interface::get_n_levels(void) const{
-    return this->uc->n_levels;
-}
+int Interface::get_n_levels(void) const { return this->uc->n_levels; }
 
-int Interface::get_level_ptr_at(int idx) const{
+int Interface::get_level_ptr_at(int idx) const {
     return this->uc->lvl_ptr[idx];
 }
 
@@ -79,7 +77,6 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
         spgemm->args = std::make_unique<KERNELS::SPGEMM::Args>(this->uc);
         spgemm->flags = std::make_unique<KERNELS::SPGEMM::Flags>();
         break;
-
     }
     case KernelType::SPTRSV: {
         this->kernels[name] = std::make_unique<KERNELS::SpTRSVKernel>(std::move(k_ctx));

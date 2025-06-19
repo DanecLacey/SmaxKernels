@@ -7,7 +7,7 @@
 #define ERROR_CUT_OFF 100
 #define SPGEMM_FLOPS_PER_NZ 2
 
-#define INIT_SPGEMM                                                            \
+#define INIT_SPGEMM(IT, VT)                                                    \
     SpGEMMParser *parser = new SpGEMMParser;                                   \
     SpGEMMParser::SpGEMMArgs *cli_args = parser->parse(argc, argv);            \
     bool compute_AA = false;                                                   \
@@ -16,13 +16,13 @@
     }                                                                          \
     COOMatrix *coo_mat_A = new COOMatrix;                                      \
     coo_mat_A->read_from_mtx(cli_args->matrix_file_name_A);                    \
-    CRSMatrix *crs_mat_A = new CRSMatrix;                                      \
+    CRSMatrix<IT, VT> *crs_mat_A = new CRSMatrix<IT, VT>;                      \
     crs_mat_A->convert_coo_to_crs(coo_mat_A);                                  \
     COOMatrix *coo_mat_B = new COOMatrix;                                      \
     if (!compute_AA) {                                                         \
         coo_mat_B->read_from_mtx(cli_args->matrix_file_name_B);                \
     }                                                                          \
-    CRSMatrix *crs_mat_B = new CRSMatrix;                                      \
+    CRSMatrix<IT, VT> *crs_mat_B = new CRSMatrix<IT, VT>;                      \
     crs_mat_B->convert_coo_to_crs(coo_mat_B);
 
 #define FINALIZE_SPGEMM                                                        \
@@ -84,7 +84,8 @@ class SpGEMMParser : public CliParser {
     SpGEMMArgs *args() const { return static_cast<SpGEMMArgs *>(args_); }
 };
 
-void compare_spgemm(CRSMatrix *C_smax, CRSMatrix *C_mkl,
+template <typename IT, typename VT>
+void compare_spgemm(CRSMatrix<IT, VT> *C_smax, CRSMatrix<IT, VT> *C_mkl,
                     const std::string mtx_name_A,
                     const std::string mtx_name_B) {
 
@@ -99,38 +100,40 @@ void compare_spgemm(CRSMatrix *C_smax, CRSMatrix *C_mkl,
 
     // Basic sanity checks
     if (C_smax->n_rows != C_mkl->n_rows) {
-        fprintf(stderr,
-                "ERROR: Number of rows mismatch between C_smax (%i) and C_mkl "
-                "(%i).\n",
-                C_smax->n_rows, C_mkl->n_rows);
+        fprintf(
+            stderr,
+            "ERROR: Number of rows mismatch between C_smax (%lld) and C_mkl "
+            "(%lld).\n",
+            C_smax->n_rows, C_mkl->n_rows);
         exit(EXIT_FAILURE);
     }
     if (C_smax->n_cols != C_mkl->n_cols) {
-        fprintf(stderr,
-                "ERROR: Number of cols mismatch between C_smax (%i) and C_mkl "
-                "(%i).\n",
-                C_smax->n_cols, C_mkl->n_cols);
+        fprintf(
+            stderr,
+            "ERROR: Number of cols mismatch between C_smax (%lld) and C_mkl "
+            "(%lld).\n",
+            C_smax->n_cols, C_mkl->n_cols);
         exit(EXIT_FAILURE);
     }
     if (C_smax->nnz != C_mkl->nnz) {
-        fprintf(
-            stderr,
-            "ERROR: Number of non zeros mismatch between C_smax (%i) and C_mkl "
-            "(%i).\n",
-            C_smax->nnz, C_mkl->nnz);
+        fprintf(stderr,
+                "ERROR: Number of non zeros mismatch between C_smax (%lld) and "
+                "C_mkl "
+                "(%lld).\n",
+                C_smax->nnz, C_mkl->nnz);
         exit(EXIT_FAILURE);
     }
 
-    int col_diff = 0;
+    long long int col_diff = 0;
     double val_diff = 0.0;
     double relative_val_diff = 0.0;
-    int row_ptr_diff = 0;
-    int bad_idxs = 0;
+    long long int row_ptr_diff = 0;
+    ULL bad_idxs = 0;
 
-    int nnz_digits = C_smax->nnz > 0 ? (int)log10((double)C_smax->nnz) + 1 : 2;
+    ULL nnz_digits = C_smax->nnz > 0 ? (ULL)log10((double)C_smax->nnz) + 1 : 2;
 
     // Check if there are any errors at all
-    for (int i = 0; i < C_smax->nnz; ++i) {
+    for (ULL i = 0; i < C_smax->nnz; ++i) {
         col_diff = C_smax->col[i] - C_mkl->col[i];
         val_diff = C_smax->val[i] - C_mkl->val[i];
         relative_val_diff = val_diff / C_mkl->val[i];
@@ -170,8 +173,8 @@ void compare_spgemm(CRSMatrix *C_smax, CRSMatrix *C_mkl,
                      << std::setw(PRINT_WIDTH) << "------------"
                      << "\n";
 
-        int error_cut_off_counter = 0;
-        for (int i = 0; i < C_smax->nnz; ++i) {
+        ULL error_cut_off_counter = 0;
+        for (ULL i = 0; i < C_smax->nnz; ++i) {
             col_diff = C_smax->col[i] - C_mkl->col[i];
             val_diff = C_smax->val[i] - C_mkl->val[i];
             relative_val_diff = val_diff / C_mkl->val[i];

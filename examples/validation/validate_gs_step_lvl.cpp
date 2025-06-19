@@ -4,8 +4,8 @@
 #include <cmath>
 #include <iostream>
 
-void lx_difference(double *a, double *b, int num_elem, int norm,
-                   std::string descr) {
+template <typename VT>
+void lx_difference(VT *a, VT *b, int num_elem, int norm, std::string descr) {
     if (norm == 0) {
         double max = 0;
         for (int i = 0; i < num_elem; i++) {
@@ -24,46 +24,57 @@ void lx_difference(double *a, double *b, int num_elem, int norm,
 }
 
 int main(int argc, char *argv[]) {
-    INIT_GS;
 
-    DenseMatrix *x_smax = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *x_smax_perm = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *x_mkl = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *b = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *b_mkl = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *b_perm = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *tmp_rhs = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix *tmp_rhs_mkl = new DenseMatrix(crs_mat->n_cols, 1, 1.0);
+#ifdef USE_MKL_ILP64
+    using IT = long long int;
+#else
+    using IT = int;
+#endif
+    using VT = double;
 
-    int n_rows = crs_mat->n_rows;
+    INIT_GS(IT, VT);
+
+    DenseMatrix<VT> *x_smax = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *x_smax_perm = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *x_mkl = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *b_mkl = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *b_perm = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *tmp_rhs = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+    DenseMatrix<VT> *tmp_rhs_mkl = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
+
+    ULL n_rows = crs_mat->n_rows;
 
     // Declare permutation vectors
     int *perm = new int[n_rows];
     int *inv_perm = new int[n_rows];
 
     // Declare and allocate room for permuted matrix
-    CRSMatrix *crs_mat_perm =
-        new CRSMatrix(n_rows, crs_mat->n_cols, crs_mat->nnz);
+    CRSMatrix<IT, VT> *crs_mat_perm =
+        new CRSMatrix<IT, VT>(n_rows, crs_mat->n_cols, crs_mat->nnz);
 
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_lvl_sptrsv", SMAX::KernelType::SPTRSV);
-    smax->register_kernel("my_lvl_spmv", SMAX::KernelType::SPMV);
+    register_kernel<IT, VT>(smax, std::string("my_lvl_sptrsv"),
+                            SMAX::KernelType::SPTRSV, SMAX::PlatformType::CPU);
+    register_kernel<IT, VT>(smax, std::string("my_lvl_spmv"),
+                            SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
 
     // Generate and apply permutation
-    smax->utils->generate_perm<int>(n_rows, crs_mat->row_ptr, crs_mat->col,
-                                    perm, inv_perm, argv[2]);
-    smax->utils->apply_mat_perm<int, double>(
-        n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
-        crs_mat_perm->row_ptr, crs_mat_perm->col, crs_mat_perm->val, perm,
-        inv_perm);
+    smax->utils->generate_perm<IT>(n_rows, crs_mat->row_ptr, crs_mat->col, perm,
+                                   inv_perm, argv[2]);
+    smax->utils->apply_mat_perm<IT, VT>(n_rows, crs_mat->row_ptr, crs_mat->col,
+                                        crs_mat->val, crs_mat_perm->row_ptr,
+                                        crs_mat_perm->col, crs_mat_perm->val,
+                                        perm, inv_perm);
 
-    smax->utils->apply_vec_perm<double>(n_rows, b->val, b_perm->val, perm);
-    smax->utils->apply_vec_perm<double>(n_rows, x_smax->val, x_smax_perm->val,
-                                        perm);
+    smax->utils->apply_vec_perm<VT>(n_rows, b->val, b_perm->val, perm);
+    smax->utils->apply_vec_perm<VT>(n_rows, x_smax->val, x_smax_perm->val,
+                                    perm);
 
-    CRSMatrix *crs_mat_perm_D_plus_L = new CRSMatrix;
-    CRSMatrix *crs_mat_perm_U = new CRSMatrix;
-    extract_D_L_U(*crs_mat_perm, *crs_mat_perm_D_plus_L, *crs_mat_perm_U);
+    CRSMatrix<IT, VT> *crs_mat_perm_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_perm_U = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_perm_D_plus_L,
+                          *crs_mat_perm_U);
 
     // Smax SPMV
     REGISTER_GS_DATA("my_lvl_spmv", crs_mat_perm_U, x_smax_perm, tmp_rhs);
@@ -72,7 +83,7 @@ int main(int argc, char *argv[]) {
     *b_perm -= *tmp_rhs;
     // Smax SpTRSV
     REGISTER_GS_DATA("my_lvl_sptrsv", crs_mat_perm_D_plus_L, x_smax_perm,
-                         b_perm);
+                     b_perm);
     smax->kernel("my_lvl_sptrsv")->run();
 
     // MKL SpTRSV
@@ -87,18 +98,31 @@ int main(int argc, char *argv[]) {
     descr_U.mode = SPARSE_FILL_MODE_UPPER;
     descr_U.diag = SPARSE_DIAG_NON_UNIT;
 
-    // Create the matrix handle from CSR data
-    CHECK_MKL_STATUS(mkl_sparse_d_create_csr(
-                         &A, SPARSE_INDEX_BASE_ZERO, crs_mat_D_plus_L->n_rows,
-                         crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->row_ptr,
-                         crs_mat_D_plus_L->row_ptr + 1, crs_mat_D_plus_L->col,
-                         crs_mat_D_plus_L->val),
-                     "mkl_sparse_d_create_csr");
+    // // Create the matrix handle from CSR data
     CHECK_MKL_STATUS(
-        mkl_sparse_d_create_csr(&U, SPARSE_INDEX_BASE_ZERO, crs_mat_U->n_rows,
-                                crs_mat_U->n_cols, crs_mat_U->row_ptr,
-                                crs_mat_U->row_ptr + 1, crs_mat_U->col,
-                                crs_mat_U->val),
+        mkl_sparse_d_create_csr(
+            /* handle    */ &A,
+            /* indexing  */ SPARSE_INDEX_BASE_ZERO,
+            /* rows      */ static_cast<MKL_INT>(crs_mat_D_plus_L->n_rows),
+            /* cols      */ static_cast<MKL_INT>(crs_mat_D_plus_L->n_cols),
+            /* row_start */
+            reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->row_ptr),
+            /* row_end   */
+            reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->row_ptr + 1),
+            /* col_ind   */ reinterpret_cast<MKL_INT *>(crs_mat_D_plus_L->col),
+            /* values    */ crs_mat_D_plus_L->val),
+        "mkl_sparse_d_create_csr");
+
+    CHECK_MKL_STATUS(
+        mkl_sparse_d_create_csr(
+            /* handle    */ &U,
+            /* indexing  */ SPARSE_INDEX_BASE_ZERO,
+            /* rows      */ static_cast<MKL_INT>(crs_mat_U->n_rows),
+            /* cols      */ static_cast<MKL_INT>(crs_mat_U->n_cols),
+            /* row_start */ reinterpret_cast<MKL_INT *>(crs_mat_U->row_ptr),
+            /* row_end   */ reinterpret_cast<MKL_INT *>(crs_mat_U->row_ptr + 1),
+            /* col_ind   */ reinterpret_cast<MKL_INT *>(crs_mat_U->col),
+            /* values    */ crs_mat_U->val),
         "mkl_sparse_d_create_csr");
 
     // Optimize the matrix
@@ -106,7 +130,8 @@ int main(int argc, char *argv[]) {
     CHECK_MKL_STATUS(mkl_sparse_optimize(U), "mkl_sparse_optimize");
 
     CHECK_MKL_STATUS(mkl_sparse_d_mv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, U,
-                                     descr_U, x_mkl->val, 0.0, tmp_rhs_mkl->val),
+                                     descr_U, x_mkl->val, 0.0,
+                                     tmp_rhs_mkl->val),
                      "mkl_sparse_d_mv");
     *b_mkl -= *tmp_rhs_mkl;
     CHECK_MKL_STATUS(mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A,
@@ -114,18 +139,18 @@ int main(int argc, char *argv[]) {
                      "mkl_sparse_d_trsv");
 
     // Unpermute and compare
-    smax->utils->apply_vec_perm<double>(n_rows, x_smax_perm->val, x_smax->val,
-                                        inv_perm);
-    smax->utils->apply_vec_perm<double>(n_rows, b_perm->val, b->val, inv_perm);
+    smax->utils->apply_vec_perm<VT>(n_rows, x_smax_perm->val, x_smax->val,
+                                    inv_perm);
+    smax->utils->apply_vec_perm<VT>(n_rows, b_perm->val, b->val, inv_perm);
 
-    compare_gs(n_rows, b->val, b_mkl->val, cli_args->matrix_file_name);
-    lx_difference(b_mkl->val, b->val, n_rows, 2,
-                  "Right hand side after b = Ux");
-    compare_gs(n_rows, x_smax->val, x_mkl->val, cli_args->matrix_file_name);
-    lx_difference(x_mkl->val, x_smax->val, n_rows, 2,
-                  "Solution after Lx=b solve");
-    lx_difference(x_mkl->val, x_smax->val, n_rows, 0,
-                  "Solution after Lx=b solve");
+    compare_gs<VT>(n_rows, b->val, b_mkl->val, cli_args->matrix_file_name);
+    lx_difference<VT>(b_mkl->val, b->val, n_rows, 2,
+                      "Right hand side after b = Ux");
+    compare_gs<VT>(n_rows, x_smax->val, x_mkl->val, cli_args->matrix_file_name);
+    lx_difference<VT>(x_mkl->val, x_smax->val, n_rows, 2,
+                      "Solution after Lx=b solve");
+    lx_difference<VT>(x_mkl->val, x_smax->val, n_rows, 0,
+                      "Solution after Lx=b solve");
 
     delete x_smax;
     delete x_smax_perm;

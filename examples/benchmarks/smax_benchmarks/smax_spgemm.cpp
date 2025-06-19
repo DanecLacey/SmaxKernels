@@ -9,15 +9,19 @@
 
 int main(int argc, char *argv[]) {
 
+    using IT = long long int;
+    using VT = double;
+
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPGEMM;
-    CRSMatrix *crs_mat_C = new CRSMatrix();
+    INIT_SPGEMM(IT, VT);
+    CRSMatrix<IT, VT> *crs_mat_C = new CRSMatrix<IT, VT>;
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_spgemm", SMAX::KernelType::SPGEMM);
+    smax->register_kernel("my_spgemm", SMAX::KernelType::SPGEMM,
+                          SMAX::PlatformType::CPU, SMAX::IntType::INT64);
     if (compute_AA) {
         REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_A, crs_mat_C);
     } else {
@@ -54,6 +58,8 @@ int main(int argc, char *argv[]) {
     };
 
     RUN_BENCH;
+
+    smax->utils->print_timers();
 
     // Just to get C_nnz //
     smax->kernel("my_spgemm")->run();

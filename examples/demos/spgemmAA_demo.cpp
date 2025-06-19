@@ -8,6 +8,8 @@
 #include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
 
+using ULL = unsigned long long int;
+
 int main(void) {
     int A_n_rows = 3;
     int A_n_cols = 3;
@@ -16,9 +18,10 @@ int main(void) {
     u_int16_t *A_row_ptr = new u_int16_t[A_n_rows + 1]{0, 2, 3, 5};
     float *A_val = new float[A_nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
 
-    int C_n_rows = 0;
-    int C_n_cols = 0;
-    int C_nnz = 0;
+    // NOTE: We require metadata of C is of type "unsigned long long int"
+    ULL C_n_rows = 0;
+    ULL C_n_cols = 0;
+    ULL C_nnz = 0;
     u_int16_t *C_col = nullptr;
     u_int16_t *C_row_ptr = nullptr;
     float *C_val = nullptr;
