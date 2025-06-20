@@ -17,7 +17,8 @@ int main(int argc, char *argv[]) {
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_sptrsv", SMAX::KernelType::SPTRSV);
+    register_kernel<IT, VT>(smax, std::string("my_sptrsv"),
+                            SMAX::KernelType::SPTRSV, SMAX::PlatformType::CPU);
     REGISTER_SPTRSV_DATA("my_sptrsv", crs_mat_D_plus_L, x, b);
 
     // Make lambda, and pass to the benchmarking harness

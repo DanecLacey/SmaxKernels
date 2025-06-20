@@ -41,7 +41,8 @@ int main(int argc, char *argv[]) {
     DenseMatrix<VT> *x = new DenseMatrix<VT>(A_scs_n_elements, 1, 1.0);
     DenseMatrix<VT> *y = new DenseMatrix<VT>(A_scs_n_elements, 1, 0.0);
 
-    smax->register_kernel("my_scs_spmv", SMAX::KernelType::SPMV);
+    register_kernel<IT, VT>(smax, std::string("my_scs_spmv"),
+                            SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
 
     // A is expected to be in the SCS format
     smax->kernel("my_scs_spmv")->set_mat_scs(true);

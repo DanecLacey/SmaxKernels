@@ -20,8 +20,8 @@ int main(int argc, char *argv[]) {
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    smax->register_kernel("my_spgemm", SMAX::KernelType::SPGEMM,
-                          SMAX::PlatformType::CPU, SMAX::IntType::INT64);
+    register_kernel<IT, VT>(smax, std::string("my_spgemm"),
+                            SMAX::KernelType::SPGEMM, SMAX::PlatformType::CPU);
     if (compute_AA) {
         REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_A, crs_mat_C);
     } else {

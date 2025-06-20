@@ -44,6 +44,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     endif()
     # Set the debug level as a compile definition
     set_property(CACHE DEBUG_LEVEL PROPERTY STRINGS 1 2 3)
+    add_compile_definitions(DEBUG_MODE)
     add_compile_definitions(DEBUG_LEVEL=${DEBUG_LEVEL})
     message(STATUS "Debug Level: ${DEBUG_LEVEL}")
 endif()
