@@ -5,33 +5,36 @@
 
 int main(int argc, char *argv[]) {
 
+    using IT = int;
+    using VT = double;
+
     init_pin(); // avoid counting pinning in timing
 
-    INIT_SPGEMM;
-    CRSMatrix *crs_mat_C = new CRSMatrix();
+    INIT_SPGEMM(IT, VT);
+    CRSMatrix<IT, VT> *crs_mat_C = new CRSMatrix<IT, VT>();
 
-    Eigen::SparseMatrix<double> eigen_A(crs_mat_A->n_rows, crs_mat_A->n_cols);
-    Eigen::SparseMatrix<double> eigen_B(crs_mat_B->n_rows, crs_mat_B->n_cols);
+    Eigen::SparseMatrix<VT> eigen_A(crs_mat_A->n_rows, crs_mat_A->n_cols);
+    Eigen::SparseMatrix<VT> eigen_B(crs_mat_B->n_rows, crs_mat_B->n_cols);
     {
-        std::vector<Eigen::Triplet<double>> triA;
+        std::vector<Eigen::Triplet<VT>> triA;
         triA.reserve(crs_mat_A->nnz);
-        for (int i = 0; i < crs_mat_A->n_rows; ++i)
-            for (int k = crs_mat_A->row_ptr[i]; k < crs_mat_A->row_ptr[i + 1];
+        for (IT i = 0; i < crs_mat_A->n_rows; ++i)
+            for (IT k = crs_mat_A->row_ptr[i]; k < crs_mat_A->row_ptr[i + 1];
                  ++k)
                 triA.emplace_back(i, crs_mat_A->col[k], crs_mat_A->val[k]);
         eigen_A.setFromTriplets(triA.begin(), triA.end());
     }
     {
-        std::vector<Eigen::Triplet<double>> triB;
+        std::vector<Eigen::Triplet<VT>> triB;
         triB.reserve(crs_mat_B->nnz);
-        for (int i = 0; i < crs_mat_B->n_rows; ++i)
-            for (int k = crs_mat_B->row_ptr[i]; k < crs_mat_B->row_ptr[i + 1];
+        for (IT i = 0; i < crs_mat_B->n_rows; ++i)
+            for (IT k = crs_mat_B->row_ptr[i]; k < crs_mat_B->row_ptr[i + 1];
                  ++k)
                 triB.emplace_back(i, crs_mat_B->col[k], crs_mat_B->val[k]);
         eigen_B.setFromTriplets(triB.begin(), triB.end());
     }
 
-    Eigen::SparseMatrix<double> eigen_C(crs_mat_A->n_rows, crs_mat_B->n_cols);
+    Eigen::SparseMatrix<VT> eigen_C(crs_mat_A->n_rows, crs_mat_B->n_cols);
 
     // --- Benchmark metadata ---
     std::string bench_name = "eigen_spgemm";

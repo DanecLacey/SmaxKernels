@@ -5,24 +5,27 @@
 
 int main(int argc, char *argv[]) {
 
+    using IT = int;
+    using VT = double;
+
     init_pin(); // avoid counting pinning in timing
 
-    INIT_SPMV;
+    INIT_SPMV(IT, VT);
 
     Eigen::VectorXd eigen_x = Eigen::VectorXd::Constant(crs_mat->n_cols, 1.0);
     Eigen::VectorXd eigen_y = Eigen::VectorXd::Constant(crs_mat->n_rows, 0.0);
 
     // Wrap your CRS data into an Eigen SparseMatrix
-    Eigen::SparseMatrix<double, Eigen::RowMajor> eigen_mat(crs_mat->n_rows,
-                                                           crs_mat->n_cols);
-    std::vector<Eigen::Triplet<double>> triplets;
+    Eigen::SparseMatrix<VT, Eigen::RowMajor> eigen_mat(crs_mat->n_rows,
+                                                       crs_mat->n_cols);
+    std::vector<Eigen::Triplet<VT>> triplets;
     triplets.reserve(crs_mat->nnz);
 
-    for (int i = 0; i < crs_mat->n_rows; ++i) {
-        for (int idx = crs_mat->row_ptr[i]; idx < crs_mat->row_ptr[i + 1];
+    for (IT i = 0; i < crs_mat->n_rows; ++i) {
+        for (IT idx = crs_mat->row_ptr[i]; idx < crs_mat->row_ptr[i + 1];
              ++idx) {
-            int j = crs_mat->col[idx];
-            double val = crs_mat->val[idx];
+            IT j = crs_mat->col[idx];
+            VT val = crs_mat->val[idx];
             triplets.emplace_back(i, j, val);
         }
     }

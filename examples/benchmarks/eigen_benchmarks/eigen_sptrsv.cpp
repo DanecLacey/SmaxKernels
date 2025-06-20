@@ -5,23 +5,26 @@
 
 int main(int argc, char *argv[]) {
 
+    using IT = int;
+    using VT = double;
+
     init_pin(); // avoid counting pinning in timing
 
-    INIT_SPTRSV;
+    INIT_SPTRSV(IT, VT);
 
     Eigen::VectorXd b = Eigen::VectorXd::Constant(crs_mat->n_cols, 1.0);
     Eigen::VectorXd x = Eigen::VectorXd::Zero(crs_mat->n_rows);
 
     // Convert to Eigen SparseMatrix
-    Eigen::SparseMatrix<double> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
-    std::vector<Eigen::Triplet<double>> triplets;
+    Eigen::SparseMatrix<VT> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
+    std::vector<Eigen::Triplet<VT>> triplets;
     triplets.reserve(crs_mat->nnz);
 
-    for (int i = 0; i < crs_mat->n_rows; ++i) {
-        for (int idx = crs_mat->row_ptr[i]; idx < crs_mat->row_ptr[i + 1];
+    for (IT i = 0; i < crs_mat->n_rows; ++i) {
+        for (IT idx = crs_mat->row_ptr[i]; idx < crs_mat->row_ptr[i + 1];
              ++idx) {
-            int j = crs_mat->col[idx];
-            double val = crs_mat->val[idx];
+            IT j = crs_mat->col[idx];
+            VT val = crs_mat->val[idx];
             triplets.emplace_back(i, j, val);
         }
     }
