@@ -11,7 +11,7 @@ namespace SMAX {
 
 template <typename elem_type>
 void transfer_HtoD(const void *h_data, void *&d_data_out, size_t n_elems) {
-#if CUDA_MODE
+#if SMAX_CUDA_MODE
     elem_type *d_data = nullptr;
 
     IF_SMAX_DEBUG(std::cout << "Allocating: " << n_elems << " spaces of size: "
@@ -52,7 +52,7 @@ void transfer_HtoD(const void *h_data, void *&d_data_out, size_t n_elems) {
 template <typename elem_type>
 void transfer_DtoH(const void *d_data, void *&h_data_out, size_t n_elems) {
 
-#if CUDA_MODE
+#if SMAX_CUDA_MODE
     elem_type *h_data = static_cast<elem_type *>(h_data_out);
 
     IF_SMAX_DEBUG(std::cout << "Copying back: " << n_elems

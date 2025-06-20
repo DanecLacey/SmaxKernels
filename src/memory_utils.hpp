@@ -45,13 +45,20 @@ inline ULL get_ull(const Variant &v) {
             if constexpr (!std::is_pointer_v<T>) {
                 // We don't allow negative
                 if constexpr (std::is_signed_v<T>) {
-                    if (x < 0)
+                    if (x < 0) {
+                    // 2025.06.20 DL TODO: Temporary workaround
+#if !SMAX_CUDA_MODE
                         throw std::runtime_error("metadata value < 0");
+#endif
+                    }
                 }
 
                 return static_cast<ULL>(x);
             } else {
+            // 2025.06.20 DL TODO: Temporary workaround
+#if !SMAX_CUDA_MODE
                 throw std::runtime_error("This should never be called");
+#endif
                 return reinterpret_cast<ULL>(x);
             }
         },

@@ -23,7 +23,7 @@ class Kernel {
 
     Kernel(std::unique_ptr<KernelContext> _k_ctx) : k_ctx(std::move(_k_ctx)) {
         this->timers = new Timers;
-#ifdef USE_TIMERS
+#if SMAX_USE_TIMERS
         CREATE_SMAX_STOPWATCH(initialize)
         CREATE_SMAX_STOPWATCH(apply)
         CREATE_SMAX_STOPWATCH(finalize)

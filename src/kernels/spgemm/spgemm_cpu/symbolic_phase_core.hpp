@@ -12,7 +12,7 @@ int symbolic_phase_cpu(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_TIME(timers->get("symbolic_phase")->start());
 
     // suppress unused warnings
-#ifndef USE_TIMERS
+#if !SMAX_USE_TIMERS
     (void)timers;
 #endif
     (void)k_ctx;

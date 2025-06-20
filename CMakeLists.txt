@@ -201,9 +201,10 @@ message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
 # Create the shared library target
 add_library(${LIBRARY_NAME} SHARED ${SOURCES})
 
-target_compile_definitions(${LIBRARY_NAME} PRIVATE
-    CUDA_MODE=${CUDA_MODE}
-    DEBUG_MODE=${DEBUG_MODE}
+# For public use
+target_compile_definitions(${LIBRARY_NAME} PUBLIC
+    SMAX_CUDA_MODE=${CUDA_MODE}
+    SMAX_DEBUG_MODE=${DEBUG_MODE}
 )
 
 # Configure and generate a configuration header
@@ -222,7 +223,7 @@ configure_file(${SMAX_CONFIG_IN} ${SMAX_CONFIG_OUT} @ONLY)
 # Add DEBUG_LEVEL definition to the library only in Debug mode
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(${LIBRARY_NAME}
-        PRIVATE DEBUG_LEVEL=${DEBUG_LEVEL})
+        PUBLIC SMAX_DEBUG_LEVEL=${DEBUG_LEVEL})
 endif()
 
 # Include directories used when building or installing the library
@@ -236,12 +237,12 @@ target_include_directories(${LIBRARY_NAME}
 
 if(CUDAToolkit_FOUND)
     # This tells the host compiler where to find CUDA headers
-    target_include_directories(${LIBRARY_NAME} PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+    target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 
     # Propagate to users
-    target_compile_definitions(${LIBRARY_NAME} PRIVATE CUDA_TPB=${CUDA_TPB})
-    target_include_directories(${LIBRARY_NAME} PRIVATE ${CUDA_INCLUDE_DIRS})
-    target_link_libraries(${LIBRARY_NAME} PRIVATE CUDA::cudart)
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC CUDA_TPB=${CUDA_TPB})
+    target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDA_INCLUDE_DIRS})
+    target_link_libraries(${LIBRARY_NAME} PUBLIC CUDA::cudart)
 
     # Mark .cu files as CUDA language explicitly (optional but safe)
     set_source_files_properties(
@@ -257,8 +258,10 @@ option(USE_LIKWID "Enable LIKWID support" OFF)
 
 # Enable Timers if selected
 if(USE_TIMERS)
-    target_compile_definitions(${LIBRARY_NAME} PUBLIC USE_TIMERS)
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_TIMERS=1)
     message(STATUS "Enabling Timers support.")
+else()
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_TIMERS=0)
 endif()
 
 # Enable and configure OpenMP support
@@ -281,7 +284,7 @@ if(USE_LIKWID)
     find_package(likwid REQUIRED)
     if(likwid_FOUND)
         message(STATUS "LIKWID found, enabling LIKWID support.")
-        target_compile_definitions(${LIBRARY_NAME} PRIVATE USE_LIKWID LIKWID_PERFMON)
+        target_compile_definitions(${LIBRARY_NAME} PUBLIC USE_LIKWID LIKWID_PERFMON)
         include_directories(${LIKWID_INCLUDES})
         set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES})
     else()

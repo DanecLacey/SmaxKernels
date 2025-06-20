@@ -11,17 +11,18 @@ set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # If the lib is built with CUDA, the examples must also be
-if(SMAX_CUDA_MODE) # Detected from smax lib
+if(SMAX_CUDA_MODE_EXPORT) # Detected from smax lib
     find_package(CUDAToolkit REQUIRED)
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
     endif()
     enable_language(CUDA)
+    include_directories(${CUDAToolkit_INCLUDE_DIRS}) # Why is this necessary?
 else()
     # The examples cannot be built with CUDA if the lib was not
     find_package(CUDAToolkit QUIET)
     if (CUDAToolkit_FOUND)
-        message(WARNING "CUDA compiler found, but SMAX_CUDA_MODE=${SMAX_CUDA_MODE}.
+        message(WARNING "CUDA compiler found, but SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.
         Building only CPU examples.")
     endif()
 endif()
@@ -57,14 +58,14 @@ endif()
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
-if (SMAX_CUDA_MODE)
+if (SMAX_CUDA_MODE_EXPORT)
     message(STATUS "CUDA Compiler ID: ${CMAKE_CUDA_COMPILER_ID}")
     message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
 endif()
 
 # Compiler-specific flags
 # GPU builds
-if(SMAX_CUDA_MODE)
+if(SMAX_CUDA_MODE_EXPORT)
     string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID) # Normalize compiler ID for consistent matching
     if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
         set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
@@ -74,7 +75,7 @@ if(SMAX_CUDA_MODE)
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
         endif()
     else()
-        message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_CUDA_MODE=${SMAX_CUDA_MODE}.")
+        message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.")
     endif()
 endif()
 

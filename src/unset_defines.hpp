@@ -1,8 +1,7 @@
 #pragma once
 
-#ifdef USE_TIMERS
-#undef USE_TIMERS
-#endif
+// 2025.06.20 DL TODO: Is this the best way to handle internal defines?
+// It should be possible to just mark as PRIVATE in CMakeLists
 
 #ifdef USE_FAST_MMIO
 #undef USE_FAST_MMIO

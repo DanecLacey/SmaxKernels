@@ -64,7 +64,7 @@ void print_sptrsv_timers(const std::string &kernel_name, const Kernel *kernel_pt
 }
 
 void Utils::print_timers() {
-#ifdef USE_TIMERS
+#if SMAX_USE_TIMERS
     // Compute the longest label
     int left_flush_width = 0;
     for (auto &[kernel_name, kernel_ptr] : this->kernels) {
@@ -119,7 +119,7 @@ void Utils::print_timers() {
     }
 
 #else
-    printf("USE_TIMERS is disabled in SMAX. No timers collected.\n");
+    printf("SMAX_USE_TIMERS=0. No timers collected.\n");
 #endif
 }
 // clang-format on
