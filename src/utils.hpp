@@ -60,6 +60,10 @@ class Utils {
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                        int *inv_perm, std::string type = std::string("BFS"));
 
+    template<typename IT>
+    bool sanity_check_perm(const int A_n_rows, const IT *A_row_ptr, const IT *A_col,
+                           const int *lvl);
+
     template <typename IT, typename VT>
     void apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
                         IT *A_perm_row_ptr, IT *A_perm_col, VT *A_perm_val,
