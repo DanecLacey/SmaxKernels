@@ -536,7 +536,7 @@ bool Utils::sanity_check_perm(const int A_n_rows, const IT *A_row_ptr, const IT 
     
     bool valid = true;
 
-#pragma omp prallel for reduction(&:valid)
+#pragma omp parallel for reduction(&:valid)
     for (int row = 0; row < A_n_rows; row++) {
         for (int idx = A_row_ptr[row]; idx < A_row_ptr[row + 1]; idx++) {
             if (A_col[idx] >= row)
