@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <ostream>
 #include <queue>
 #include <unordered_set>
 
@@ -398,25 +399,20 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr,
     for (int i = 0; i < A_n_rows; i++) {
         colors[i] = -1;
     }
-    // std::cout << "Max row=" << A_n_rows << std::endl;
 
 #pragma omp parallel for schedule(static, 10)
     for (int row = 0; row < A_n_rows; row++) {
-        // std::cout << std::endl << "Row " << row << " ";
         bool repeat = true;
         // Repeat until conflicts resolved
-        // int rep = 0;
+        int rep = 0;
         while (repeat) {
             std::unordered_set<int> forbidden;
             std::unordered_set<int> critical;
-            // std::cout << rep++ << " ";
             for (int idx = A_sym_row_ptr[row]; idx < A_sym_row_ptr[row + 1];
                  idx++) {
                 int col_idx = A_sym_col[idx];
-                // std::cout << "Access to " << col_idx << std::endl;
                 forbidden.insert(colors[col_idx]);
-                if ((colors[col_idx] == -1) &&
-                    ((((int)row / 10) % omp_get_num_threads()) !=
+                if ((((int)(col_idx / 10) % omp_get_num_threads()) !=
                      omp_get_thread_num())) {
                     critical.insert(col_idx);
                 }
@@ -428,14 +424,16 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr,
             if (critical.empty()) {
                 colors[row] = spec_color;
                 repeat = false;
+#pragma omp critical
+                {
                 max_color = std::max(spec_color, max_color);
+                }
             } else {
                 // BEGIN CRITICAL
 #pragma omp critical
                 {
                     bool valid = true;
                     for (const auto &crit : critical) {
-                        // std::cout << "Access to " << crit << std::endl;
                         if (colors[crit] == spec_color) {
                             valid = false;
                             break;
@@ -466,7 +464,7 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
     double b = A_n_rows / num_colors;
     int *color_size = new int[num_colors];
     for (int c = 0; c < num_colors; c++) {
-        color_size = 0;
+        color_size[c] = 0;
     }
     // Count size of each lvl
     for (int idx = 0; idx < A_n_rows; idx++) {
@@ -485,16 +483,14 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
             for (int idx = A_sym_row_ptr[row]; idx < A_sym_row_ptr[row + 1];
                  idx++) {
                 int col_idx = A_sym_col[idx];
-                // std::cout << "Access to " << col_idx << std::endl;
                 forbidden.insert(colors[col_idx]);
-                if ((color_size[colors[col_idx]] > b) &&
-                    ((((int)row / 10) % omp_get_num_threads()) !=
+                if ((((int)(col_idx / 10) % omp_get_num_threads()) !=
                      omp_get_thread_num())) {
                     critical.insert(col_idx);
                 }
             }
             int spec_color = 0;
-            while (forbidden.count(spec_color) || color_size[spec_color] > b) {
+            while (forbidden.count(spec_color) || color_size[spec_color] >= b) {
                 spec_color++;
             }
             if (spec_color >= num_colors) {
@@ -502,8 +498,10 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
             }
             if (critical.empty()) {
                 // Atomic operations
+#pragma omp atomic
                 color_size[colors[row]]--;
                 colors[row] = spec_color;
+#pragma omp atomic
                 color_size[colors[row]]++;
                 repeat = false;
             } else {
@@ -512,7 +510,6 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
                 {
                     bool valid = true;
                     for (const auto &crit : critical) {
-                        // std::cout << "Access to " << crit << std::endl;
                         if (colors[crit] == spec_color) {
                             valid = false;
                             break;
@@ -532,6 +529,27 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
     }
 
     return num_colors;
+}
+
+template <typename IT>
+bool Utils::sanity_check_perm(const int A_n_rows, const IT *A_row_ptr, const IT *A_col, const int *colors){
+    
+    bool valid = true;
+
+#pragma omp parallel for reduction(&:valid)
+    for (int row = 0; row < A_n_rows; row++) {
+        for (int idx = A_row_ptr[row]; idx < A_row_ptr[row + 1]; idx++) {
+            if (A_col[idx] >= row)
+                continue;
+            if (colors[row] == colors[A_col[idx]]) {
+                std::cout << "Found problem in color " << colors[row] << " with nodes " << row << " and " << A_col[idx] << std::endl;
+                valid &= false;
+            }
+        }
+    }
+    
+    return valid;
+
 }
 
 template <typename IT, typename VT>

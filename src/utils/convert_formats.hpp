@@ -2,6 +2,7 @@
 
 #include "../common.hpp"
 #include "utils_common.hpp"
+#include <algorithm>
 
 namespace SMAX {
 
