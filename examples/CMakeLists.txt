@@ -193,8 +193,6 @@ if(USE_EIGEN)
         include(cmake/eigen.cmake)
     endif()
 
-    # Optional: Compiler flags specific to Eigen performance tuning
-    add_compile_options(-mavx2 -mno-avx512f)
 else()
     message(STATUS "Eigen support is disabled.")
 endif()
