@@ -3,10 +3,11 @@
 namespace SMAX::KERNELS::SPMV::CUDA {
 
 template <typename IT, typename VT>
-__global__ void naive_crs_spmv_cuda(const ULL n_rows, const IT *RESTRICT col,
-                                    const IT *RESTRICT row_ptr,
-                                    const VT *RESTRICT val,
-                                    const VT *RESTRICT x, VT *RESTRICT y) {
+__global__ void
+naive_crs_spmv_cuda(const ULL n_rows, const IT *SMAX_RESTRICT col,
+                    const IT *SMAX_RESTRICT row_ptr,
+                    const VT *SMAX_RESTRICT val, const VT *SMAX_RESTRICT x,
+                    VT *SMAX_RESTRICT y) {
 
     ULL row = blockIdx.x * blockDim.x + threadIdx.x;
     if (row < n_rows) {
@@ -21,10 +22,11 @@ __global__ void naive_crs_spmv_cuda(const ULL n_rows, const IT *RESTRICT col,
 }
 
 template <typename IT, typename VT>
-void naive_crs_spmv_cuda_launcher(const ULL n_rows, const IT *RESTRICT col,
-                                  const IT *RESTRICT row_ptr,
-                                  const VT *RESTRICT val, const VT *RESTRICT x,
-                                  VT *RESTRICT y) {
+void naive_crs_spmv_cuda_launcher(const ULL n_rows, const IT *SMAX_RESTRICT col,
+                                  const IT *SMAX_RESTRICT row_ptr,
+                                  const VT *SMAX_RESTRICT val,
+                                  const VT *SMAX_RESTRICT x,
+                                  VT *SMAX_RESTRICT y) {
 
     // CUDA_TPB selected at compile time
     ULL blocks = (n_rows + CUDA_TPB - 1) / CUDA_TPB;

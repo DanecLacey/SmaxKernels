@@ -9,9 +9,9 @@
 #include <stdexcept>
 #include <string>
 
-#define LINE_COUNT_WARNING 100000
-#define LINE_COUNT_ERROR 1000000
-#define BUF_SIZE 1024
+#define SMAX_LINE_COUNT_WARNING 100000
+#define SMAX_LINE_COUNT_ERROR 1000000
+#define SMAX_BUF_SIZE 1024
 
 namespace SMAX {
 std::ofstream ErrorHandler::log_file;
@@ -52,13 +52,13 @@ void ErrorHandler::_log(const std::string &log_message) {
             ++n_lines;
 
             // Some protection against blowing up the file system
-            if (n_lines % LINE_COUNT_WARNING == 0) {
-                std::cerr << "Warning: " << LINE_COUNT_WARNING
+            if (n_lines % SMAX_LINE_COUNT_WARNING == 0) {
+                std::cerr << "Warning: " << SMAX_LINE_COUNT_WARNING
                           << " lines in log file."
                           << " Consider turning off DEBUG_MODE." << std::endl;
             }
-            if (n_lines == LINE_COUNT_ERROR) {
-                std::cerr << "Error: " << LINE_COUNT_ERROR
+            if (n_lines == SMAX_LINE_COUNT_ERROR) {
+                std::cerr << "Error: " << SMAX_LINE_COUNT_ERROR
                           << " lines in log file."
                           << " Turn off DEBUG_MODE. Aborting." << std::endl;
                 close_log();
@@ -105,11 +105,11 @@ void ErrorHandler::log(const std::string &message) { _log(message); }
 
 void ErrorHandler::log(const char *format, ...) {
 
-    char buffer[BUF_SIZE];
+    char buffer[SMAX_BUF_SIZE];
 
     va_list args;
     va_start(args, format);
-    vsnprintf(buffer, BUF_SIZE, format, args);
+    vsnprintf(buffer, SMAX_BUF_SIZE, format, args);
     va_end(args);
 
     _log(std::string(buffer));

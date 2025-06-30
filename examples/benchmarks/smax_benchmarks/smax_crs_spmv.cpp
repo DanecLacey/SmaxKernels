@@ -5,13 +5,14 @@
 
 int main(int argc, char *argv[]) {
 
-    using IT = int;
+    using IT = unsigned int;
     using VT = double;
 
     // Just to take overhead of pinning away from timers
     init_pin();
 
     INIT_SPMV(IT, VT);
+
     DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
     DenseMatrix<VT> *y = new DenseMatrix<VT>(crs_mat->n_rows, 1, 0.0);
 
@@ -42,9 +43,9 @@ int main(int argc, char *argv[]) {
 #endif
 
     std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
         smax->kernel("my_crs_spmv")->run();
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
     RUN_BENCH;

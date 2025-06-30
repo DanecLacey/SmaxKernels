@@ -31,7 +31,9 @@ struct Args {
     Args &operator=(const Args &) = delete;
 };
 
-struct Flags {};
+struct Flags {
+    bool mat_permuted = false;
+};
 
 class SpGEMMErrorHandler : public KernelErrorHandler {
   public:

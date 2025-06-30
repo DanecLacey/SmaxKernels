@@ -7,10 +7,10 @@
 namespace SMAX::KERNELS::SPMV::CPU {
 
 template <typename IT, typename VT>
-inline void naive_crs_spmv(const ULL n_rows, const ULL n_cols,
-                           const IT *RESTRICT col, const IT *RESTRICT row_ptr,
-                           const VT *RESTRICT val, const VT *RESTRICT x,
-                           VT *RESTRICT y) {
+inline void
+naive_crs_spmv(const ULL n_rows, const ULL n_cols, const IT *SMAX_RESTRICT col,
+               const IT *SMAX_RESTRICT row_ptr, const VT *SMAX_RESTRICT val,
+               const VT *SMAX_RESTRICT x, VT *SMAX_RESTRICT y) {
 
     // clang-format off
 #pragma omp parallel for schedule(static)

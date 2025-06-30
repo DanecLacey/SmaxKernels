@@ -11,6 +11,7 @@
     SpGEMMParser *parser = new SpGEMMParser;                                   \
     SpGEMMParser::SpGEMMArgs *cli_args = parser->parse(argc, argv);            \
     bool compute_AA = false;                                                   \
+    bool fuse_phases = cli_args->fuse_phases;                                  \
     if (cli_args->matrix_file_name_A == cli_args->matrix_file_name_B) {        \
         compute_AA = true;                                                     \
     }                                                                          \
@@ -64,12 +65,14 @@ class SpGEMMParser : public CliParser {
     struct SpGEMMArgs : public CliArgs {
         std::string matrix_file_name_A;
         std::string matrix_file_name_B;
+        bool fuse_phases = false;
     };
 
     SpGEMMArgs *parse(int argc, char *argv[]) override {
-        if (argc != 3) {
+        if (argc != 3 && argc != 4) {
             std::cerr << "Usage: " << argv[0]
-                      << " <matrix_file1.mtx> <matrix_file2.mtx>\n";
+                      << " <matrix_file1.mtx> <matrix_file2.mtx> <fuse_phases "
+                         "[0/1]>\n";
             std::exit(EXIT_FAILURE);
         }
 
@@ -77,6 +80,8 @@ class SpGEMMParser : public CliParser {
         auto *SpGEMM_args = new SpGEMMArgs();
         SpGEMM_args->matrix_file_name_A = argv[1];
         SpGEMM_args->matrix_file_name_B = argv[2];
+        if (argc == 4)
+            SpGEMM_args->fuse_phases = argv[3];
         args_ = SpGEMM_args;
         return SpGEMM_args;
     }

@@ -25,6 +25,8 @@ class SpGEMMKernel : public Kernel {
         CREATE_SMAX_STOPWATCH(numerical_phase)
         CREATE_SMAX_STOPWATCH(Numerical_Setup)
         CREATE_SMAX_STOPWATCH(Numerical_Gustavson)
+        CREATE_SMAX_STOPWATCH(Fused_Gustavson)
+        CREATE_SMAX_STOPWATCH(Lvl)
     }
 
     ~SpGEMMKernel() {}
@@ -77,6 +79,12 @@ class SpGEMMKernel : public Kernel {
         this->args->C->crs->row_ptr = std::get<void **>(args[4]);
         this->args->C->crs->val = std::get<void **>(args[5]);
 
+        return 0;
+    }
+
+    // Flag setters
+    int set_mat_perm(bool flag) override {
+        this->flags->mat_permuted = flag;
         return 0;
     }
 

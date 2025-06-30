@@ -10,10 +10,11 @@ namespace SMAX::KERNELS::SPTRSV::CPU {
 
 template <bool Lower, typename IT, typename VT>
 inline void crs_sptrsv_lvl(const int n_levels, const ULL n_cols,
-                           const IT *RESTRICT col, const IT *RESTRICT row_ptr,
-                           const VT *RESTRICT val, const VT *RESTRICT D,
-                           VT *RESTRICT x, const VT *RESTRICT y,
-                           const int *lvl_ptr) {
+                           const IT *SMAX_RESTRICT col,
+                           const IT *SMAX_RESTRICT row_ptr,
+                           const VT *SMAX_RESTRICT val,
+                           const VT *SMAX_RESTRICT D, VT *SMAX_RESTRICT x,
+                           const VT *SMAX_RESTRICT y, const int *lvl_ptr) {
 
     // DL 30.05.25 NOTE: Cannot do too much DRY due to OpenMP
     // clang-format off

@@ -8,10 +8,11 @@ namespace SMAX::KERNELS::SPMV::CPU {
 
 template <typename IT, typename VT>
 inline void naive_scs_spmv(const ULL C, const ULL n_cols, const ULL n_chunks,
-                           const IT *RESTRICT chunk_ptr,
-                           const IT *RESTRICT A_chunk_lengths,
-                           const IT *RESTRICT A_col, const VT *RESTRICT val,
-                           const VT *RESTRICT x, VT *RESTRICT y) {
+                           const IT *SMAX_RESTRICT chunk_ptr,
+                           const IT *SMAX_RESTRICT A_chunk_lengths,
+                           const IT *SMAX_RESTRICT A_col,
+                           const VT *SMAX_RESTRICT val,
+                           const VT *SMAX_RESTRICT x, VT *SMAX_RESTRICT y) {
 
     // clang-format off
 #pragma omp parallel for schedule(static)

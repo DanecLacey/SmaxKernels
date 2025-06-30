@@ -11,9 +11,7 @@
 namespace SMAX {
 
 // To ensure users can pass any int-like metadata
-using Variant = std::variant<signed char, unsigned char, short, unsigned short,
-                             int, unsigned int, long, unsigned long, long long,
-                             unsigned long long, void *, void **>;
+using Variant = std::variant<long long, unsigned long long, void *, void **>;
 using ULL = unsigned long long int; // But they will all be cast to this type
 
 // one‐level overloads

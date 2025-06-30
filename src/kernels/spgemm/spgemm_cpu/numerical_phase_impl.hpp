@@ -7,17 +7,17 @@
 namespace SMAX::KERNELS::SPGEMM::CPU {
 
 template <typename IT, typename VT>
-inline void
-basic_numerical_phase(Timers *timers, const ULL A_n_rows,
-                      const IT *RESTRICT A_col, const IT *RESTRICT A_row_ptr,
-                      const VT *RESTRICT A_val, const IT *RESTRICT B_col,
-                      const IT *RESTRICT B_row_ptr, const VT *RESTRICT B_val,
-                      const ULL C_n_cols, const IT *RESTRICT C_col,
-                      const IT *RESTRICT C_row_ptr, VT *RESTRICT C_val) {
+inline void basic_numerical_phase(
+    Timers *timers, const ULL A_n_rows, const IT *SMAX_RESTRICT A_col,
+    const IT *SMAX_RESTRICT A_row_ptr, const VT *SMAX_RESTRICT A_val,
+    const IT *SMAX_RESTRICT B_col, const IT *SMAX_RESTRICT B_row_ptr,
+    const VT *SMAX_RESTRICT B_val, const ULL C_n_cols,
+    const IT *SMAX_RESTRICT C_col, const IT *SMAX_RESTRICT C_row_ptr,
+    VT *SMAX_RESTRICT C_val) {
 
     IF_SMAX_TIME(timers->get("Numerical_Setup")->start());
 
-    GET_THREAD_COUNT(ULL, n_threads)
+    SMAX_GET_THREAD_COUNT(ULL, n_threads)
 
     // Prepare thread local dense accumulators
     VT **dense_accumulators = new VT *[n_threads];
@@ -28,7 +28,7 @@ basic_numerical_phase(Timers *timers, const ULL A_n_rows,
 
 #pragma omp parallel
     {
-        GET_THREAD_ID(ULL, tid)
+        SMAX_GET_THREAD_ID(ULL, tid)
         for (ULL i = 0; i < C_n_cols; ++i) {
             dense_accumulators[tid][i] = (VT)0.0;
         }
@@ -40,7 +40,7 @@ basic_numerical_phase(Timers *timers, const ULL A_n_rows,
 // Gustavson's algorithm (numerical)
 #pragma omp parallel
     {
-        GET_THREAD_ID(ULL, tid)
+        SMAX_GET_THREAD_ID(ULL, tid)
 #pragma omp for schedule(static)
         for (ULL i = 0; i < A_n_rows; ++i) {
             for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {

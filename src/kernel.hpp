@@ -15,7 +15,19 @@ class Kernel {
         return static_cast<void *>(ptr);
     }
 
-    Variant wrap_arg(int val) { return val; }
+    // Signed integers (e.g., int, short, long, long long)
+    template <typename T>
+    std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>, Variant>
+    wrap_arg(T val) {
+        return static_cast<long long>(val);
+    }
+
+    // Unsigned integers (e.g., unsigned, unsigned long)
+    template <typename T>
+    std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>, Variant>
+    wrap_arg(T val) {
+        return static_cast<unsigned long long>(val);
+    }
 
   public:
     std::unique_ptr<KernelContext> k_ctx;
@@ -74,9 +86,10 @@ class Kernel {
         // runtime (e.g. register A to kernel, but A[i*n_rows] needed)
         // DL 18.06.2025 NOTE: an int can be automatically promoted to unsigned
         // long long int when passed by value, so this is okay
-        CHECK_ERROR(initialize(A_offset, B_offset, C_offset), "initialize");
-        CHECK_ERROR(apply(A_offset, B_offset, C_offset), "apply");
-        CHECK_ERROR(finalize(A_offset, B_offset, C_offset), "finalize");
+        SMAX_CHECK_ERROR(initialize(A_offset, B_offset, C_offset),
+                         "initialize");
+        SMAX_CHECK_ERROR(apply(A_offset, B_offset, C_offset), "apply");
+        SMAX_CHECK_ERROR(finalize(A_offset, B_offset, C_offset), "finalize");
 
         return 0;
     }

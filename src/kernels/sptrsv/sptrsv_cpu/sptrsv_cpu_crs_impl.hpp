@@ -7,10 +7,11 @@
 namespace SMAX::KERNELS::SPTRSV::CPU {
 
 template <bool Lower, typename IT, typename VT>
-inline void naive_crs_sptrsv(const ULL n_rows, const ULL n_cols,
-                             const IT *RESTRICT col, const IT *RESTRICT row_ptr,
-                             const VT *RESTRICT val, const VT *RESTRICT D_val,
-                             VT *RESTRICT x, const VT *RESTRICT y) {
+inline void
+naive_crs_sptrsv(const ULL n_rows, const ULL n_cols,
+                 const IT *SMAX_RESTRICT col, const IT *SMAX_RESTRICT row_ptr,
+                 const VT *SMAX_RESTRICT val, const VT *SMAX_RESTRICT D_val,
+                 VT *SMAX_RESTRICT x, const VT *SMAX_RESTRICT y) {
 
     // clang-format off
     long long int row_start, row_end, row_step;

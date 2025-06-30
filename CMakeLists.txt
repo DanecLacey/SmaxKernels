@@ -37,7 +37,6 @@ set(SOURCES
 # List of header files for installation
 set(COMMON_HEADERS
     src/interface.hpp
-    src/unset_defines.hpp
     src/common.hpp
     src/macros.hpp
     src/memory_utils.hpp
@@ -95,18 +94,18 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # Debug-specific configuration
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(DEBUG_MODE 1)
-    set(DEBUG_LEVEL 1 CACHE STRING "Set the debug verbosity level (1, 2, or 3)")
+    set(SMAX_DEBUG_MODE 1)
+    set(SMAX_DEBUG_LEVEL 1 CACHE STRING "Set the debug verbosity level (1, 2, or 3)")
     # Validate that debug level is within accepted values
-    if(NOT DEBUG_LEVEL MATCHES "^[123]$")
-        message(FATAL_ERROR "DEBUG_LEVEL must be 1, 2, or 3 (got: ${DEBUG_LEVEL})")
+    if(NOT SMAX_DEBUG_LEVEL MATCHES "^[123]$")
+        message(FATAL_ERROR "SMAX_DEBUG_LEVEL must be 1, 2, or 3 (got: ${SMAX_DEBUG_LEVEL})")
     endif()
-    set_property(CACHE DEBUG_LEVEL PROPERTY STRINGS 1 2 3)
-    message(STATUS "Debug Level: ${DEBUG_LEVEL}")
+    set_property(CACHE SMAX_DEBUG_LEVEL PROPERTY STRINGS 1 2 3)
+    message(STATUS "Debug Level: ${SMAX_DEBUG_LEVEL}")
 else()
-    set(DEBUG_MODE 0)
+    set(SMAX_DEBUG_MODE 0)
     # If not Debug, remove it from GUI cache
-    unset(DEBUG_LEVEL CACHE)
+    unset(SMAX_DEBUG_LEVEL CACHE)
 endif()
 
 # If the user didn't specify a compiler, default to g++
@@ -136,7 +135,7 @@ set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 # GPU builds
 if(USE_CUDA)
     if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")   
-        set(CUDA_MODE 1) # All checks pass, and we can use CUDA kernels!
+        set(SMAX_CUDA_MODE 1) # All checks pass, and we can use CUDA kernels!
         set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
         # Set CUDA flags based on build type
         if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -166,7 +165,7 @@ if(USE_CUDA)
         message(FATAL_ERROR "No supported GPU compiler found, even though USE_CUDA=ON.")
     endif()
 else()
-    set(CUDA_MODE 0)
+    set(SMAX_CUDA_MODE 0)
 endif()
 
 set(CXX_DEBUG_BASE_FLAGS "-g -O0 -Wall -Wextra -fno-omit-frame-pointer")
@@ -203,8 +202,8 @@ add_library(${LIBRARY_NAME} SHARED ${SOURCES})
 
 # For public use
 target_compile_definitions(${LIBRARY_NAME} PUBLIC
-    SMAX_CUDA_MODE=${CUDA_MODE}
-    SMAX_DEBUG_MODE=${DEBUG_MODE}
+    SMAX_CUDA_MODE=${SMAX_CUDA_MODE}
+    SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
 )
 
 # Configure and generate a configuration header
@@ -220,10 +219,10 @@ set_property(
 # Process the config header template
 configure_file(${SMAX_CONFIG_IN} ${SMAX_CONFIG_OUT} @ONLY)
 
-# Add DEBUG_LEVEL definition to the library only in Debug mode
+# Add SMAX_DEBUG_LEVEL definition to the library only in Debug mode
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(${LIBRARY_NAME}
-        PUBLIC SMAX_DEBUG_LEVEL=${DEBUG_LEVEL})
+        PUBLIC SMAX_DEBUG_LEVEL=${SMAX_DEBUG_LEVEL})
 endif()
 
 # Include directories used when building or installing the library

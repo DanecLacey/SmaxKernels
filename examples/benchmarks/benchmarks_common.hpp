@@ -97,9 +97,30 @@ void init_pin() {
 }
 
 #ifdef USE_LIKWID
-#define IF_USE_LIKWID(cmd) cmd
+#define PARALLEL_LIKWID_MARKER_START(name)                                     \
+    do {                                                                       \
+        if (!(warmup)) {                                                       \
+            _Pragma("omp parallel") { LIKWID_MARKER_START(name); }             \
+        }                                                                      \
+    } while (0)
+
+#define PARALLEL_LIKWID_MARKER_STOP(name)                                      \
+    do {                                                                       \
+        if (!(warmup)) {                                                       \
+            _Pragma("omp parallel") { LIKWID_MARKER_STOP(name); }              \
+        }                                                                      \
+    } while (0)
+
 #else
-#define IF_USE_LIKWID(cmd)
+
+// No‑ops when LIKWID support is disabled:
+#define PARALLEL_LIKWID_MARKER_START(name)                                     \
+    do {                                                                       \
+    } while (0)
+#define PARALLEL_LIKWID_MARKER_STOP(name)                                      \
+    do {                                                                       \
+    } while (0)
+
 #endif
 
 #define RUN_BENCH                                                              \

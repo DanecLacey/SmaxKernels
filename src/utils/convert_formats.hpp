@@ -112,7 +112,7 @@ int Utils::convert_crs_to_scs(const ST _n_rows, const ST _n_cols, const ST _nnz,
             ++row_local_elem_count[new_row];
 
             // Common errors
-#ifdef DEBUG_MODE
+#ifdef SMAX_DEBUG_MODE
             if (col[idx] >= n_cols) {
                 UtilsErrorHandler::col_ob(col[idx], idx, n_cols,
                                           std::string("convert_crs_to_scs"));

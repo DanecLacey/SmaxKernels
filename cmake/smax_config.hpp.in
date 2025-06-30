@@ -5,6 +5,6 @@
 #define SMAX_VERSION_MINOR @PROJECT_VERSION_MINOR@
 
 /* This is replaced by configure_file() */
-#define SMAX_DEBUG_MODE @DEBUG_MODE@
-#define SMAX_CUDA_MODE @CUDA_MODE@
+#define SMAX_DEBUG_MODE @SMAX_DEBUG_MODE@
+#define SMAX_CUDA_MODE @SMAX_CUDA_MODE@
 // clang-format on

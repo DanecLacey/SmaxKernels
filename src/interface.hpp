@@ -47,7 +47,4 @@ class Interface {
     Kernel *kernel(const std::string &kernel_name);
 };
 
-// Prevent spillage of internal defines
-#include "unset_defines.hpp"
-
 } // namespace SMAX

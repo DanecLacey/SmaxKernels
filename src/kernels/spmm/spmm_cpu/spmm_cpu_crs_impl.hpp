@@ -9,9 +9,10 @@ namespace SMAX::KERNELS::SPMM::CPU {
 template <typename IT, typename VT>
 inline void
 naive_crs_spmm_col_maj(const ULL n_rows, const ULL n_cols,
-                       const IT *RESTRICT col, const IT *RESTRICT row_ptr,
-                       const VT *RESTRICT val, const VT *RESTRICT X,
-                       VT *RESTRICT Y, const ULL block_vector_size) {
+                       const IT *SMAX_RESTRICT col,
+                       const IT *SMAX_RESTRICT row_ptr,
+                       const VT *SMAX_RESTRICT val, const VT *SMAX_RESTRICT X,
+                       VT *SMAX_RESTRICT Y, const ULL block_vector_size) {
 
     // clang-format off
 #pragma omp parallel for schedule(static)
@@ -49,9 +50,10 @@ naive_crs_spmm_col_maj(const ULL n_rows, const ULL n_cols,
 template <typename IT, typename VT>
 inline void
 naive_crs_spmm_row_maj(const ULL n_rows, const ULL n_cols,
-                       const IT *RESTRICT col, const IT *RESTRICT row_ptr,
-                       const VT *RESTRICT val, const VT *RESTRICT X,
-                       VT *RESTRICT Y, const ULL block_vector_size) {
+                       const IT *SMAX_RESTRICT col,
+                       const IT *SMAX_RESTRICT row_ptr,
+                       const VT *SMAX_RESTRICT val, const VT *SMAX_RESTRICT X,
+                       VT *SMAX_RESTRICT Y, const ULL block_vector_size) {
 
     // clang-format off
 #pragma omp parallel for schedule(static)

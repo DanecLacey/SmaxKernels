@@ -7,15 +7,18 @@
 namespace SMAX::KERNELS::SPGEMM::CPU {
 
 template <typename IT, typename VT>
-inline void padded_symbolic_phase(
-    Timers *timers, const ULL A_n_rows, const IT *RESTRICT A_col,
-    const IT *RESTRICT A_row_ptr, const ULL B_n_rows, const ULL B_n_cols,
-    const IT *RESTRICT B_col, const IT *RESTRICT B_row_ptr, ULL &C_n_rows,
-    ULL &C_n_cols, ULL &C_nnz, IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
+inline void padded_symbolic_phase(Timers *timers, const ULL A_n_rows,
+                                  const IT *SMAX_RESTRICT A_col,
+                                  const IT *SMAX_RESTRICT A_row_ptr,
+                                  const ULL B_n_rows, const ULL B_n_cols,
+                                  const IT *SMAX_RESTRICT B_col,
+                                  const IT *SMAX_RESTRICT B_row_ptr,
+                                  ULL &C_n_rows, ULL &C_n_cols, ULL &C_nnz,
+                                  IT *&C_col, IT *&C_row_ptr, VT *&C_val) {
 
     IF_SMAX_TIME(timers->get("Symbolic_Setup")->start());
 
-    GET_THREAD_COUNT(ULL, n_threads);
+    SMAX_GET_THREAD_COUNT(ULL, n_threads);
 
     // Enforce dimensions of C
     C_n_rows = A_n_rows;
@@ -35,7 +38,7 @@ inline void padded_symbolic_phase(
 
 #pragma omp parallel
     {
-        GET_THREAD_ID(ULL, tid)
+        SMAX_GET_THREAD_ID(ULL, tid)
         tl_ub[tid] = 0;
 
 #pragma omp for schedule(static)
@@ -55,7 +58,7 @@ inline void padded_symbolic_phase(
 
     // Allocate padded CRS arrays for C
     ULL upper_nnz_bound = tl_offsets[n_threads];
-    IT *RESTRICT padded_C_col = new IT[upper_nnz_bound];
+    IT *SMAX_RESTRICT padded_C_col = new IT[upper_nnz_bound];
     bool **used_cols = new bool *[n_threads];
     ULL *tl_nnz = new ULL[n_threads];
     ULL *C_nnz_per_row = new ULL[C_n_rows];
@@ -83,7 +86,7 @@ inline void padded_symbolic_phase(
 // Padded Gustavson's algorithm (symbolic)
 #pragma omp parallel
     {
-        GET_THREAD_ID(ULL, tid)
+        SMAX_GET_THREAD_ID(ULL, tid)
         ULL offset = tl_offsets[tid];
         bool *tl_used_cols = used_cols[tid];
 
@@ -146,7 +149,7 @@ inline void padded_symbolic_phase(
 // Compress padded_C_col to C_col
 #pragma omp parallel
     {
-        GET_THREAD_ID(ULL, tid)
+        SMAX_GET_THREAD_ID(ULL, tid)
         ULL offset = C_nnz_displacement[tid];
         for (ULL i = 0; i < tl_nnz[tid]; ++i) {
             C_col[offset + i] = padded_C_col[tl_offsets[tid] + i];

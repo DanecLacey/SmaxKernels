@@ -8,9 +8,10 @@ namespace SMAX::KERNELS::SPTRSM::CPU {
 
 template <bool Lower, typename IT, typename VT>
 inline void naive_crs_col_maj_sptrsm(
-    const ULL n_rows, const ULL n_cols, const IT *RESTRICT col,
-    const IT *RESTRICT row_ptr, const VT *RESTRICT val, const VT *RESTRICT D,
-    VT *RESTRICT X, const VT *RESTRICT Y, const ULL block_vector_size) {
+    const ULL n_rows, const ULL n_cols, const IT *SMAX_RESTRICT col,
+    const IT *SMAX_RESTRICT row_ptr, const VT *SMAX_RESTRICT val,
+    const VT *SMAX_RESTRICT D, VT *SMAX_RESTRICT X, const VT *SMAX_RESTRICT Y,
+    const ULL block_vector_size) {
 
     // clang-format off
     long long int row_start, row_end, row_step;
@@ -54,9 +55,9 @@ inline void naive_crs_col_maj_sptrsm(
 
 template <bool Lower, typename IT, typename VT>
 inline void naive_crs_row_maj_sptrsm(const ULL n_rows, const ULL n_cols,
-                                     const IT *RESTRICT col, const IT *RESTRICT row_ptr,
-                                     const VT *RESTRICT val, const VT *RESTRICT D,
-                                     VT *RESTRICT X, const VT *RESTRICT Y,
+                                     const IT *SMAX_RESTRICT col, const IT *SMAX_RESTRICT row_ptr,
+                                     const VT *SMAX_RESTRICT val, const VT *SMAX_RESTRICT D,
+                                     VT *SMAX_RESTRICT X, const VT *SMAX_RESTRICT Y,
                                      const ULL block_vector_size) {
 
     // clang-format off

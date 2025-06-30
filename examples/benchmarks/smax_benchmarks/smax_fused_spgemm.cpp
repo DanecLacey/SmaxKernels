@@ -20,16 +20,27 @@ int main(int argc, char *argv[]) {
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    register_kernel<IT, VT>(smax, std::string("my_spgemm"),
+    register_kernel<IT, VT>(smax, std::string("my_fused_spgemm"),
                             SMAX::KernelType::SPGEMM, SMAX::PlatformType::CPU);
     if (compute_AA) {
-        REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_A, crs_mat_C);
+        REGISTER_SPGEMM_DATA("my_fused_spgemm", crs_mat_A, crs_mat_A,
+                             crs_mat_C);
     } else {
-        REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_B, crs_mat_C);
+        REGISTER_SPGEMM_DATA("my_fused_spgemm", crs_mat_A, crs_mat_B,
+                             crs_mat_C);
     }
 
+    int *perm = new int[crs_mat_A->n_rows];
+    int *inv_perm = new int[crs_mat_A->n_rows];
+
+    smax->utils->generate_perm<IT>(crs_mat_A->n_rows, crs_mat_A->row_ptr,
+                                   crs_mat_A->col, perm, inv_perm,
+                                   std::string("BFS"));
+
+    smax->kernel("my_fused_spgemm")->set_mat_perm(true);
+
     // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = "smax_spgemm";
+    std::string bench_name = "smax_fused_spgemm";
     double runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -52,7 +63,7 @@ int main(int argc, char *argv[]) {
     std::function<void(bool)> lambda = [bench_name, smax,
                                         crs_mat_C](bool warmup) {
         PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
-        smax->kernel("my_spgemm")->run();
+        smax->kernel("my_fused_spgemm")->run();
         crs_mat_C->clear(); // Need to free memory allocated by SMAX
         PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
@@ -62,7 +73,7 @@ int main(int argc, char *argv[]) {
     smax->utils->print_timers();
 
     // Just to get C_nnz //
-    smax->kernel("my_spgemm")->run();
+    smax->kernel("my_fused_spgemm")->run();
     // Just to get C_nnz //
     std::cout << "A_n_rows: " << crs_mat_A->n_rows << std::endl;
     std::cout << "A_nnz: " << crs_mat_A->nnz << std::endl;

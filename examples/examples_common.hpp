@@ -160,9 +160,10 @@ void operator delete(void *p) {
 
 /*
 Only type supported by this helper function at this time:
-- int, long long int, unsigned long long int
+- int, long int, long long int, unsigned long long int
 - float, double
 */
+// TODO: Clean the mess up!
 template <typename IT, typename VT>
 void register_kernel(SMAX::Interface *smax, std::string kernel_name,
                      SMAX::KernelType KernelType,
@@ -175,6 +176,30 @@ void register_kernel(SMAX::Interface *smax, std::string kernel_name,
         } else if constexpr (std::is_same_v<VT, double>) {
             smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
                                   SMAX::IntType::INT32,
+                                  SMAX::FloatType::FLOAT64);
+        } else {
+            std::cout << "VT not recognized" << std::endl;
+        }
+    } else if constexpr (std::is_same_v<IT, long>) {
+        if constexpr (std::is_same_v<VT, float>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::INT64,
+                                  SMAX::FloatType::FLOAT32);
+        } else if constexpr (std::is_same_v<VT, double>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::INT64,
+                                  SMAX::FloatType::FLOAT64);
+        } else {
+            std::cout << "VT not recognized" << std::endl;
+        }
+    } else if constexpr (std::is_same_v<IT, unsigned int>) {
+        if constexpr (std::is_same_v<VT, float>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::UINT32,
+                                  SMAX::FloatType::FLOAT32);
+        } else if constexpr (std::is_same_v<VT, double>) {
+            smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType,
+                                  SMAX::IntType::UINT32,
                                   SMAX::FloatType::FLOAT64);
         } else {
             std::cout << "VT not recognized" << std::endl;
@@ -508,6 +533,36 @@ template <typename IT, typename VT> struct CRSMatrix {
         row_ptr = new IT[n_rows + 1];
     }
 
+    // --- Copy assignment operator ---
+    CRSMatrix &operator=(CRSMatrix const &other) {
+        if (this != &other) {
+            // 1) Free existing storage
+            delete[] val;
+            delete[] col;
+            delete[] row_ptr;
+
+            // 2) Copy sizes
+            nnz = other.nnz;
+            n_rows = other.n_rows;
+            n_cols = other.n_cols;
+
+            // 3) Allocate new storage
+            if (nnz > 0) {
+                val = new VT[nnz];
+                col = new IT[nnz];
+                row_ptr = new IT[n_rows + 1];
+
+                // 4) Copy data
+                std::copy(other.val, other.val + nnz, val);
+                std::copy(other.col, other.col + nnz, col);
+                std::copy(other.row_ptr, other.row_ptr + n_rows + 1, row_ptr);
+            } else {
+                val = col = row_ptr = nullptr;
+            }
+        }
+        return *this;
+    }
+
     ~CRSMatrix() {
         delete[] val;
         delete[] col;
@@ -642,7 +697,8 @@ template <typename VT> struct DenseMatrix {
 
         val = new VT[n_rows * n_cols];
 
-        // Initialize all elements to val
+// Initialize all elements to val
+#pragma omp parallel for
         for (ULL i = 0; i < n_rows * n_cols; ++i) {
             val[i] = _val;
         }

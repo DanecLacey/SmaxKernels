@@ -8,9 +8,9 @@
 
 namespace SMAX {
 
-#define RESTRICT __restrict__
+#define SMAX_RESTRICT __restrict__
 
-#define CHECK_ERROR(func, label)                                               \
+#define SMAX_CHECK_ERROR(func, label)                                          \
     if (func) {                                                                \
         std::cerr << "Error in " << label << "\n";                             \
         return 1;                                                              \
@@ -18,14 +18,14 @@ namespace SMAX {
 
 #ifdef _OPENMP
 
-#define GET_THREAD_COUNT(Type, n_threads)                                      \
+#define SMAX_GET_THREAD_COUNT(Type, n_threads)                                 \
     Type n_threads = omp_get_max_threads();
-#define GET_THREAD_ID(Type, tid) Type tid = omp_get_thread_num();
+#define SMAX_GET_THREAD_ID(Type, tid) Type tid = omp_get_thread_num();
 
 #else
 
-#define GET_THREAD_COUNT(Type, n_threads) Type n_threads = 1;
-#define GET_THREAD_ID(Type, tid) Type tid = 0;
+#define SMAX_GET_THREAD_COUNT(Type, n_threads) Type n_threads = 1;
+#define SMAX_GET_THREAD_ID(Type, tid) Type tid = 0;
 
 #endif
 

@@ -61,9 +61,9 @@ int main(int argc, char *argv[]) {
 #endif
 
     std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
         smax->kernel("my_sptrsv_lvl")->run();
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
     RUN_BENCH;
