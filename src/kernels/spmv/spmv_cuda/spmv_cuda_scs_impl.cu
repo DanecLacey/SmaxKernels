@@ -46,40 +46,41 @@ void naive_scs_spmv_cuda_launcher(const ULL C, const ULL n_chunks,
     // Synchronize device to ensure kernel execution completes
     cudaError_t err = cudaDeviceSynchronize();
     if (err != cudaSuccess) {
-        fprintf(stderr, "CUDA error in naive_crs_spmv_cuda_launcher: %s\n",
+        fprintf(stderr, "CUDA error in naive_scs_spmv_cuda_launcher: %s\n",
                 cudaGetErrorString(err));
         std::exit(EXIT_FAILURE); // or throw an exception depending on your
                                  // error model
     }
 }
 
-// Explicit instantiations
-// clang-format off
-template __global__ void naive_scs_spmv_cuda<int16_t, float>(const ULL, const ULL, const int16_t*, const int16_t*, const int16_t*, const float*, const float*, float*);
-template __global__ void naive_scs_spmv_cuda<int16_t, double>(const ULL, const ULL, const int16_t*, const int16_t*, const int16_t*, const double*, const double*, double*);
-template __global__ void naive_scs_spmv_cuda<int32_t, float>(const ULL, const ULL, const int32_t*, const int32_t*, const int32_t*, const float*, const float*, float*);
-template __global__ void naive_scs_spmv_cuda<int32_t, double>(const ULL, const ULL, const int32_t*, const int32_t*, const int32_t*, const double*, const double*, double*);
-template __global__ void naive_scs_spmv_cuda<int64_t, float>(const ULL, const ULL, const int64_t*, const int64_t*, const int64_t*, const float*, const float*, float*);
-template __global__ void naive_scs_spmv_cuda<int64_t, double>(const ULL, const ULL, const int64_t*, const int64_t*, const int64_t*, const double*, const double*, double*);
-template __global__ void naive_scs_spmv_cuda<uint16_t, float>(const ULL, const ULL, const uint16_t*, const uint16_t*, const uint16_t*, const float*, const float*, float*);
-template __global__ void naive_scs_spmv_cuda<uint16_t, double>(const ULL, const ULL, const uint16_t*, const uint16_t*, const uint16_t*, const double*, const double*, double*);
-template __global__ void naive_scs_spmv_cuda<uint32_t, float>(const ULL, const ULL, const uint32_t*, const uint32_t*, const uint32_t*, const float*, const float*, float*);
-template __global__ void naive_scs_spmv_cuda<uint32_t, double>(const ULL, const ULL, const uint32_t*, const uint32_t*, const uint32_t*, const double*, const double*, double*);
-template __global__ void naive_scs_spmv_cuda<uint64_t, float>(const ULL, const ULL, const uint64_t*, const uint64_t*, const uint64_t*, const float*, const float*, float*);
-template __global__ void naive_scs_spmv_cuda<uint64_t, double>(const ULL, const ULL, const uint64_t*, const uint64_t*, const uint64_t*, const double*, const double*, double*);
+// Macro for cuda kernel instantiation
+#define INSTANTIATE_SCS_SPMV_KERNEL(IT, VT)                                    \
+    template __global__ void naive_scs_spmv_cuda(                              \
+        const ULL, const ULL, const IT *RESTRICT, const IT *RESTRICT,          \
+        const IT *RESTRICT, const VT *RESTRICT, const VT *RESTRICT,            \
+        VT *RESTRICT);
 
-template void naive_scs_spmv_cuda_launcher<int16_t, float>(const ULL, const ULL, const int16_t*, const int16_t*, const int16_t*, const float*, const float*, float*);
-template void naive_scs_spmv_cuda_launcher<int16_t, double>(const ULL, const ULL, const int16_t*, const int16_t*, const int16_t*, const double*, const double*, double*);
-template void naive_scs_spmv_cuda_launcher<int32_t, float>(const ULL, const ULL, const int32_t*, const int32_t*, const int32_t*, const float*, const float*, float*);
-template void naive_scs_spmv_cuda_launcher<int32_t, double>(const ULL, const ULL, const int32_t*, const int32_t*, const int32_t*, const double*, const double*, double*);
-template void naive_scs_spmv_cuda_launcher<int64_t, float>(const ULL, const ULL, const int64_t*, const int64_t*, const int64_t*, const float*, const float*, float*);
-template void naive_scs_spmv_cuda_launcher<int64_t, double>(const ULL, const ULL, const int64_t*, const int64_t*, const int64_t*, const double*, const double*, double*);
-template void naive_scs_spmv_cuda_launcher<uint16_t, float>(const ULL, const ULL, const uint16_t*, const uint16_t*, const uint16_t*, const float*, const float*, float*);
-template void naive_scs_spmv_cuda_launcher<uint16_t, double>(const ULL, const ULL, const uint16_t*, const uint16_t*, const uint16_t*, const double*, const double*, double*);
-template void naive_scs_spmv_cuda_launcher<uint32_t, float>(const ULL, const ULL, const uint32_t*, const uint32_t*, const uint32_t*, const float*, const float*, float*);
-template void naive_scs_spmv_cuda_launcher<uint32_t, double>(const ULL, const ULL, const uint32_t*, const uint32_t*, const uint32_t*, const double*, const double*, double*);
-template void naive_scs_spmv_cuda_launcher<uint64_t, float>(const ULL, const ULL, const uint64_t*, const uint64_t*, const uint64_t*, const float*, const float*, float*);
-template void naive_scs_spmv_cuda_launcher<uint64_t, double>(const ULL, const ULL, const uint64_t*, const uint64_t*, const uint64_t*, const double*, const double*, double*);
-// clang-format on
+// Macro for launcher instantiation
+#define INSTANTIATE_SCS_SPMV_LAUNCHER(IT, VT)                                  \
+    template void naive_scs_spmv_cuda_launcher(                                \
+        const ULL, const ULL, const IT *RESTRICT, const IT *RESTRICT,          \
+        const IT *RESTRICT, const VT *RESTRICT, const VT *RESTRICT,            \
+        VT *RESTRICT)
+
+// Master macro to instantiate both
+#define INSTANTIATE_SCS_SPMV(IndexType, ValueType)                             \
+    INSTANTIATE_SCS_SPMV_KERNEL(IndexType, ValueType);                         \
+    INSTANTIATE_SCS_SPMV_LAUNCHER(IndexType, ValueType);
+
+#define INSTANTIATE_SCS_SPMV_FLOAT_DOUBLE(IndexType)                           \
+    INSTANTIATE_SCS_SPMV(IndexType, float);                                    \
+    INSTANTIATE_SCS_SPMV(IndexType, double);
+
+INSTANTIATE_SCS_SPMV_FLOAT_DOUBLE(int16_t);
+INSTANTIATE_SCS_SPMV_FLOAT_DOUBLE(int32_t);
+INSTANTIATE_SCS_SPMV_FLOAT_DOUBLE(int64_t);
+INSTANTIATE_SCS_SPMV_FLOAT_DOUBLE(uint16_t);
+INSTANTIATE_SCS_SPMV_FLOAT_DOUBLE(uint32_t);
+INSTANTIATE_SCS_SPMV_FLOAT_DOUBLE(uint64_t);
 
 } // namespace SMAX::KERNELS::SPMV::CUDA
