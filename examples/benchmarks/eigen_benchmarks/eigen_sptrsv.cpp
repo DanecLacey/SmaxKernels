@@ -52,9 +52,9 @@ int main(int argc, char *argv[]) {
 
     std::function<void(bool)> lambda = [bench_name, &eigen_mat, &x,
                                         &b](bool warmup) {
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
         x.noalias() = eigen_mat.triangularView<Eigen::Lower>().solve(b);
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
     RUN_BENCH;
