@@ -12,6 +12,7 @@
     SpGEMMParser::SpGEMMArgs *cli_args = parser->parse(argc, argv);            \
     bool compute_AA = false;                                                   \
     bool fuse_phases = cli_args->fuse_phases;                                  \
+    if(fuse_phases) {printf("Fusing SpGEMM phases\n");}                        \
     if (cli_args->matrix_file_name_A == cli_args->matrix_file_name_B) {        \
         compute_AA = true;                                                     \
     }                                                                          \

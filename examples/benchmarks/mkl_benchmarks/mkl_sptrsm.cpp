@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "mkl_sptrsm";
-    double runtime = 0.0;
+    float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
 #ifdef _OPENMP
@@ -72,11 +72,11 @@ int main(int argc, char *argv[]) {
 
     std::function<void(bool)> lambda = [bench_name, A, descr, X, crs_mat,
                                         n_vectors, B](bool warmup) {
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
         mkl_sparse_d_trsm(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr,
                           SPARSE_LAYOUT_COLUMN_MAJOR, B->val, n_vectors,
                           crs_mat->n_rows, X->val, crs_mat->n_rows);
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
     RUN_BENCH;
