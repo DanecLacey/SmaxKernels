@@ -16,8 +16,6 @@ inline void lvl_seq_traversal(
     ULL &C_n_rows, ULL &C_n_cols, ULL &C_nnz, IT *&C_col, IT *&C_row_ptr,
     VT *&C_val, const int *lvl_ptr, const int n_levels) {
 
-    KernelErrorHandler::not_implemented("lvl_seq_traversal");
-
     IF_SMAX_TIME(timers->get("Symbolic_Setup")->start());
 
     SMAX_GET_THREAD_COUNT(ULL, n_threads);
@@ -154,49 +152,6 @@ inline void lvl_seq_traversal(
         }
     }
 
-    // old attempt
-    //     // clang-format off
-    //     // For each level, process the relevant neighbor levels
-    //     for (int lvl_idx = 0; lvl_idx < n_levels; ++lvl_idx) {
-    //         int start_lvl = std::max(0, lvl_idx - 1);
-    //         int end_lvl = std::min(n_levels - 1, lvl_idx + 1);
-
-    //         for (int neighbor_lvl = start_lvl; neighbor_lvl <= end_lvl;
-    //         ++neighbor_lvl) {
-    //             ULL row_nnz, previous_nnz, local_nnz = 0;
-    //             for (int row_idx = lvl_ptr[neighbor_lvl]; row_idx <
-    //             lvl_ptr[neighbor_lvl + 1]; ++row_idx) {
-    // // 1. Symbolically make L(lvl_idx)
-    //                 row_nnz = 0;
-    //                 previous_nnz = local_nnz;
-    //                 local_nnz = 0;
-    //                 for (IT j = A_row_ptr[row_idx]; j < A_row_ptr[row_idx +
-    //                 1]; ++j) {
-    //                     IT left_col = A_col[j];
-    //                     IT b_start = B_row_ptr[left_col];   // To help
-    //                     compiler IT b_end = B_row_ptr[left_col + 1]; // To
-    //                     help compiler for (IT k = b_start; k < b_end; ++k) {
-    //                         IT right_col = B_col[k];
-    //                         if (!used_cols[right_col]) {
-    //                             used_cols[right_col] = true;
-    //                             _C_col[local_nnz++] = right_col; // Write
-    //                             into overestimated array
-    //                             ++row_nnz;
-    //                         }
-    //                     }
-    //                 }
-    // // 1.1. Reset used_cols for next row
-    //                 for (ULL j = previous_nnz; j < local_nnz; ++j) {
-    //                     used_cols[_C_col[j]] = false;
-    //                 }
-    // // 1.2. Append nnz_per_row to row_ptr
-    //                 C_nnz += row_nnz;
-    //                 C_row_ptr[row_idx + 1] = C_row_ptr[row_idx] + row_nnz;
-    //             }
-    //         }
-    //     }
-    // clang-format on
-
     IF_SMAX_TIME(timers->get("Fused_Gustavson")->stop());
     IF_SMAX_TIME(timers->get("Compress")->start());
 
@@ -219,12 +174,27 @@ inline void lvl_seq_traversal(
 }
 
 template <typename IT, typename VT>
+inline void lvl_parallel_traversal(
+    Timers *timers, const ULL A_n_rows, const ULL A_n_cols, const ULL A_nnz,
+    const IT *SMAX_RESTRICT A_col, const IT *SMAX_RESTRICT A_row_ptr,
+    const VT *SMAX_RESTRICT A_val, const ULL B_n_rows, const ULL B_n_cols,
+    const ULL B_nnz, const IT *SMAX_RESTRICT B_col,
+    const IT *SMAX_RESTRICT B_row_ptr, const VT *SMAX_RESTRICT B_val,
+    ULL &C_n_rows, ULL &C_n_cols, ULL &C_nnz, IT *&C_col, IT *&C_row_ptr,
+    VT *&C_val, const int *lvl_ptr, const int n_levels) {
+
+    KernelErrorHandler::not_implemented("lvl_parallel_traversal");
+}
+
+template <typename IT, typename VT>
 inline void lvl_fused_naive(
     Timers *timers, const ULL A_n_rows, const IT *SMAX_RESTRICT A_col,
     const IT *SMAX_RESTRICT A_row_ptr, const ULL B_n_rows, const ULL B_n_cols,
     const IT *SMAX_RESTRICT B_col, const IT *SMAX_RESTRICT B_row_ptr,
     ULL &C_n_rows, ULL &C_n_cols, ULL &C_nnz, IT *&C_col, IT *&C_row_ptr,
     VT *&C_val, const int *lvl_ptr, const int n_levels) {
+
+    KernelErrorHandler::not_implemented("lvl_fused_naive");
 
     // ULL *C_nnz_per_row = new ULL[C_n_rows];
     // bool **used_cols = new bool *[n_threads];
