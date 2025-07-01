@@ -5,6 +5,7 @@ file(GLOB ALL_CPP_FILES *.cpp)
 set(CPP_FILES "")
 
 if(NOT (SMAX_CUDA_MODE_EXPORT AND CUDAToolkit_FOUND))
+    # Skip everything containing keyword "cuda"
     set(SKIP_ME "cuda")
     foreach(file ${ALL_CPP_FILES})
         get_filename_component(FILENAME "${file}" NAME)

@@ -14,8 +14,9 @@ void transfer_HtoD(const void *h_data, void *&d_data_out, size_t n_elems) {
 #if SMAX_CUDA_MODE
     elem_type *d_data = nullptr;
 
-    IF_SMAX_DEBUG(std::cout << "Allocating: " << n_elems << " spaces of size: "
-                            << sizeof(elem_type) << " on device" << std::endl);
+    IF_SMAX_DEBUG_3(std::cout << "Allocating: " << n_elems
+                              << " spaces of size: " << sizeof(elem_type)
+                              << " on device" << std::endl);
 
     cudaError_t err = cudaMalloc(reinterpret_cast<void **>(&d_data),
                                  n_elems * sizeof(elem_type));
@@ -55,9 +56,9 @@ void transfer_DtoH(const void *d_data, void *&h_data_out, size_t n_elems) {
 #if SMAX_CUDA_MODE
     elem_type *h_data = static_cast<elem_type *>(h_data_out);
 
-    IF_SMAX_DEBUG(std::cout << "Copying back: " << n_elems
-                            << " spaces of size: " << sizeof(elem_type)
-                            << " on host" << std::endl);
+    IF_SMAX_DEBUG_3(std::cout << "Copying back: " << n_elems
+                              << " spaces of size: " << sizeof(elem_type)
+                              << " on host" << std::endl);
 
     cudaError_t err = cudaMemcpy(h_data, d_data, n_elems * sizeof(elem_type),
                                  cudaMemcpyDeviceToHost);

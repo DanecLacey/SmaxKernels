@@ -25,6 +25,23 @@
     smax->kernel(kernel_name)->register_B(mat->n_cols, X->val);                \
     smax->kernel(kernel_name)->register_C(mat->n_rows, Y->val);
 
+#ifdef CUDA_MODE
+#define PRINT_SPMV_BENCH                                                       \
+    std::cout << "----------------" << std::endl;                              \
+    std::cout << "--" << bench_name << " Bench--" << std::endl;                \
+    std::cout << cli_args->matrix_file_name << " with " << CUDA_TPB            \
+              << " thread(s) per block" << std::endl;                          \
+    std::cout << "Runtime: " << runtime << std::endl;                          \
+    std::cout << "Iterations: " << n_iter << std::endl;                        \
+                                                                               \
+    long flops_per_iter = crs_mat->nnz * SPMV_FLOPS_PER_NZ;                    \
+    double iter_per_second = n_iter / runtime;                                 \
+                                                                               \
+    std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
+              << " [GF/s]" << std::endl;                                       \
+    std::cout << "----------------" << std::endl;
+#else
+
 #define PRINT_SPMV_BENCH                                                       \
     std::cout << "----------------" << std::endl;                              \
     std::cout << "--" << bench_name << " Bench--" << std::endl;                \
@@ -39,6 +56,8 @@
     std::cout << "Performance: " << flops_per_iter * iter_per_second * F_TO_GF \
               << " [GF/s]" << std::endl;                                       \
     std::cout << "----------------" << std::endl;
+
+#endif
 
 class SpMVParser : public CliParser {
   public:

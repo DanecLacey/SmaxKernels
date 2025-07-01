@@ -17,6 +17,7 @@ if(SMAX_CUDA_MODE_EXPORT) # Detected from smax lib
         set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
     endif()
     enable_language(CUDA)
+    add_compile_definitions(CUDA_MODE)
     include_directories(${CUDAToolkit_INCLUDE_DIRS}) # Why is this necessary?
 else()
     # The examples cannot be built with CUDA if the lib was not

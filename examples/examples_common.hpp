@@ -25,6 +25,10 @@ namespace fmm = fast_matrix_market;
 #include "mmio.hpp"
 #endif
 
+#ifdef __CUDACC__
+#include <cuda_runtime.h>
+#endif
+
 using ULL = unsigned long long int;
 
 #define PRINT_WIDTH 18
@@ -43,6 +47,16 @@ using ULL = unsigned long long int;
         fprintf(stderr, "ERROR: %s\n", (message));                             \
         exit(EXIT_FAILURE);                                                    \
     }
+
+#define CUDA_CHECK(cmd)                                                        \
+    do {                                                                       \
+        cudaError_t e = cmd;                                                   \
+        if (e != cudaSuccess) {                                                \
+            fprintf(stderr, "CUDA error %s:%d: %s\n", __FILE__, __LINE__,      \
+                    cudaGetErrorString(e));                                    \
+            exit(EXIT_FAILURE);                                                \
+        }                                                                      \
+    } while (0)
 
 #ifdef DEBUG_MODE
 #define DIFF_STATUS_MACRO(relative_diff, working_file)                         \

@@ -1,5 +1,24 @@
 # Get all .cpp files in the current directory
-file(GLOB CPP_FILES *.cpp)
+file(GLOB ALL_CPP_FILES *.cpp)
+
+# Create filtered list
+set(CPP_FILES "")
+
+if(NOT (SMAX_CUDA_MODE_EXPORT AND CUDAToolkit_FOUND))
+    # Skip everything containing keyword "cuda"
+    set(SKIP_ME "cuda")
+    foreach(file ${ALL_CPP_FILES})
+        get_filename_component(FILENAME "${file}" NAME)
+        string(FIND "${FILENAME}" "${SKIP_ME}" FOUND)
+        if(FOUND EQUAL -1)
+            list(APPEND CPP_FILES "${file}")
+        else()
+            message(STATUS "Skipping ${file} (filename contains '${SKIP_ME}')")
+        endif()
+    endforeach()
+else()
+    set(CPP_FILES ${ALL_CPP_FILES})
+endif()
 
 # Create a list to store target names
 set(smax_benchmarks_targets)

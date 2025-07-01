@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "smax_scs_spmv";
-    double runtime = 0.0;
+    float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
 #ifdef _OPENMP
