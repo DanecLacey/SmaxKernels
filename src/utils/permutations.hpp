@@ -140,12 +140,7 @@ int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
 
 template <typename IT>
 int Utils::generate_perm_row_sweep(int A_n_rows, IT *A_sym_row_ptr,
-                                   IT *A_sym_col, int *perm, int *inv_perm,
-                                   int *lvl) {
-
-    // suppress compiler warnings
-    (void)perm;
-    (void)inv_perm;
+                                   IT *A_sym_col, int *lvl) {
 
     int max_level = 0;
 
@@ -167,15 +162,13 @@ int Utils::generate_perm_row_sweep(int A_n_rows, IT *A_sym_row_ptr,
 
 template <typename IT>
 int Utils::generate_perm_BFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
-                             int *perm, int *inv_perm, int *lvl) {
-
-    // suppress compiler warnings
-    (void)inv_perm;
+                             int *perm, int *lvl) {
 
     std::vector<bool> visited(A_n_rows, false);
 
     // Start queueing the island roots
     std::queue<int> q; // Queue for BFS
+#pragma omp parallel for schedule(static, 10)
     for (int start = 0; start < A_n_rows; ++start) {
         bool is_root = true;
         for (int nnz = A_sym_row_ptr[start]; nnz < A_sym_row_ptr[start + 1];
@@ -185,6 +178,7 @@ int Utils::generate_perm_BFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                 break;
             }
         }
+#pragma omp critical
         if (is_root) {
             q.push(start);
             visited[start] = true;
@@ -209,6 +203,7 @@ int Utils::generate_perm_BFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
             global_max_level = std::max(global_max_level, current_level);
 
             // Enqueue all unvisited neighbors
+#pragma omp parallel for
             for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; ++jj) {
                 int v = A_sym_col[jj];
                 bool has_dependecy = false;
@@ -219,6 +214,7 @@ int Utils::generate_perm_BFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                         break;
                     }
                 }
+#pragma omp critical
                 if (!visited[v] && !has_dependecy) {
                     visited[v] = true;
                     q.push(v);
@@ -241,6 +237,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
 
     // Step 0: Make array for level information
     int *lvl = new int[A_n_rows];
+#pragma omp parallel for
     for (int i = 0; i < A_n_rows; ++i) {
         lvl[i] = -1;
     }
@@ -255,21 +252,21 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     int n_levels = 0;
     if (type == "RS") {
         n_levels = Utils::generate_perm_row_sweep(
-            A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
+            A_n_rows, A_sym_row_ptr, A_sym_col, lvl);
     } else if (type == "BFS") {
         n_levels = Utils::generate_perm_BFS(A_n_rows, A_sym_row_ptr, A_sym_col,
-                                            perm, inv_perm, lvl);
+                                            perm, lvl);
     } else if (type == "SC") {
         n_levels = Utils::generate_color_perm(A_n_rows, A_sym_row_ptr,
-                                              A_sym_col, perm, inv_perm, lvl);
+                                              A_sym_col, lvl);
     } else if (type == "PC") {
         n_levels = Utils::generate_color_perm_par(
-            A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
+            A_n_rows, A_sym_row_ptr, A_sym_col, lvl);
     } else if (type == "PC_BAL") {
         n_levels = Utils::generate_color_perm_par(
-            A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl);
+            A_n_rows, A_sym_row_ptr, A_sym_col, lvl);
         n_levels = Utils::generate_color_perm_bal(
-            A_n_rows, A_sym_row_ptr, A_sym_col, perm, inv_perm, lvl, n_levels);
+            A_n_rows, A_sym_row_ptr, A_sym_col, lvl, n_levels);
     } else {
         // Throwing errors in lib is not nice.
         // TODO: think of a way to tell user that the wrong type is used.
@@ -278,6 +275,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
 
     // Step 3: Compute permuation - if necessary
     if (type != "BFS") {
+#pragma omp parallel for schedule(static, 10)
         for (int i = 0; i < A_n_rows; i++) {
             perm[i] = i;
         }
@@ -287,6 +285,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     }
 
     // Compute inverse permutation
+#pragma omp parallel for schedule(static, 10)
     for (int i = 0; i < A_n_rows; ++i) {
         inv_perm[perm[i]] = i;
     }
@@ -310,6 +309,9 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
     }
 
+    IF_SMAX_DEBUG(
+        ErrorHandler::log("The generated permutation is %s", (sanity_check_perm(A_n_rows, A_sym_row_ptr, A_sym_col, lvl) ? "valid" : "not valid" )));
+
     uc->n_levels = n_levels;
     delete[] A_sym_row_ptr;
     delete[] A_sym_col;
@@ -321,26 +323,20 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
 // Based on Saad Alg 3.6
 template <typename IT>
 int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
-                               int *perm, int *inv_perm, int *lvl) {
-
-    // suppress compiler warnings
-    (void)perm;
-    (void)inv_perm;
+                               int *lvl) {
 
     int *color = lvl;
     int *usable_colors = new int[A_n_rows];
-    for (int i = 0; i < A_n_rows; i++) {
-        color[i] = -2;
-        usable_colors[i] = -1;
-    }
 
     int max_color = 0;
 
     // Use BFS-like traversal to assign colors
-    //
     // Start queueing the island roots
     std::queue<int> q; // Queue for BFS
+#pragma omp parallel for schedule(static, 10)
     for (int start = 0; start < A_n_rows; ++start) {
+        color[start] = -2;
+        usable_colors[start] = -1;
         bool is_root = true;
         for (int nnz = A_sym_row_ptr[start]; nnz < A_sym_row_ptr[start + 1];
              ++nnz) {
@@ -349,6 +345,7 @@ int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                 break;
             }
         }
+#pragma omp critical
         if (is_root) {
             q.push(start);
             color[start] = -1;
@@ -361,11 +358,15 @@ int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
         q.pop();
 
         // Enqueue all unvisited neighbors
+#pragma omp parallel for
         for (int jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; ++jj) {
             int v = A_sym_col[jj];
             if (color[v] == -2) {
                 color[v] = -1;
-                q.push(v);
+#pragma omp critical
+                {
+                    q.push(v);
+                }
             } else if (color[v] >= 0) {
                 usable_colors[color[v]] = u;
             }
@@ -387,15 +388,11 @@ int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
 // platforms'' C. Giannoula, A. Peppas, G. Goumas, N. Koziris
 template <typename IT>
 int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr,
-                                   IT *A_sym_col, int *perm, int *inv_perm,
-                                   int *lvl) {
-
-    // suppress compiler warnings
-    (void)perm;
-    (void)inv_perm;
+                                   IT *A_sym_col, int *lvl) {
 
     int max_color = 0;
     int *colors = lvl;
+#pragma omp parallel for schedule(static, 10)
     for (int i = 0; i < A_n_rows; i++) {
         colors[i] = -1;
     }
@@ -457,8 +454,7 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr,
 // platforms'' C. Giannoula, A. Peppas, G. Goumas, N. Koziris
 template <typename IT>
 int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
-                                   IT *A_sym_col, int *perm, int *inv_perm,
-                                   int *lvl, int num_colors) {
+                                   IT *A_sym_col, int *lvl, int num_colors) {
 
     int *colors = lvl;
     double b = A_n_rows / num_colors;
@@ -467,6 +463,7 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
         color_size[c] = 0;
     }
     // Count size of each lvl
+#pragma omp parallel for schedule(static, 10)
     for (int idx = 0; idx < A_n_rows; idx++) {
         color_size[colors[idx]]++;
     }
@@ -571,7 +568,7 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
         A_perm_row_ptr[row + 1] = perm_idx;
     }
 
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static, 10)
     for (int row = 0; row < A_n_rows; ++row) {
         IT perm_row = perm[row];
 
