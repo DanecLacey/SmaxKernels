@@ -56,9 +56,9 @@ int main(int argc, char *argv[]) {
 
     std::function<void(bool)> lambda = [bench_name, eigen_mat, eigen_x,
                                         &eigen_y](bool warmup) {
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_START(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
         eigen_y.noalias() = eigen_mat * eigen_x;
-        IF_USE_LIKWID(if (!warmup) LIKWID_MARKER_STOP(bench_name.c_str());)
+        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
     RUN_BENCH;

@@ -25,6 +25,10 @@ foreach(src ${CPP_FILES})
 
     # Add to the list of targets
     list(APPEND eigen_benchmarks_targets ${exec_name})
+
+    target_compile_options(${exec_name} PRIVATE -mavx512f)
+    target_compile_definitions(${exec_name} PRIVATE EIGEN_VECTORIZE_AVX512)
+
 endforeach()
 
 # Export the list to parent scope
