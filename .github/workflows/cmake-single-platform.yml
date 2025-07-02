@@ -49,7 +49,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: 
           name: tests-Release
-          path: ${{github.workspace}}/examples/build/tests/
+          path: ${{github.workspace}}/examples/build/bin/
 
   runTests_release:
     needs: buildTests_release
@@ -64,13 +64,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: tests-Release
-          path: ${{github.workspace}}/run_tests
+          path: ${{github.workspace}}
 
       - name: Execute Tests (Release)
         run: |
-          cd run_tests
-          chmod +x ./run_tests
-          ./run_tests
+          ./bin/run_tests
 
   buildLibrary_debug:
     runs-on: ubuntu-latest
@@ -114,7 +112,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: 
           name: tests-Debug
-          path: ${{github.workspace}}/examples/build/tests/
+          path: ${{github.workspace}}/examples/build/bin/
 
   runTests_debug:
     needs: buildTests_debug
@@ -129,10 +127,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: tests-Debug
-          path: ${{github.workspace}}/run_tests
+          path: ${{github.workspace}}
 
       - name: Execute Tests (Debug)
         run: |
-          cd run_tests
-          chmod +x ./run_tests
-          ./run_tests
+          ./bin/run_tests
