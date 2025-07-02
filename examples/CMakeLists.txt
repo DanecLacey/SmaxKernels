@@ -4,6 +4,9 @@ set(PROJECT_NAME "SmaxKernelsExamples")
 
 project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
+# Set global output directory for all executables
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 find_package(SmaxKernels REQUIRED)
 
 # Set C++ standard version

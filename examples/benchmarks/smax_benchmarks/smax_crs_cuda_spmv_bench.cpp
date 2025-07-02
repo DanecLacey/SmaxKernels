@@ -18,12 +18,13 @@ int main(int argc, char *argv[]) {
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    register_kernel<IT, VT>(smax, std::string("my_crs_spmv"),
-                            SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
-    REGISTER_SPMV_DATA("my_crs_spmv", crs_mat, x, y);
+    register_kernel<IT, VT>(smax, std::string("my_crs_cuda_spmv"),
+                            SMAX::KernelType::SPMV,
+                            SMAX::PlatformType::CUDA);
+    REGISTER_SPMV_DATA("my_crs_cuda_spmv", crs_mat, x, y);
 
     // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = "smax_crs_spmv";
+    std::string bench_name = "smax_crs_cuda_spmv";
     float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -44,17 +45,19 @@ int main(int argc, char *argv[]) {
 
     std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
         PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
-        smax->kernel("my_crs_spmv")->run();
+        smax->kernel("my_crs_cuda_spmv")->apply(0, 0, 0);
         PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
+    // Time for data transfer not included for now
+    smax->kernel("my_crs_cuda_spmv")->initialize(0, 0, 0);
     RUN_BENCH;
+    smax->kernel("my_crs_cuda_spmv")->finalize(0, 0, 0);
     PRINT_SPMV_BENCH;
 
     smax->utils->print_timers();
 
     FINALIZE_SPMV;
-    delete bench_harness;
     delete x;
     delete y;
 

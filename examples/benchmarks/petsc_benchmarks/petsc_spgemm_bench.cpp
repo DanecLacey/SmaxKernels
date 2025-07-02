@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 
     // --- 3) Benchmark metadata ---
     std::string bench_name = "petsc_spgemm";
-    double runtime = 0.0;
+    float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
 
@@ -77,7 +77,6 @@ int main(int argc, char *argv[]) {
     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
     FINALIZE_SPGEMM;
-    delete bench_harness;
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;

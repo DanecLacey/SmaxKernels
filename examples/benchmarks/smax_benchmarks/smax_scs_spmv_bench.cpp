@@ -87,7 +87,6 @@ int main(int argc, char *argv[]) {
     smax->utils->print_timers();
 
     FINALIZE_SPMV;
-    delete bench_harness;
     delete[] A_scs_chunk_ptr;
     delete[] A_scs_chunk_lengths;
     delete[] A_scs_col;

@@ -47,4 +47,4 @@ This project is very much still in development, and many features may be unfinis
 * 2025-06-19: It is strongly recommended to use intel compilers when interating with tests in `examples/validation` for ABI compatability. 
 
 ## Contributing ##
-Contributions are welcome! We follow a branching strategy as detailed [in this blog post](https://nvie.com/posts/a-successful-git-branching-model/). Contributors are welcome to submit pull requests to the `develop` branch. To report an issue or propose additions / changes, please open an issue.
+Contributions are welcome! We follow a branching strategy as detailed [in this blog post](https://nvie.com/posts/a-successful-git-branching-model/). To report an issue or propose additions / changes, please open an issue.

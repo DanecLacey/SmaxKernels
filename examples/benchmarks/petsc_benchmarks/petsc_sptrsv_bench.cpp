@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
 
     //     // Benchmark Setup
     //     std::string bench_name = "petsc_sptrsv";
-    //     double runtime = 0.0;
+    //     float runtime = 0.0;
     //     int n_iter = MIN_NUM_ITERS;
     //     int n_threads = 1;
 
@@ -131,7 +131,6 @@ int main(int argc, char *argv[]) {
     //     RUN_BENCH;
     //     PRINT_SPTRSV_BENCH;
     //     FINALIZE_SPTRSV;
-    //     delete bench_harness;
 
     //     // Cleanup PETSc objects
     //     ierr = MatDestroy(&D_plus_L);

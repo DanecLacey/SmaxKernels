@@ -59,7 +59,6 @@ int main(int argc, char *argv[]) {
     RUN_BENCH;
     PRINT_SPMV_BENCH;
     FINALIZE_SPMV;
-    delete bench_harness;
 
     ierr = VecDestroy(&x);
     CHKERRABORT(PETSC_COMM_SELF, ierr);

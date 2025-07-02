@@ -25,6 +25,7 @@
 
 class BenchHarness {
   public:
+    virtual ~BenchHarness() = default;
     const std::string &bench_name;
     std::function<void(bool)> callback;
     int &n_iters;
@@ -41,91 +42,104 @@ class BenchHarness {
           counter(_counter) {};
 
     void warmup() {
-#ifdef CUDA_MODE
-        cudaEvent_t warmup_begin_loop_time, warmup_end_loop_time;
-        CUDA_CHECK(cudaEventCreate(&warmup_begin_loop_time));
-        CUDA_CHECK(cudaEventCreate(&warmup_end_loop_time));
-        CUDA_CHECK(cudaDeviceSynchronize());
-#else
-        double warmup_begin_loop_time, warmup_end_loop_time;
-        warmup_begin_loop_time = warmup_end_loop_time = 0.0;
-#endif
-
-        float warmup_runtime = 0.0;
-        int warmup_n_iters = n_iters;
+        setup_timing();
+        float warmup_runtime = 0.f;
+        int warmup_iters = n_iters;
 
         do {
-#ifdef CUDA_MODE
-            CUDA_CHECK(cudaEventRecord(warmup_begin_loop_time, 0));
-#else
-            warmup_begin_loop_time = getTimeStamp();
-#endif
-            for (int k = 0; k < warmup_n_iters; ++k) {
+            record_start();
+            for (int i = 0; i < warmup_iters; ++i) {
                 callback(true);
-#ifdef CUDA_MODE
-                CUDA_CHECK(cudaDeviceSynchronize());
-#endif
             }
-            if (counter != nullptr)
-                (*counter) += warmup_n_iters;
-            warmup_n_iters *= 2;
-#ifdef CUDA_MODE
-            CUDA_CHECK(cudaEventRecord(warmup_end_loop_time, 0));
-            CUDA_CHECK(cudaDeviceSynchronize());
-            CUDA_CHECK(cudaEventElapsedTime(
-                &warmup_runtime, warmup_begin_loop_time, warmup_end_loop_time));
-            warmup_runtime /= 1000;
-#else
-            warmup_end_loop_time = getTimeStamp();
-            warmup_runtime = warmup_end_loop_time - warmup_begin_loop_time;
-#endif
-
+            if (counter)
+                *counter += warmup_iters;
+            warmup_iters *= 2;
+            record_stop();
+            warmup_runtime = compute_elapsed() / time_scale();
         } while (warmup_runtime < min_bench_time);
-        warmup_n_iters /= 2;
-    };
+        warmup_iters /= 2;
+    }
 
     void bench() {
-
-#ifdef CUDA_MODE
-        cudaEvent_t begin_loop_time, end_loop_time;
-        CUDA_CHECK(cudaEventCreate(&begin_loop_time));
-        CUDA_CHECK(cudaEventCreate(&end_loop_time));
-        CUDA_CHECK(cudaDeviceSynchronize());
-#else
-        double begin_loop_time, end_loop_time;
-        begin_loop_time = end_loop_time = 0.0;
-#endif
+        setup_timing();
 
         do {
-#ifdef CUDA_MODE
-            CUDA_CHECK(cudaEventRecord(begin_loop_time, 0));
-#else
-            begin_loop_time = getTimeStamp();
-#endif
-            for (int k = 0; k < n_iters; ++k) {
+            record_start();
+            for (int i = 0; i < n_iters; ++i) {
                 callback(false);
-#ifdef CUDA_MODE
-                CUDA_CHECK(cudaDeviceSynchronize());
-#endif
             }
-            if (counter != nullptr)
-                (*counter) += n_iters;
+            if (counter)
+                *counter += n_iters;
             n_iters *= 2;
-
-#ifdef CUDA_MODE
-            CUDA_CHECK(cudaEventRecord(end_loop_time, 0));
-            CUDA_CHECK(cudaDeviceSynchronize());
-            CUDA_CHECK(
-                cudaEventElapsedTime(&runtime, begin_loop_time, end_loop_time));
-            runtime /= 1000;
-#else
-            end_loop_time = getTimeStamp();
-            runtime = end_loop_time - begin_loop_time;
-#endif
-
+            record_stop();
+            runtime = compute_elapsed() / time_scale();
         } while (runtime < min_bench_time);
+
         n_iters /= 2;
+    }
+
+  protected:
+    virtual void setup_timing() = 0;
+    virtual void record_start() = 0;
+    virtual void record_stop() = 0;
+    virtual float compute_elapsed() const = 0;
+    virtual float time_scale() const = 0;
+};
+
+class BenchHarnessCPU : public BenchHarness {
+    double begin_loop_time, end_loop_time;
+
+  public:
+    BenchHarnessCPU(const std::string &_bench_name,
+                    std::function<void(bool)> _callback, int &_n_iters,
+                    float &_runtime, float _min_bench_time,
+                    int *_counter = nullptr)
+        : BenchHarness(_bench_name, _callback, _n_iters, _runtime,
+                       _min_bench_time, _counter) {};
+
+  protected:
+    void setup_timing() override {}
+    void record_start() override { begin_loop_time = getTimeStamp(); }
+    void record_stop() override { end_loop_time = getTimeStamp(); }
+    float compute_elapsed() const override {
+        return end_loop_time - begin_loop_time;
+    }
+    float time_scale() const override { return 1.0; }
+};
+
+class BenchHarnessCUDA : public BenchHarness {
+#ifdef CUDA_MODE
+    cudaEvent_t start_ev, stop_ev;
+
+  public:
+    BenchHarnessCUDA(const std::string &_bench_name,
+                     std::function<void(bool)> _callback, int &_n_iters,
+                     float &_runtime, float _min_bench_time,
+                     int *_counter = nullptr)
+        : BenchHarness(_bench_name, _callback, _n_iters, _runtime,
+                       _min_bench_time, _counter) {
+        CUDA_CHECK(cudaEventCreate(&start_ev));
+        CUDA_CHECK(cudaEventCreate(&stop_ev));
     };
+    ~BenchHarnessCUDA() override {
+        cudaEventDestroy(start_ev);
+        cudaEventDestroy(stop_ev);
+    }
+
+  protected:
+    void setup_timing() override { CUDA_CHECK(cudaDeviceSynchronize()); }
+    void record_start() override { CUDA_CHECK(cudaEventRecord(start_ev, 0)); }
+    void record_stop() override {
+        CUDA_CHECK(cudaEventRecord(stop_ev, 0));
+        CUDA_CHECK(cudaEventSynchronize(stop_ev));
+    }
+    float compute_elapsed() const override {
+        float ms = 0.f;
+        CUDA_CHECK(cudaEventElapsedTime(&ms, start_ev, stop_ev));
+        return ms;
+    }
+    float time_scale() const override { return 1000.0; }
+#endif
 };
 
 void init_pin() {
@@ -175,9 +189,16 @@ void init_pin() {
 
 #endif
 
+#ifdef CUDA_MODE
+using harness_type = BenchHarnessCUDA;
+#else
+using harness_type = BenchHarnessCPU;
+#endif
+
 #define RUN_BENCH                                                              \
-    BenchHarness *bench_harness =                                              \
-        new BenchHarness(bench_name, lambda, n_iter, runtime, MIN_BENCH_TIME); \
+    std::unique_ptr<harness_type> bench_harness =                              \
+        std::make_unique<harness_type>(bench_name, lambda, n_iter, runtime,    \
+                                       MIN_BENCH_TIME);                        \
     std::cout << "Running bench: " << bench_name << std::endl;                 \
     bench_harness->warmup();                                                   \
     printf("Warmup complete\n");                                               \
