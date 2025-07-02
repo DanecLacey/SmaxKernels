@@ -4,6 +4,9 @@ set(PROJECT_NAME "SmaxKernelsExamples")
 
 project(${PROJECT_NAME} VERSION 0.1 LANGUAGES CXX)
 
+# Set global output directory for all executables
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 find_package(SmaxKernels REQUIRED)
 
 # Set C++ standard version
@@ -99,7 +102,7 @@ elseif(CPU_COMPILER_ID STREQUAL "INTELLLVM")
     set(CXX_RELEASE_EXTRA_FLAGS "-xHost -qopt-zmm-usage=high")
     set(CXX_DEBUG_EXTRA_FLAGS "-fp-model=precise")
 elseif(CPU_COMPILER_ID STREQUAL "CLANG")
-    set(CXX_RELEASE_EXTRA_FLAGS "-fno-alias")
+    set(CXX_RELEASE_EXTRA_FLAGS "-fno-strict-aliasing")
 else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()

@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
     // --- Benchmark metadata ---
     std::string bench_name = "eigen_spgemm";
-    double runtime = 0.0;
+    float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
 #ifdef _OPENMP
@@ -66,7 +66,6 @@ int main(int argc, char *argv[]) {
     RUN_BENCH;
     PRINT_SPGEMM_BENCH(eigen_C.nonZeros());
     FINALIZE_SPGEMM;
-    delete bench_harness;
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;

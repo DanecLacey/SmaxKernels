@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     std::cout << "C_nnz: " << mkl_row_end[mkl_n_rows - 1] << std::endl;
     PRINT_SPGEMM_BENCH(mkl_row_start[mkl_n_rows]);
     FINALIZE_SPGEMM;
-    delete bench_harness;
+
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy A");
     CHECK_MKL_STATUS(mkl_sparse_destroy(B), "mkl_sparse_destroy B");
     CHECK_MKL_STATUS(mkl_sparse_destroy(C), "mkl_sparse_destroy C");
