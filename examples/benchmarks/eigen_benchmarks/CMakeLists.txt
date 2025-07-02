@@ -27,6 +27,10 @@ foreach(src ${CPP_FILES})
     list(APPEND eigen_benchmarks_targets ${exec_name})
 
     target_compile_options(${exec_name} PRIVATE -mavx512f)
+    if(CPU_COMPILER_ID STREQUAL "GNU" OR CPU_COMPILER_ID STREQUAL "INTEL")
+        target_compile_options(${exec_name} PRIVATE -mfma -mavx -msse)
+        string(REPLACE "-march=native" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    endif()
     target_compile_definitions(${exec_name} PRIVATE EIGEN_VECTORIZE_AVX512)
 
 endforeach()
