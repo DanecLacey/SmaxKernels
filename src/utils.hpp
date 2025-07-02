@@ -37,24 +37,22 @@ class Utils {
 
     template <typename IT>
     int generate_perm_row_sweep(int A_n_rows, IT *A_row_ptr, IT *A_col,
-                                int *perm, int *inv_perm, int *lvl);
+                                int *lvl);
 
     template <typename IT>
     int generate_perm_BFS(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                          int *inv_perm, int *lvl);
+                          int *lvl);
 
     template <typename IT>
-    int generate_color_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
-                            int *inv_perm, int *lvl);
+    int generate_color_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *lvl);
 
     template <typename IT>
     int generate_color_perm_par(int A_n_rows, IT *A_row_ptr, IT *A_col,
-                                int *perm, int *inv_perm, int *lvl);
+                                int *lvl);
 
     template <typename IT>
     int generate_color_perm_bal(int A_n_rows, IT *A_row_ptr, IT *A_col,
-                                int *perm, int *inv_perm, int *lvl,
-                                int num_colors);
+                                int *lvl, int num_colors);
 
     template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,

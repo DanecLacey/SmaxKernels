@@ -50,8 +50,24 @@ REGISTER_TEST(perm_test_1) {
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
 
+#ifdef _OPENMP
+    int t = 0;
+#pragma omp parallel
+    {
+#pragma omp single
+        {
+            t = omp_get_num_threads();
+        }
+    }
+    omp_set_num_threads(1);
+#endif
+
     smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_bfs,
                                    inv_perm_bfs, std::string("BFS"));
+
+#ifdef _OPENMP
+    omp_set_num_threads(t);
+#endif
 
     int expected_max_level = 4;
     int *expected_levels = new int[5]{0, 2, 4, 6, 8};
