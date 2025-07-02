@@ -41,22 +41,22 @@ int main(int argc, char *argv[]) {
     DenseMatrix<VT> *x = new DenseMatrix<VT>(A_scs_n_elements, 1, 1.0);
     DenseMatrix<VT> *y = new DenseMatrix<VT>(A_scs_n_elements, 1, 0.0);
 
-    register_kernel<IT, VT>(smax, std::string("my_scs_spmv"),
-                            SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
+    register_kernel<IT, VT>(smax, std::string("my_scs_cuda_spmv"),
+                            SMAX::KernelType::SPMV, SMAX::PlatformType::CUDA);
 
     // A is expected to be in the SCS format
-    smax->kernel("my_scs_spmv")->set_mat_scs(true);
+    smax->kernel("my_scs_cuda_spmv")->set_mat_scs(true);
 
-    smax->kernel("my_scs_spmv")
+    smax->kernel("my_scs_cuda_spmv")
         ->register_A(A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded,
                      A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,
                      A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
                      A_scs_perm);
-    smax->kernel("my_scs_spmv")->register_B(A_scs_n_elements, x->val);
-    smax->kernel("my_scs_spmv")->register_C(A_scs_n_elements, y->val);
+    smax->kernel("my_scs_cuda_spmv")->register_B(A_scs_n_elements, x->val);
+    smax->kernel("my_scs_cuda_spmv")->register_C(A_scs_n_elements, y->val);
 
     // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = "smax_scs_spmv";
+    std::string bench_name = "smax_scs_cuda_spmv";
     float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -77,21 +77,19 @@ int main(int argc, char *argv[]) {
 
     std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
         PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
-        smax->kernel("my_scs_spmv")->run();
+        smax->kernel("my_scs_cuda_spmv")->apply(0, 0, 0);
         PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
+    // Time for data transfer not included for now
+    smax->kernel("my_scs_cuda_spmv")->initialize(0, 0, 0);
     RUN_BENCH;
+    smax->kernel("my_scs_cuda_spmv")->finalize(0, 0, 0);
     PRINT_SPMV_BENCH;
 
     smax->utils->print_timers();
 
     FINALIZE_SPMV;
-    delete[] A_scs_chunk_ptr;
-    delete[] A_scs_chunk_lengths;
-    delete[] A_scs_col;
-    delete[] A_scs_val;
-    delete[] A_scs_perm;
     delete x;
     delete y;
 
