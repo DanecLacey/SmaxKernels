@@ -1,5 +1,5 @@
 #include "../../examples_common.hpp"
-#include "../../spmm_helpers.hpp"
+#include "../../sptrsm_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "eigen_benchmarks_common.hpp"
 
@@ -10,16 +10,15 @@ int main(int argc, char *argv[]) {
 
     init_pin(); // avoid counting pinning in timing
 
-    INIT_SPMM(IT, VT);
+    INIT_SPTRSM(IT, VT);
 
-    Eigen::MatrixXd eigen_x =
+    Eigen::MatrixXd X =
         Eigen::MatrixXd::Constant(crs_mat->n_cols, n_vectors, 1.0);
-    Eigen::MatrixXd eigen_y =
+    Eigen::MatrixXd B =
         Eigen::MatrixXd::Constant(crs_mat->n_rows, n_vectors, 0.0);
 
     // Wrap your CRS data into an Eigen SparseMatrix
-    Eigen::SparseMatrix<VT, Eigen::RowMajor> eigen_mat(crs_mat->n_rows,
-                                                       crs_mat->n_cols);
+    Eigen::SparseMatrix<VT> eigen_mat(crs_mat->n_rows, crs_mat->n_cols);
     std::vector<Eigen::Triplet<VT>> triplets;
     triplets.reserve(crs_mat->nnz);
 
@@ -34,8 +33,8 @@ int main(int argc, char *argv[]) {
     eigen_mat.setFromTriplets(triplets.begin(), triplets.end());
 
     // Setup benchmark metadata
-    std::string bench_name = "eigen_spmm";
-    double runtime = 0.0;
+    std::string bench_name = "eigen_sptrsm";
+    float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
 
@@ -54,17 +53,16 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    std::function<void(bool)> lambda = [bench_name, eigen_mat, eigen_x,
-                                        &eigen_y](bool warmup) {
+    std::function<void(bool)> lambda = [bench_name, &eigen_mat, &X,
+                                        &B](bool warmup) {
         PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
-        eigen_y.noalias() = eigen_mat * eigen_x;
+        X.noalias() = eigen_mat.triangularView<Eigen::Lower>().solve(B);
         PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
     RUN_BENCH;
-    PRINT_SPMM_BENCH;
-    FINALIZE_SPMM;
-    delete bench_harness;
+    PRINT_SPTRSM_BENCH;
+    FINALIZE_SPTRSM;
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;

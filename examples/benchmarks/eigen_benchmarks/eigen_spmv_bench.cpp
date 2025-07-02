@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "eigen_spmv";
-    double runtime = 0.0;
+    float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
 #ifdef _OPENMP
@@ -60,7 +60,6 @@ int main(int argc, char *argv[]) {
     RUN_BENCH;
     PRINT_SPMV_BENCH;
     FINALIZE_SPMV;
-    delete bench_harness;
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;

@@ -1,33 +1,28 @@
 #include "../../examples_common.hpp"
-#include "../../spmv_helpers.hpp"
+#include "../../sptrsv_helpers.hpp"
 #include "../benchmarks_common.hpp"
 #include "smax_benchmarks_common.hpp"
 
 int main(int argc, char *argv[]) {
 
-    using IT = unsigned int;
+    using IT = int;
     using VT = double;
 
     // Just to take overhead of pinning away from timers
     init_pin();
 
-    INIT_SPMV(IT, VT);
-
+    INIT_SPTRSV(IT, VT);
     DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix<VT> *y = new DenseMatrix<VT>(crs_mat->n_rows, 1, 0.0);
+    DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
-    // register_kernel<IT, VT>(smax, std::string("my_crs_cuda_spmv"),
-    //                         SMAX::KernelType::SPMV,
-    //                         SMAX::PlatformType::CUDA);
-    smax->register_kernel("my_crs_cuda_spmv", SMAX::KernelType::SPMV,
-                          SMAX::PlatformType::CUDA, SMAX::IntType::UINT32,
-                          SMAX::FloatType::FLOAT64);
-    REGISTER_SPMV_DATA("my_crs_cuda_spmv", crs_mat, x, y);
+    register_kernel<IT, VT>(smax, std::string("my_sptrsv"),
+                            SMAX::KernelType::SPTRSV, SMAX::PlatformType::CPU);
+    REGISTER_SPTRSV_DATA("my_sptrsv", crs_mat_D_plus_L, x, b);
 
     // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = "smax_crs_cuda_spmv";
+    std::string bench_name = "smax_sptrsv";
     float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -48,22 +43,15 @@ int main(int argc, char *argv[]) {
 
     std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
         PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
-        smax->kernel("my_crs_cuda_spmv")->apply(0, 0, 0);
+        smax->kernel("my_sptrsv")->run();
         PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
-    // Time for data transfer not included for now
-    smax->kernel("my_crs_cuda_spmv")->initialize(0, 0, 0);
     RUN_BENCH;
-    smax->kernel("my_crs_cuda_spmv")->finalize(0, 0, 0);
-    PRINT_SPMV_BENCH;
-
-    smax->utils->print_timers();
-
-    FINALIZE_SPMV;
-    delete bench_harness;
+    PRINT_SPTRSV_BENCH;
+    FINALIZE_SPTRSV;
     delete x;
-    delete y;
+    delete b;
 
 #ifdef USE_LIKWID
     LIKWID_MARKER_CLOSE;

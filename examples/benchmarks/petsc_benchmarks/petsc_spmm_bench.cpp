@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     CHKERRABORT(PETSC_COMM_SELF, ierr);
 
     std::string bench_name = "petsc_spmm";
-    double runtime = 0.0;
+    float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
 
@@ -72,7 +72,6 @@ int main(int argc, char *argv[]) {
     RUN_BENCH;
     PRINT_SPMM_BENCH;
     FINALIZE_SPMM;
-    delete bench_harness;
 
     ierr = MatDestroy(&A);
     CHKERRABORT(PETSC_COMM_SELF, ierr);

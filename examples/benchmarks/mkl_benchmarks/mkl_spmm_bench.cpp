@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     RUN_BENCH;
     PRINT_SPMM_BENCH;
     FINALIZE_SPMM;
-    delete bench_harness;
+
     delete X;
     delete Y;
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
