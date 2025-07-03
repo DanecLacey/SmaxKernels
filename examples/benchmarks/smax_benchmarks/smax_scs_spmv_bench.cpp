@@ -38,8 +38,10 @@ int main(int argc, char *argv[]) {
         A_scs_nnz, A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
         A_scs_perm);
 
-    DenseMatrix<VT> *x = new DenseMatrix<VT>(A_scs_n_elements, 1, 1.0);
-    DenseMatrix<VT> *y = new DenseMatrix<VT>(A_scs_n_elements, 1, 0.0);
+    // Pad to the same length to emulate real iterative schemes
+    IT vec_size = std::max(A_scs_n_rows_padded, A_scs_n_cols);
+    DenseMatrix<VT> *x = new DenseMatrix<VT>(vec_size, 1, 1.0);
+    DenseMatrix<VT> *y = new DenseMatrix<VT>(vec_size, 1, 0.0);
 
     register_kernel<IT, VT>(smax, std::string("my_scs_spmv"),
                             SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
@@ -52,8 +54,8 @@ int main(int argc, char *argv[]) {
                      A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,
                      A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
                      A_scs_perm);
-    smax->kernel("my_scs_spmv")->register_B(A_scs_n_elements, x->val);
-    smax->kernel("my_scs_spmv")->register_C(A_scs_n_elements, y->val);
+    smax->kernel("my_scs_spmv")->register_B(vec_size, x->val);
+    smax->kernel("my_scs_spmv")->register_C(vec_size, y->val);
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "smax_scs_spmv";

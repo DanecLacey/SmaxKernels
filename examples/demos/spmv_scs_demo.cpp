@@ -41,13 +41,16 @@ int main(void) {
         A_scs_n_chunks, A_scs_n_elements, A_scs_nnz, A_scs_chunk_ptr,
         A_scs_chunk_lengths, A_scs_col, A_scs_val, A_scs_perm);
 
-    double *x = new double[A_scs_n_rows_padded];
-    for (int i = 0; i < A_scs_n_rows_padded; ++i) {
+    // Pad to the same length to emulate real iterative schemes
+    int vec_size = std::max(A_scs_n_rows_padded, A_scs_n_cols);
+
+    double *x = new double[vec_size];
+    for (int i = 0; i < vec_size; ++i) {
         x[i] = 1.0;
     }
 
     // Initialize result
-    double *y = new double[A_scs_n_rows_padded];
+    double *y = new double[vec_size];
 
     // Register kernel tag, platform, and metadata
     smax->register_kernel("SCS_spmv", SMAX::KernelType::SPMV);
@@ -70,7 +73,7 @@ int main(void) {
 
     smax->utils->print_timers();
 
-    print_vector<double>(y, A_scs_n_cols);
+    print_vector<double>(y, A_scs_n_rows);
 
     delete[] A_crs_col;
     delete[] A_crs_row;
