@@ -25,11 +25,13 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
     (void)x_offset;
     (void)y_offset;
 
-    ULL vector_size;
+    ULL x_size;
+    ULL y_size;
 
     // Cast void pointers to the correct types with "as"
     // Dereference to get usable data
     if (flags->is_mat_scs) {
+        ULL A_n_cols = args->A->scs->n_cols;
         ULL A_n_elements = args->A->scs->n_elements;
         ULL A_n_rows_padded = args->A->scs->n_rows_padded;
         ULL A_n_chunks = args->A->scs->n_chunks;
@@ -49,14 +51,16 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
         // Copy metadata from host matrix
         args->d_A->scs->n_chunks = args->A->scs->n_chunks;
         args->d_A->scs->C = args->A->scs->C;
-        vector_size = A_n_rows_padded;
+
+        x_size = A_n_cols;
+        y_size = A_n_rows_padded;
     } else {
         ULL A_n_rows = args->A->crs->n_rows;
+        ULL A_n_cols = args->A->crs->n_cols;
         ULL A_nnz = args->A->crs->nnz;
         IT *A_col = as<IT *>(args->A->crs->col);
         IT *A_row_ptr = as<IT *>(args->A->crs->row_ptr);
         VT *A_val = as<VT *>(args->A->crs->val);
-        vector_size = A_n_rows;
 
         // Copy typed pointers from host to device
         transfer_HtoD<IT>(A_col, args->d_A->crs->col, A_nnz);
@@ -67,12 +71,15 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
         args->d_A->crs->n_rows = args->A->crs->n_rows;
         args->d_A->crs->n_cols = args->A->crs->n_cols;
         args->d_A->crs->nnz = args->A->crs->nnz;
+
+        x_size = A_n_cols;
+        y_size = A_n_rows;
     }
 
     VT *x = as<VT *>(args->x->val);
     VT *y = as<VT *>(args->y->val);
-    transfer_HtoD<VT>(x, args->d_x->val, vector_size);
-    transfer_HtoD<VT>(y, args->d_y->val, vector_size);
+    transfer_HtoD<VT>(x, args->d_x->val, x_size);
+    transfer_HtoD<VT>(y, args->d_y->val, y_size);
 
     IF_SMAX_TIME(timers->get("initialize")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cuda_core"));
@@ -138,18 +145,15 @@ int finalize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
     (void)x_offset;
     (void)y_offset;
 
-    ULL vector_size;
+    ULL y_size;
     if (flags->is_mat_scs) {
-        ULL A_n_rows_padded = args->A->scs->n_rows_padded;
-        vector_size = A_n_rows_padded;
+        y_size = args->A->scs->n_rows;
     } else {
-        ULL A_n_rows = args->A->crs->n_rows;
-        vector_size = A_n_rows;
+        y_size = args->A->crs->n_rows;
     }
 
     VT *d_y = as<VT *>(args->d_y->val);
-
-    transfer_DtoH<VT>(d_y, args->y->val, vector_size);
+    transfer_DtoH<VT>(d_y, args->y->val, y_size);
 
     IF_SMAX_TIME(timers->get("finalize")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_finalize_cuda_core"));
