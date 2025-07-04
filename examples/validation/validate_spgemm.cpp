@@ -15,8 +15,6 @@ int main(int argc, char *argv[]) {
     // Make permuted version of A with the same metadata
     CRSMatrix<IT, VT> *crs_mat_A_perm = new CRSMatrix<IT, VT>(
         crs_mat_A->n_rows, crs_mat_A->n_cols, crs_mat_A->nnz);
-    int *perm = new int[crs_mat_A->n_rows];
-    int *inv_perm = new int[crs_mat_A->n_rows];
 
     CRSMatrix<IT, VT> *crs_mat_C_smax = new CRSMatrix<IT, VT>;
     CRSMatrix<IT, VT> *crs_mat_C_mkl = new CRSMatrix<IT, VT>;
@@ -25,22 +23,6 @@ int main(int argc, char *argv[]) {
     SMAX::Interface *smax = new SMAX::Interface();
     register_kernel<IT, VT>(smax, std::string("my_spgemm"),
                             SMAX::KernelType::SPGEMM, SMAX::PlatformType::CPU);
-
-    if (fuse_phases) {
-        smax->utils->generate_perm<IT>(crs_mat_A->n_rows, crs_mat_A->row_ptr,
-                                       crs_mat_A->col, perm, inv_perm,
-                                       std::string("BFS"));
-
-        smax->utils->apply_mat_perm<IT, VT>(
-            crs_mat_A->n_rows, crs_mat_A->row_ptr, crs_mat_A->col,
-            crs_mat_A->val, crs_mat_A_perm->row_ptr, crs_mat_A_perm->col,
-            crs_mat_A_perm->val, perm, inv_perm);
-
-        smax->kernel("my_spgemm")->set_mat_perm(true);
-
-        // MKL will also use the same BFS permuted matrix
-        crs_mat_A = crs_mat_A_perm; // TODO: Does this work as expected?
-    }
 
     if (compute_AA) {
         REGISTER_SPGEMM_DATA("my_spgemm", crs_mat_A, crs_mat_A, crs_mat_C_smax);
@@ -146,8 +128,6 @@ int main(int argc, char *argv[]) {
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
     CHECK_MKL_STATUS(mkl_sparse_destroy(B), "mkl_sparse_destroy");
     CHECK_MKL_STATUS(mkl_sparse_destroy(C), "mkl_sparse_destroy");
-    delete[] perm;
-    delete[] inv_perm;
     delete crs_mat_C_smax;
     delete crs_mat_C_mkl;
     FINALIZE_SPGEMM;
