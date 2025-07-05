@@ -619,26 +619,13 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
         for (int row = uc->lvl_ptr[lvl_idx]; row < uc->lvl_ptr[lvl_idx + 1]; ++row) {
             uc->thread_mapping[row] = num_rows[omp_get_thread_num()];
             num_rows[omp_get_thread_num()] = num_rows[omp_get_thread_num()] + 1;
-            num_vals[omp_get_thread_num()] += A_perm_row_ptr[row + 1] - A_perm_row_ptr[row];
+            int nnz_row = 0;
+            for (int nnz = A_perm_row_ptr[row]; nnz < A_perm_row_ptr[row + 1]; nnz++) {
+                if (A_perm_col[nnz] < row)
+                    nnz_row++;
+            }
+            num_vals[omp_get_thread_num()] += nnz_row;
         }
-    }
-
-    printf("%d\n", threads);
-
-    int sum = 0;
-    int sum_val = 0;
-#pragma omp parallel for reduction(+:sum,sum_val)
-    for (int t = 0; t < threads; t++) {
-        sum += num_rows[omp_get_thread_num()];
-        sum_val += num_vals[omp_get_thread_num()];
-    }
-
-    if (sum != A_n_rows){
-        printf("WTF, rows dont match: Got %d, but exp: %d\n", sum, A_n_rows);
-    }
-
-    if (sum_val != A_row_ptr[A_n_rows]){
-        printf("WTF, nnz dont match: Got %d, but exp: %d\n", sum_val, A_row_ptr[A_n_rows]);
     }
 
     std::cout << "Done collecting info" << std::endl;
@@ -655,21 +642,18 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
 #pragma omp parallel for schedule(static)
         for (int row = uc->lvl_ptr[lvl_idx]; row < uc->lvl_ptr[lvl_idx + 1]; ++row) {
             int local_row = uc->thread_mapping[row];
-            int diff = A_perm_row_ptr[row + 1] - A_perm_row_ptr[row];
-            // printf("Update row_ptr... ");
-            uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row + 1] = uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row] + diff;
-            // printf("DONE\n");
-            for (int nnz_idx = 0; nnz_idx < diff; nnz_idx++) {
-                // printf("Obatin old idx... ");
-                int old_idx = A_perm_row_ptr[row] + nnz_idx;
-                // printf("DONE\nObtain new idx... For %d of %d\n ", local_row, A_n_rows);
-                int new_idx = uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row] + nnz_idx;
-                // printf("DONE\nUpdate val... ");
-                uc->thread_mem_ptr[omp_get_thread_num()]->A_val[new_idx] = A_perm_val[old_idx];
-                // printf("DONE\nUpdate col... ");
-                uc->thread_mem_ptr[omp_get_thread_num()]->A_col[new_idx] = A_perm_col[old_idx];
-                // printf("DONE\n");
+            int nnz_row = 0;
+            int offset = uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row];
+            for (int nnz_idx = A_perm_row_ptr[row]; nnz_idx < A_perm_row_ptr[row + 1]; nnz_idx++) {
+                if (A_perm_col[nnz_idx] < row) {
+                    
+                    int new_idx = offset + nnz_row;
+                    nnz_row++;
+                    uc->thread_mem_ptr[omp_get_thread_num()]->A_val[new_idx] = A_perm_val[nnz_idx];
+                    uc->thread_mem_ptr[omp_get_thread_num()]->A_col[new_idx] = A_perm_col[nnz_idx];
+                }
             }
+            uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row + 1] = uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row] + nnz_row;
         }
     }
 

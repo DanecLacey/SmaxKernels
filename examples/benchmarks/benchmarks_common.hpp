@@ -19,7 +19,7 @@
 #endif
 
 #define MIN_BENCH_TIME 3.0
-#define MIN_WARMUP_TIME 10.0
+#define MIN_WARMUP_TIME 3.0
 #define MIN_NUM_ITERS 100
 #define GF_TO_F 1000000000
 #define F_TO_GF 0.000000001
