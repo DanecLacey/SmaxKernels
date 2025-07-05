@@ -42,6 +42,7 @@ int main(int argc, char *argv[]) {
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "smax_sptrsv_lvl";
+    std::string warmup_name = "smax_sptrsv_lvl_warmup";
     float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -57,13 +58,14 @@ int main(int argc, char *argv[]) {
 #pragma omp parallel
     {
         LIKWID_MARKER_REGISTER(bench_name.c_str());
+        LIKWID_MARKER_REGISTER(warmup_name.c_str());
     }
 #endif
 
-    std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
-        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
+    std::function<void(bool)> lambda = [bench_name, warmup_name, smax](bool warmup) {
+        PARALLEL_LIKWID_MARKER_START(warmup?warmup_name.c_str():bench_name.c_str());
         smax->kernel("my_sptrsv_lvl")->run();
-        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
+        PARALLEL_LIKWID_MARKER_STOP(warmup?warmup_name.c_str():bench_name.c_str());
     };
 
     RUN_BENCH;

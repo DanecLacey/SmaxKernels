@@ -168,7 +168,7 @@ int Utils::generate_perm_BFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
 
     // Start queueing the island roots
     std::queue<int> q; // Queue for BFS
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
     for (int start = 0; start < A_n_rows; ++start) {
         bool is_root = true;
         for (int nnz = A_sym_row_ptr[start]; nnz < A_sym_row_ptr[start + 1];
@@ -275,7 +275,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
 
     // Step 3: Compute permuation - if necessary
     if (type != "BFS") {
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
         for (int i = 0; i < A_n_rows; i++) {
             perm[i] = i;
         }
@@ -285,7 +285,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     }
 
     // Compute inverse permutation
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
     for (int i = 0; i < A_n_rows; ++i) {
         inv_perm[perm[i]] = i;
     }
@@ -333,7 +333,7 @@ int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
     // Use BFS-like traversal to assign colors
     // Start queueing the island roots
     std::queue<int> q; // Queue for BFS
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
     for (int start = 0; start < A_n_rows; ++start) {
         color[start] = -2;
         usable_colors[start] = -1;
@@ -345,10 +345,12 @@ int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
                 break;
             }
         }
-#pragma omp critical
         if (is_root) {
-            q.push(start);
-            color[start] = -1;
+#pragma omp critical
+            {
+                q.push(start);
+                color[start] = -1;
+            }
         }
     }
 
@@ -392,12 +394,12 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr,
 
     int max_color = 0;
     int *colors = lvl;
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
     for (int i = 0; i < A_n_rows; i++) {
         colors[i] = -1;
     }
 
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
     for (int row = 0; row < A_n_rows; row++) {
         bool repeat = true;
         // Repeat until conflicts resolved
@@ -463,12 +465,12 @@ int Utils::generate_color_perm_bal(int A_n_rows, IT *A_sym_row_ptr,
         color_size[c] = 0;
     }
     // Count size of each lvl
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
     for (int idx = 0; idx < A_n_rows; idx++) {
         color_size[colors[idx]]++;
     }
 
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
     for (int row = 0; row < A_n_rows; row++) {
         // Skip if color class is already balanced
         if (color_size[lvl[row]] <= b)
@@ -568,7 +570,7 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
         A_perm_row_ptr[row + 1] = perm_idx;
     }
 
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static)
     for (int row = 0; row < A_n_rows; ++row) {
         IT perm_row = perm[row];
 
@@ -589,6 +591,92 @@ void Utils::apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
         }
     }
 
+    // Need to do:
+    //  - Create mapping array [Done]
+    //  - Create ThreadLocalCRS array [Done]
+    //  - Threads running in dummy loop to collect assignment [Done]
+    //  - Create thread local data structures [Done]
+    //  - Fill data structures and profit [Done]
+    std::cout << "Starting with local copies" << std::endl;
+    uc->thread_mapping = new int[A_n_rows];
+
+    int threads = 1;
+#ifdef _OPENMP
+#pragma omp parallel
+    {
+        threads = omp_get_num_threads();
+    }
+#endif
+
+    int *num_rows = new int[threads];
+    int *num_vals = new int[threads];
+    for (int t = 0; t < threads; t++) {
+        num_rows[t] = 0;
+        num_vals[t] = 0;
+    }
+    for (int lvl_idx = 0; lvl_idx < uc->n_levels; ++lvl_idx) {
+#pragma omp parallel for schedule(static)
+        for (int row = uc->lvl_ptr[lvl_idx]; row < uc->lvl_ptr[lvl_idx + 1]; ++row) {
+            uc->thread_mapping[row] = num_rows[omp_get_thread_num()];
+            num_rows[omp_get_thread_num()] = num_rows[omp_get_thread_num()] + 1;
+            num_vals[omp_get_thread_num()] += A_perm_row_ptr[row + 1] - A_perm_row_ptr[row];
+        }
+    }
+
+    printf("%d\n", threads);
+
+    int sum = 0;
+    int sum_val = 0;
+#pragma omp parallel for reduction(+:sum,sum_val)
+    for (int t = 0; t < threads; t++) {
+        sum += num_rows[omp_get_thread_num()];
+        sum_val += num_vals[omp_get_thread_num()];
+    }
+
+    if (sum != A_n_rows){
+        printf("WTF, rows dont match: Got %d, but exp: %d\n", sum, A_n_rows);
+    }
+
+    if (sum_val != A_row_ptr[A_n_rows]){
+        printf("WTF, nnz dont match: Got %d, but exp: %d\n", sum_val, A_row_ptr[A_n_rows]);
+    }
+
+    std::cout << "Done collecting info" << std::endl;
+
+    uc->thread_mem_ptr = new struct ThreadLocalCRS*[threads];
+#pragma omp parallel
+    {
+        uc->thread_mem_ptr[omp_get_thread_num()] = new ThreadLocalCRS(num_rows[omp_get_thread_num()], num_vals[omp_get_thread_num()]);
+    }
+
+    std::cout << "Starting Fill" << std::endl;
+
+    for (int lvl_idx = 0; lvl_idx < uc->n_levels; ++lvl_idx) {
+#pragma omp parallel for schedule(static)
+        for (int row = uc->lvl_ptr[lvl_idx]; row < uc->lvl_ptr[lvl_idx + 1]; ++row) {
+            int local_row = uc->thread_mapping[row];
+            int diff = A_perm_row_ptr[row + 1] - A_perm_row_ptr[row];
+            // printf("Update row_ptr... ");
+            uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row + 1] = uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row] + diff;
+            // printf("DONE\n");
+            for (int nnz_idx = 0; nnz_idx < diff; nnz_idx++) {
+                // printf("Obatin old idx... ");
+                int old_idx = A_perm_row_ptr[row] + nnz_idx;
+                // printf("DONE\nObtain new idx... For %d of %d\n ", local_row, A_n_rows);
+                int new_idx = uc->thread_mem_ptr[omp_get_thread_num()]->A_row_ptr[local_row] + nnz_idx;
+                // printf("DONE\nUpdate val... ");
+                uc->thread_mem_ptr[omp_get_thread_num()]->A_val[new_idx] = A_perm_val[old_idx];
+                // printf("DONE\nUpdate col... ");
+                uc->thread_mem_ptr[omp_get_thread_num()]->A_col[new_idx] = A_perm_col[old_idx];
+                // printf("DONE\n");
+            }
+        }
+    }
+
+    std::cout << "Done fill" << std::endl;
+
+    delete[] num_rows;
+    delete[] num_vals;
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting apply_mat_perm"));
 };
 

@@ -14,17 +14,25 @@ inline void crs_sptrsv_lvl(const int n_levels, const ULL n_cols,
                            const IT *SMAX_RESTRICT row_ptr,
                            const VT *SMAX_RESTRICT val,
                            const VT *SMAX_RESTRICT D, VT *SMAX_RESTRICT x,
-                           const VT *SMAX_RESTRICT y, const int *lvl_ptr) {
+                           const VT *SMAX_RESTRICT y, const int *lvl_ptr, const UtilitiesContainer *uc) {
 
     // DL 30.05.25 NOTE: Cannot do too much DRY due to OpenMP
     // clang-format off
     if constexpr (Lower) {
+        /*
+        ThreadLocalCRS *local_mem = uc->thread_mem_ptr[omp_get_thread_num()];
+        const int *SMAX_RESTRICT local_row_ptr = local_mem->A_row_ptr;
+        const double *SMAX_RESTRICT local_val = local_mem->A_val;
+        const int *SMAX_RESTRICT local_col = local_mem->A_col;
+        */
+
         for (int lvl_idx = 0; lvl_idx < n_levels; ++lvl_idx) {
-#pragma omp parallel for
+#pragma omp for schedule(static)
             for (int row_idx = lvl_ptr[lvl_idx]; row_idx < lvl_ptr[lvl_idx + 1]; ++row_idx) {
                 VT sum = (VT)0.0;
-                IT row_start = row_ptr[row_idx]; // To help compiler
-                IT row_end   = row_ptr[row_idx + 1] - 1; // To help compiler
+                int local_row = uc->thread_mapping[row_idx];
+                IT row_start = row_ptr[local_row]; // To help compiler
+                IT row_end   = row_ptr[local_row + 1] - 1; // To help compiler
 
                 #pragma omp simd reduction(+:sum)
                 for (IT j = row_start; j < row_end; ++j) {

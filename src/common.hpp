@@ -153,14 +153,33 @@ struct DenseMatrix {
     }
 };
 
+struct ThreadLocalCRS{
+    
+    int *A_row_ptr = nullptr;
+    double *A_val = nullptr;
+    int *A_col = nullptr;
+
+    ThreadLocalCRS(int rows, int vals){
+        A_row_ptr = new int[rows+1];
+        A_row_ptr[0] = (int)0;
+        A_val = new double[vals];
+        A_col = new int[vals];
+    }
+
+    ~ThreadLocalCRS() { delete[] A_row_ptr; delete[] A_val; delete[] A_col;}
+
+};
+
 struct UtilitiesContainer {
     // TODO: Update to ULL
     int *lvl_ptr = nullptr;
     int n_levels = 0;
+    struct ThreadLocalCRS **thread_mem_ptr = nullptr;
+    int *thread_mapping = nullptr;
 
     UtilitiesContainer() = default;
 
-    ~UtilitiesContainer() { delete[] lvl_ptr; }
+    ~UtilitiesContainer() { delete[] lvl_ptr; delete[] thread_mem_ptr; delete[] thread_mapping; }
 };
 
 } // namespace SMAX

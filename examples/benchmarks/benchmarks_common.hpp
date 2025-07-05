@@ -19,6 +19,7 @@
 #endif
 
 #define MIN_BENCH_TIME 3.0
+#define MIN_WARMUP_TIME 10.0
 #define MIN_NUM_ITERS 100
 #define GF_TO_F 1000000000
 #define F_TO_GF 0.000000001
@@ -31,32 +32,43 @@ class BenchHarness {
     int &n_iters;
     float &runtime;
     float min_bench_time;
+    float min_warmup_time;
     int *counter;
 
     BenchHarness(const std::string &_bench_name,
                  std::function<void(bool)> _callback, int &_n_iters,
-                 float &_runtime, float _min_bench_time,
+                 float &_runtime, float _min_bench_time, float _min_warmup_time,
                  int *_counter = nullptr)
         : bench_name(_bench_name), callback(_callback), n_iters(_n_iters),
-          runtime(_runtime), min_bench_time(_min_bench_time),
+          runtime(_runtime), min_bench_time(_min_bench_time), min_warmup_time(_min_warmup_time),
           counter(_counter) {};
 
     void warmup() {
         setup_timing();
         float warmup_runtime = 0.f;
         int warmup_iters = n_iters;
+        float warmup_start = 0;
+        float *times = nullptr;
 
         do {
+            free(times);
+            times = (float *) malloc(sizeof(float) * warmup_iters);
             record_start();
             for (int i = 0; i < warmup_iters; ++i) {
-                callback(true);
+                warmup_start = getTimeStamp();
+                    callback(true);
+                times[i] = getTimeStamp() - warmup_start;
             }
             if (counter)
                 *counter += warmup_iters;
             warmup_iters *= 2;
             record_stop();
             warmup_runtime = compute_elapsed() / time_scale();
-        } while (warmup_runtime < min_bench_time);
+            for (int i = 0; i < (int)warmup_iters/2; i++) {
+                // std::cout << times[i] << ", ";
+            }
+            // std::cout << std::endl;
+        } while (warmup_runtime < min_warmup_time);
         warmup_iters /= 2;
     }
 
@@ -66,7 +78,7 @@ class BenchHarness {
         do {
             record_start();
             for (int i = 0; i < n_iters; ++i) {
-                callback(false);
+                    callback(false);
             }
             if (counter)
                 *counter += n_iters;
@@ -92,10 +104,10 @@ class BenchHarnessCPU : public BenchHarness {
   public:
     BenchHarnessCPU(const std::string &_bench_name,
                     std::function<void(bool)> _callback, int &_n_iters,
-                    float &_runtime, float _min_bench_time,
+                    float &_runtime, float _min_bench_time, float _min_warmup_time,
                     int *_counter = nullptr)
         : BenchHarness(_bench_name, _callback, _n_iters, _runtime,
-                       _min_bench_time, _counter) {};
+                       _min_bench_time, _min_warmup_time, _counter) {};
 
   protected:
     void setup_timing() override {}
@@ -165,14 +177,14 @@ void init_pin() {
 #ifdef USE_LIKWID
 #define PARALLEL_LIKWID_MARKER_START(name)                                     \
     do {                                                                       \
-        if (!(warmup)) {                                                       \
+        if (!(warmup) || 1) {                                                  \
             _Pragma("omp parallel") { LIKWID_MARKER_START(name); }             \
         }                                                                      \
     } while (0)
 
 #define PARALLEL_LIKWID_MARKER_STOP(name)                                      \
     do {                                                                       \
-        if (!(warmup)) {                                                       \
+        if (!(warmup) || 1) {                                                  \
             _Pragma("omp parallel") { LIKWID_MARKER_STOP(name); }              \
         }                                                                      \
     } while (0)
@@ -198,7 +210,7 @@ using harness_type = BenchHarnessCPU;
 #define RUN_BENCH                                                              \
     std::unique_ptr<harness_type> bench_harness =                              \
         std::make_unique<harness_type>(bench_name, lambda, n_iter, runtime,    \
-                                       MIN_BENCH_TIME);                        \
+                                       MIN_BENCH_TIME, MIN_WARMUP_TIME);       \
     std::cout << "Running bench: " << bench_name << std::endl;                 \
     bench_harness->warmup();                                                   \
     printf("Warmup complete\n");                                               \

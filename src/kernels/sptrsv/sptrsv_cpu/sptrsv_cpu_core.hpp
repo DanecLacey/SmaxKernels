@@ -74,12 +74,20 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     if (flags->mat_permuted) {
         int *lvl_ptr = args->uc->lvl_ptr;
         int n_levels = args->uc->n_levels;
+        UtilitiesContainer *uc = args->uc;
         if (flags->mat_upper_triang) {
             crs_sptrsv_lvl<false, IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr,
-                                          A_val, D_val, x, y, lvl_ptr);
+                                          A_val, D_val, x, y, lvl_ptr, uc);
         } else {
-            crs_sptrsv_lvl<true, IT, VT>(n_levels, A_n_cols, A_col, A_row_ptr,
-                                         A_val, D_val, x, y, lvl_ptr);
+#pragma omp parallel
+            {
+                ThreadLocalCRS *local_mem = uc->thread_mem_ptr[omp_get_thread_num()];
+                const IT *SMAX_RESTRICT local_row_ptr = (IT *)local_mem->A_row_ptr;
+                const VT *SMAX_RESTRICT local_val = (VT *)local_mem->A_val;
+                const IT *SMAX_RESTRICT local_col = (IT *)local_mem->A_col;
+                crs_sptrsv_lvl<true, IT, VT>(n_levels, A_n_cols, local_col, local_row_ptr,
+                                             local_val, D_val, x, y, lvl_ptr, uc);
+            }
         }
 
     } else {
