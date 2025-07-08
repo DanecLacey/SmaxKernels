@@ -1,29 +1,16 @@
 #pragma once
 
-//                  Before
+//              Before / After
 //        0   1   2   3   4   5   6   7
 //       _______________________________
-//  0   |11                            |
-//  1   |21  22                        |
+//  0   |11              15            |
+//  1   |    22  23                    |
 //  2   |    32  33                    |
-//  3   |    42      44                |
-//  4   |    52      54  55            |
-//  5   |61                  66        |
-//  6   |                        77    |
-//  7   |        83  84              88|
-//       _______________________________
-
-//                  After
-//        0   1   2   3   4   5   6   7
-//       _______________________________
-//  0   |11  **              **        |
-//  1   |21  22  **  **  **            |
-//  2   |    32  33                  **|
-//  3   |    42      44  **          **|
-//  4   |    52      54  55            |
-//  5   |61                  66        |
-//  6   |                        77    |
-//  7   |        83  84              88|
+//  3   |            44                |
+//  4   |51              55      57    |
+//  5   |                    66        |
+//  6   |                75      77    |
+//  7   |                            88|
 //       _______________________________
 
 #include "../examples_common.hpp"
@@ -31,15 +18,15 @@
 #include "testing_framework.hpp"
 #include "tests_common.hpp"
 
-REGISTER_TEST(build_symmetric_csr_1) {
+REGISTER_TEST(build_symmetric_csr_3) {
 
     using IT = int;
 
     // Initialize operands
     IT A_n_rows = 8;
-    IT A_nnz = 16;
-    IT *A_col = new IT[A_nnz]{0, 0, 1, 1, 2, 1, 3, 1, 3, 4, 0, 5, 6, 2, 3, 7};
-    IT *A_row_ptr = new IT[A_n_rows + 1]{0, 1, 3, 5, 7, 10, 12, 13, 16};
+    IT A_nnz = 14;
+    IT *A_col = new IT[A_nnz]{0, 4, 1, 2, 1, 2, 3, 0, 4, 6, 5, 4, 6, 7};
+    IT *A_row_ptr = new IT[A_n_rows + 1]{0, 2, 4, 6, 7, 10, 11, 13, 14};
 
     // Declare permuted data
     IT A_sym_n_rows = 8;
@@ -48,11 +35,11 @@ REGISTER_TEST(build_symmetric_csr_1) {
     IT *A_sym_row_ptr = nullptr;
 
     // Initialize expected result
-    IT expected_A_sym_nnz = 24;
-    IT *expected_A_sym_col = new IT[expected_A_sym_nnz]{
-        0, 1, 5, 0, 1, 2, 3, 4, 1, 2, 7, 1, 3, 4, 7, 1, 3, 4, 0, 5, 6, 2, 3, 7};
+    IT expected_A_sym_nnz = 14;
+    IT *expected_A_sym_col =
+        new IT[expected_A_sym_nnz]{0, 4, 1, 2, 1, 2, 3, 0, 4, 6, 5, 4, 6, 7};
     IT *expected_A_sym_row_ptr =
-        new IT[A_sym_n_rows + 1]{0, 3, 8, 11, 15, 18, 20, 21, 24};
+        new IT[A_sym_n_rows + 1]{0, 2, 4, 6, 7, 10, 11, 13, 14};
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
@@ -61,7 +48,7 @@ REGISTER_TEST(build_symmetric_csr_1) {
     smax->utils->build_symmetric_csr<IT, IT>(
         A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col, A_sym_nnz);
 
-    // print_array<IT>(A_sym_col, A_sym_nnz, std::string("sym_col"));
+    print_array<IT>(A_sym_col, A_sym_nnz, std::string("sym_col"));
     // print_array<IT>(A_sym_row_ptr, A_sym_n_rows + 1,
     //                 std::string("sym_row_ptr"));
 

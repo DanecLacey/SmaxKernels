@@ -31,9 +31,9 @@ class Utils {
                            ST &n_elements, ST &nnz, IT *&chunk_ptr,
                            IT *&chunk_lengths, IT *&col, VT *&val, IT *&perm);
 
-    template <typename IT>
-    int build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
-                            IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz);
+    template <typename IT, typename ST>
+    int build_symmetric_csr(IT *A_row_ptr, IT *A_col, ST A_n_rows,
+                            IT *&A_sym_row_ptr, IT *&A_sym_col, ST &A_sym_nnz);
 
     template <typename IT>
     int generate_perm_row_sweep(int A_n_rows, IT *A_row_ptr, IT *A_col,
@@ -58,9 +58,9 @@ class Utils {
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                        int *inv_perm, std::string type = std::string("BFS"));
 
-    template<typename IT>
-    bool sanity_check_perm(const int A_n_rows, const IT *A_row_ptr, const IT *A_col,
-                           const int *lvl);
+    template <typename IT>
+    bool sanity_check_perm(const int A_n_rows, const IT *A_row_ptr,
+                           const IT *A_col, const int *lvl);
 
     template <typename IT, typename VT>
     void apply_mat_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, VT *A_val,
