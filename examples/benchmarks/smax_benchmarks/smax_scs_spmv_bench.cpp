@@ -12,10 +12,9 @@ int main(int argc, char *argv[]) {
     init_pin();
 
     INIT_SPMV(IT, VT);
-    // TODO: Make C and sigma runtime args
     // Declare Sell-c-sigma operand
-    IT A_scs_C = 32;    // Defined by user
-    IT A_scs_sigma = 1; // Defined by user
+    IT A_scs_C = _C;         // Defined at runtime
+    IT A_scs_sigma = _sigma; // Defined at runtime
     IT A_scs_n_rows = 0;
     IT A_scs_n_rows_padded = 0;
     IT A_scs_n_cols = 0;
@@ -43,22 +42,26 @@ int main(int argc, char *argv[]) {
     DenseMatrix<VT> *x = new DenseMatrix<VT>(vec_size, 1, 1.0);
     DenseMatrix<VT> *y = new DenseMatrix<VT>(vec_size, 1, 0.0);
 
-    register_kernel<IT, VT>(smax, std::string("my_scs_spmv"),
+    std::ostringstream oss;
+    oss << "my_SELL_" << _C << "_" << _sigma << "_spmv";
+    std::string kernel_name = oss.str();
+
+    register_kernel<IT, VT>(smax, std::string(kernel_name),
                             SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
 
     // A is expected to be in the SCS format
-    smax->kernel("my_scs_spmv")->set_mat_scs(true);
+    smax->kernel(kernel_name)->set_mat_scs(true);
 
-    smax->kernel("my_scs_spmv")
+    smax->kernel(kernel_name)
         ->register_A(A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded,
                      A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,
                      A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
                      A_scs_perm);
-    smax->kernel("my_scs_spmv")->register_B(vec_size, x->val);
-    smax->kernel("my_scs_spmv")->register_C(vec_size, y->val);
+    smax->kernel(kernel_name)->register_B(vec_size, x->val);
+    smax->kernel(kernel_name)->register_C(vec_size, y->val);
 
     // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = "smax_scs_spmv";
+    std::string bench_name = kernel_name;
     float runtime = 0.0;
     int n_iter = MIN_NUM_ITERS;
     int n_threads = 1;
@@ -77,9 +80,10 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    std::function<void(bool)> lambda = [bench_name, smax](bool warmup) {
+    std::function<void(bool)> lambda = [bench_name, smax,
+                                        kernel_name](bool warmup) {
         PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
-        smax->kernel("my_scs_spmv")->run();
+        smax->kernel(kernel_name)->run();
         PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
