@@ -127,7 +127,6 @@ if(USE_MKL)
     #   ON  = ILP64 (64-bit indices)
     option(MKL_USE_ILP64 "Use MKL ILP64 interface (64-bit indices)" OFF)
 endif()
-option(USE_PETSC "Enable PETSC support" OFF)
 option(USE_FAST_MMIO "Enable fast matrix market support" OFF)
 include(cmake/CPM.cmake)
 
@@ -225,20 +224,6 @@ if(USE_MKL)
 else()
     message(STATUS "MKL support is disabled.")
 endif()
-
-# Enable PETSC support
-if(USE_PETSC)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(PETSC REQUIRED IMPORTED_TARGET petsc)
-    if(PETSC_FOUND)
-        message(STATUS "PETSc found, enabling PETSC support.")
-    else()
-        message(FATAL_ERROR "PETSc requested but not found.")
-    endif()
-else()
-    message(STATUS "PETSc support is disabled.")
-endif()
-
 
 if(USE_MKL)
     # DL 05.04.25 TODO: Would be useful to have other intermediate levels

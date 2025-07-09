@@ -41,7 +41,9 @@ int main(int argc, char *argv[]) {
     };
 
     // Execute benchmark and print results
+    smax->kernel(bench_name)->initialize();
     RUN_BENCH;
+    smax->kernel(bench_name)->finalize();
     smax->kernel(bench_name)->run(); // Just to get C_nnz
     PRINT_SPGEMM_BENCH(crs_mat_C->nnz);
     smax->utils->print_timers();

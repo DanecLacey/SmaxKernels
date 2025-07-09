@@ -228,12 +228,8 @@ using harness_type = BenchHarnessCPU;
                                                                                \
     std::cout << "Running bench: " << bench_name << std::endl;                 \
                                                                                \
-    smax->kernel(bench_name)->initialize();                                    \
     bench_harness->warmup();                                                   \
-    smax->kernel(bench_name)->finalize();                                      \
     printf("Warmup complete\n");                                               \
                                                                                \
-    smax->kernel(bench_name)->initialize();                                    \
     bench_harness->bench();                                                    \
-    smax->kernel(bench_name)->finalize();                                      \
     printf("Bench complete\n")

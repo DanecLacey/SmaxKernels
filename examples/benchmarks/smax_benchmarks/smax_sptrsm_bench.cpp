@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
     std::string bench_name = "smax_sptrsm";
     register_kernel<IT, VT>(smax, bench_name, SMAX::KernelType::SPTRSM,
                             SMAX::PlatformType::CPU);
+    smax->kernel(bench_name)->set_vec_row_major(true);
     REGISTER_SPTRSM_DATA(bench_name, crs_mat_D_plus_L, X, B);
 
     // Setup benchmark harness
@@ -33,7 +34,9 @@ int main(int argc, char *argv[]) {
     };
 
     // Execute benchmark and print results
+    smax->kernel(bench_name)->initialize();
     RUN_BENCH;
+    smax->kernel(bench_name)->finalize();
     PRINT_SPTRSM_BENCH;
     smax->utils->print_timers();
 

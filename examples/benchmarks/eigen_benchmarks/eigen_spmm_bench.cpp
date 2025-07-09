@@ -5,11 +5,14 @@
 
 int main(int argc, char *argv[]) {
 
+    // Set datatypes
     using IT = int;
     using VT = double;
 
-    init_pin(); // avoid counting pinning in timing
+    // Just takes pinning overhead away from timers
+    init_pin();
 
+    // Setup data structures
     INIT_SPMM(IT, VT);
 
     Eigen::MatrixXd eigen_x =
@@ -33,36 +36,20 @@ int main(int argc, char *argv[]) {
     }
     eigen_mat.setFromTriplets(triplets.begin(), triplets.end());
 
-    // Setup benchmark metadata
+    // Setup benchmark harness
     std::string bench_name = "eigen_spmm";
-    float runtime = 0.0;
-    int n_iter = MIN_NUM_ITERS;
-    int n_threads = 1;
+    SETUP_BENCH(bench_name);
 
-#ifdef _OPENMP
-#pragma omp parallel
-    {
-        n_threads = omp_get_num_threads();
-    }
-#endif
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_INIT;
-#pragma omp parallel
-    {
-        LIKWID_MARKER_REGISTER(bench_name.c_str());
-    }
-#endif
-
-    std::function<void(bool)> lambda = [bench_name, eigen_mat, eigen_x,
-                                        &eigen_y](bool warmup) {
-        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
+    std::function<void()> lambda = [bench_name, eigen_mat, eigen_x,
+                                    &eigen_y]() {
         eigen_y.noalias() = eigen_mat * eigen_x;
-        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
+    // Execute benchmark and print results
     RUN_BENCH;
     PRINT_SPMM_BENCH;
+
+    // Clean up
     FINALIZE_SPMM;
 
 #ifdef USE_LIKWID
