@@ -121,6 +121,7 @@ option(USE_MPI "Enable MPI support" OFF)
 option(USE_LIKWID "Enable LIKWID support" OFF)
 option(USE_EIGEN "Enable Eigen support" OFF)
 option(USE_MKL "Enable MKL support" OFF)
+option(USE_CUSPARSE "Enable CUSPARSE support" OFF)
 if(USE_MKL)
     # Option to select MKL integer interface:
     #   OFF = LP64 (32-bit indices)
