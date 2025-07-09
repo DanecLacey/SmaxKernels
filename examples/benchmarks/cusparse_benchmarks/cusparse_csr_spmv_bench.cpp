@@ -3,24 +3,25 @@
 #include "../benchmarks_common.hpp"
 #include "cusparse_benchmarks_common.hpp"
 
+// Set datatypes
 using IT = int;
 using VT = float;
 
 int main(int argc, char *argv[]) {
 
-    // Just to take overhead of pinning away from timers
+    // Just takes pinning overhead away from timers
     init_pin();
 
+    // Setup data structures
     INIT_SPMV(IT, VT);
-
     DenseMatrix<VT> *hX = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
     DenseMatrix<VT> *hY = new DenseMatrix<VT>(crs_mat->n_rows, 1, 0.0);
 
-    const int A_num_rows = crs_mat->n_rows;
-    const int A_num_cols = crs_mat->n_cols;
-    const int A_nnz = crs_mat->nnz;
-    int *hA_csrOffsets = crs_mat->row_ptr;
-    int *hA_columns = crs_mat->col;
+    const unsigned long long A_num_rows = crs_mat->n_rows;
+    const unsigned long long A_num_cols = crs_mat->n_cols;
+    const unsigned long long A_nnz = crs_mat->nnz;
+    IT *hA_csrOffsets = crs_mat->row_ptr;
+    IT *hA_columns = crs_mat->col;
     VT *hA_values = crs_mat->val;
 
     float alpha = 1.0f;
@@ -31,16 +32,16 @@ int main(int argc, char *argv[]) {
     int *dA_csrOffsets, *dA_columns;
     VT *dA_values, *dX, *dY;
     CHECK_CUDA(
-        cudaMalloc((void **)&dA_csrOffsets, (A_num_rows + 1) * sizeof(int)));
-    CHECK_CUDA(cudaMalloc((void **)&dA_columns, A_nnz * sizeof(int)));
+        cudaMalloc((void **)&dA_csrOffsets, (A_num_rows + 1) * sizeof(IT)));
+    CHECK_CUDA(cudaMalloc((void **)&dA_columns, A_nnz * sizeof(IT)));
     CHECK_CUDA(cudaMalloc((void **)&dA_values, A_nnz * sizeof(VT)));
     CHECK_CUDA(cudaMalloc((void **)&dX, A_num_cols * sizeof(VT)));
     CHECK_CUDA(cudaMalloc((void **)&dY, A_num_rows * sizeof(VT)));
 
     CHECK_CUDA(cudaMemcpy(dA_csrOffsets, hA_csrOffsets,
-                          (A_num_rows + 1) * sizeof(int),
+                          (A_num_rows + 1) * sizeof(IT),
                           cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dA_columns, hA_columns, A_nnz * sizeof(int),
+    CHECK_CUDA(cudaMemcpy(dA_columns, hA_columns, A_nnz * sizeof(IT),
                           cudaMemcpyHostToDevice));
     CHECK_CUDA(cudaMemcpy(dA_values, hA_values, A_nnz * sizeof(VT),
                           cudaMemcpyHostToDevice));
@@ -78,14 +79,13 @@ int main(int argc, char *argv[]) {
         vecY, CUDA_R_32F, CUSPARSE_SPMV_ALG_DEFAULT, dBuffer));
 
     std::string bench_name = "cusparse_csr_cuda_spmv";
-    float runtime = 0.0;
-    int n_iter = MIN_NUM_ITERS;
+    SETUP_BENCH(bench_name);
 
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaDeviceSynchronize());
 
-    std::function<void(bool)> lambda = [handle, matA, vecX, vecY, dBuffer, beta,
-                                        alpha](bool warmup) {
+    std::function<void()> lambda = [handle, matA, vecX, vecY, dBuffer, beta,
+                                    alpha]() {
         CHECK_CUSPARSE(cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                                     &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
                                     CUSPARSE_SPMV_ALG_DEFAULT, dBuffer));
@@ -93,9 +93,9 @@ int main(int argc, char *argv[]) {
     //--------------------------------------------------------------------------
     CHECK_CUDA(cudaDeviceSynchronize());
 
+    // Execute benchmark and print results
     RUN_BENCH;
     PRINT_SPMV_BENCH;
-    FINALIZE_SPMV;
 
     // device result check
     // CHECK_CUDA(cudaMemcpy(hY->val, dY, A_num_rows * sizeof(VT),
@@ -105,6 +105,8 @@ int main(int argc, char *argv[]) {
     // }
     //--------------------------------------------------------------------------
 
+    // Clean up
+    FINALIZE_SPMV;
     // destroy matrix/vector descriptors
     CHECK_CUSPARSE(cusparseDestroySpMat(matA));
     CHECK_CUSPARSE(cusparseDestroyDnVec(vecX));
