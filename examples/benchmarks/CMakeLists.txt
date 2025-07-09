@@ -3,6 +3,9 @@ set(BENCHMARK_DIRS
     smax_benchmarks
 )
 
+if(USE_CUSPARSE)
+    list(APPEND BENCHMARK_DIRS cusparse_benchmarks)
+endif()
 if(USE_EIGEN)
     list(APPEND BENCHMARK_DIRS eigen_benchmarks)
 endif()
