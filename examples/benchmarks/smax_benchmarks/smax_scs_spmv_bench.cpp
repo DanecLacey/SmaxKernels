@@ -5,14 +5,15 @@
 
 int main(int argc, char *argv[]) {
 
+    // Set datatypes
     using IT = unsigned int;
     using VT = double;
 
-    // Just to take overhead of pinning away from timers
+    // Just takes pinning overhead away from timers
     init_pin();
 
+    // Setup data structures
     INIT_SPMV(IT, VT);
-    // Declare Sell-c-sigma operand
     IT A_scs_C = _C;         // Defined at runtime
     IT A_scs_sigma = _sigma; // Defined at runtime
     IT A_scs_n_rows = 0;
@@ -30,6 +31,7 @@ int main(int argc, char *argv[]) {
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
 
+    // Convert CRS to Sell-C-sigma matrix
     smax->utils->convert_crs_to_scs<IT, VT, IT>(
         crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, crs_mat->col,
         crs_mat->row_ptr, crs_mat->val, A_scs_C, A_scs_sigma, A_scs_n_rows,
@@ -42,56 +44,37 @@ int main(int argc, char *argv[]) {
     DenseMatrix<VT> *x = new DenseMatrix<VT>(vec_size, 1, 1.0);
     DenseMatrix<VT> *y = new DenseMatrix<VT>(vec_size, 1, 0.0);
 
+    // Register kernel name to SMAX
     std::ostringstream oss;
-    oss << "my_SELL_" << _C << "_" << _sigma << "_spmv";
-    std::string kernel_name = oss.str();
+    oss << "smax_SELL_" << _C << "_" << _sigma << "_spmv";
+    std::string bench_name = oss.str();
+    register_kernel<IT, VT>(smax, bench_name, SMAX::KernelType::SPMV,
+                            SMAX::PlatformType::CPU);
 
-    register_kernel<IT, VT>(smax, std::string(kernel_name),
-                            SMAX::KernelType::SPMV, SMAX::PlatformType::CPU);
+    // Tell SMAX that A is expected to be in the SCS format
+    smax->kernel(bench_name)->set_mat_scs(true);
 
-    // A is expected to be in the SCS format
-    smax->kernel(kernel_name)->set_mat_scs(true);
-
-    smax->kernel(kernel_name)
+    // Register kenel data
+    smax->kernel(bench_name)
         ->register_A(A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded,
                      A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,
                      A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
                      A_scs_perm);
-    smax->kernel(kernel_name)->register_B(vec_size, x->val);
-    smax->kernel(kernel_name)->register_C(vec_size, y->val);
+    smax->kernel(bench_name)->register_B(vec_size, x->val);
+    smax->kernel(bench_name)->register_C(vec_size, y->val);
 
-    // Make lambda, and pass to the benchmarking harness
-    std::string bench_name = kernel_name;
-    float runtime = 0.0;
-    int n_iter = MIN_NUM_ITERS;
-    int n_threads = 1;
-#ifdef _OPENMP
-#pragma omp parallel
-    {
-        n_threads = omp_get_num_threads();
-    }
-#endif
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_INIT;
-#pragma omp parallel
-    {
-        LIKWID_MARKER_REGISTER(bench_name.c_str());
-    }
-#endif
-
-    std::function<void(bool)> lambda = [bench_name, smax,
-                                        kernel_name](bool warmup) {
-        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
-        smax->kernel(kernel_name)->run();
-        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
+    // Setup benchmark harness
+    SETUP_BENCH(bench_name);
+    std::function<void()> lambda = [smax, bench_name]() {
+        smax->kernel(bench_name)->apply();
     };
 
+    // Execute benchmark and print results
     RUN_BENCH;
     PRINT_SPMV_BENCH;
-
     smax->utils->print_timers();
 
+    // Clean up
     FINALIZE_SPMV;
     delete[] A_scs_chunk_ptr;
     delete[] A_scs_chunk_lengths;

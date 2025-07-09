@@ -44,9 +44,12 @@ class Kernel {
     virtual ~Kernel() { delete this->timers; };
 
     // Methods to override
-    virtual int initialize(ULL A_offset, ULL B_offset, ULL C_offset) = 0;
-    virtual int apply(ULL A_offset, ULL B_offset, ULL C_offset) = 0;
-    virtual int finalize(ULL A_offset, ULL B_offset, ULL C_offset) = 0;
+    // default offsets are zero if the caller omits them
+    virtual int initialize(ULL A_offset = 0, ULL B_offset = 0,
+                           ULL C_offset = 0) = 0;
+    virtual int apply(ULL A_offset = 0, ULL B_offset = 0, ULL C_offset = 0) = 0;
+    virtual int finalize(ULL A_offset = 0, ULL B_offset = 0,
+                         ULL C_offset = 0) = 0;
     virtual int _register_A(const std::vector<Variant> &args) = 0;
     virtual int _register_B(const std::vector<Variant> &args) = 0;
     virtual int _register_C(const std::vector<Variant> &args) = 0;

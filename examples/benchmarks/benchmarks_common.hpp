@@ -23,18 +23,34 @@
 #define GF_TO_F 1000000000
 #define F_TO_GF 0.000000001
 
+#ifdef USE_LIKWID
+#define PARALLEL_LIKWID_MARKER_START(name)                                     \
+    _Pragma("omp parallel") { LIKWID_MARKER_START(name); }
+
+#define PARALLEL_LIKWID_MARKER_STOP(name)                                      \
+    _Pragma("omp parallel") { LIKWID_MARKER_STOP(name); }
+
+#else
+
+// No‑ops when LIKWID support is disabled:
+#define PARALLEL_LIKWID_MARKER_START(name)
+
+#define PARALLEL_LIKWID_MARKER_STOP(name)
+
+#endif
+
 class BenchHarness {
   public:
     virtual ~BenchHarness() = default;
     const std::string &bench_name;
-    std::function<void(bool)> callback;
+    std::function<void()> callback;
     int &n_iters;
     float &runtime;
     float min_bench_time;
     int *counter;
 
     BenchHarness(const std::string &_bench_name,
-                 std::function<void(bool)> _callback, int &_n_iters,
+                 std::function<void()> _callback, int &_n_iters,
                  float &_runtime, float _min_bench_time,
                  int *_counter = nullptr)
         : bench_name(_bench_name), callback(_callback), n_iters(_n_iters),
@@ -47,14 +63,14 @@ class BenchHarness {
         int warmup_iters = n_iters;
 
         do {
-            record_start();
+            warmup_record_start();
             for (int i = 0; i < warmup_iters; ++i) {
-                callback(true);
+                callback();
             }
             if (counter)
                 *counter += warmup_iters;
             warmup_iters *= 2;
-            record_stop();
+            warmup_record_stop();
             warmup_runtime = compute_elapsed() / time_scale();
         } while (warmup_runtime < min_bench_time);
         warmup_iters /= 2;
@@ -66,7 +82,7 @@ class BenchHarness {
         do {
             record_start();
             for (int i = 0; i < n_iters; ++i) {
-                callback(false);
+                callback();
             }
             if (counter)
                 *counter += n_iters;
@@ -82,6 +98,8 @@ class BenchHarness {
     virtual void setup_timing() = 0;
     virtual void record_start() = 0;
     virtual void record_stop() = 0;
+    virtual void warmup_record_start() = 0;
+    virtual void warmup_record_stop() = 0;
     virtual float compute_elapsed() const = 0;
     virtual float time_scale() const = 0;
 };
@@ -90,17 +108,20 @@ class BenchHarnessCPU : public BenchHarness {
     double begin_loop_time, end_loop_time;
 
   public:
-    BenchHarnessCPU(const std::string &_bench_name,
-                    std::function<void(bool)> _callback, int &_n_iters,
-                    float &_runtime, float _min_bench_time,
-                    int *_counter = nullptr)
-        : BenchHarness(_bench_name, _callback, _n_iters, _runtime,
-                       _min_bench_time, _counter) {};
+    using BenchHarness::BenchHarness; // inherit all of the base‐class ctors
 
   protected:
     void setup_timing() override {}
-    void record_start() override { begin_loop_time = getTimeStamp(); }
-    void record_stop() override { end_loop_time = getTimeStamp(); }
+    void record_start() override {
+        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
+        begin_loop_time = getTimeStamp();
+    }
+    void record_stop() override {
+        end_loop_time = getTimeStamp();
+        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
+    }
+    void warmup_record_start() override { begin_loop_time = getTimeStamp(); }
+    void warmup_record_stop() override { end_loop_time = getTimeStamp(); }
     float compute_elapsed() const override {
         return end_loop_time - begin_loop_time;
     }
@@ -112,15 +133,16 @@ class BenchHarnessCUDA : public BenchHarness {
     cudaEvent_t start_ev, stop_ev;
 
   public:
-    BenchHarnessCUDA(const std::string &_bench_name,
-                     std::function<void(bool)> _callback, int &_n_iters,
-                     float &_runtime, float _min_bench_time,
-                     int *_counter = nullptr)
-        : BenchHarness(_bench_name, _callback, _n_iters, _runtime,
-                       _min_bench_time, _counter) {
+    using BenchHarness::BenchHarness; // inherit all of the base‐class ctors
+
+    // one forwarding ctor that also creates the events exactly once
+    template <typename... Args>
+    BenchHarnessCUDA(Args &&...args)
+        : BenchHarness(std::forward<Args>(args)...) {
         CUDA_CHECK(cudaEventCreate(&start_ev));
         CUDA_CHECK(cudaEventCreate(&stop_ev));
-    };
+    }
+
     ~BenchHarnessCUDA() override {
         cudaEventDestroy(start_ev);
         cudaEventDestroy(stop_ev);
@@ -130,6 +152,13 @@ class BenchHarnessCUDA : public BenchHarness {
     void setup_timing() override { CUDA_CHECK(cudaDeviceSynchronize()); }
     void record_start() override { CUDA_CHECK(cudaEventRecord(start_ev, 0)); }
     void record_stop() override {
+        CUDA_CHECK(cudaEventRecord(stop_ev, 0));
+        CUDA_CHECK(cudaEventSynchronize(stop_ev));
+    }
+    void warmup_record_start() override {
+        CUDA_CHECK(cudaEventRecord(start_ev, 0));
+    }
+    void warmup_record_stop() override {
         CUDA_CHECK(cudaEventRecord(stop_ev, 0));
         CUDA_CHECK(cudaEventSynchronize(stop_ev));
     }
@@ -162,45 +191,49 @@ void init_pin() {
     }
 }
 
-#ifdef USE_LIKWID
-#define PARALLEL_LIKWID_MARKER_START(name)                                     \
-    do {                                                                       \
-        if (!(warmup)) {                                                       \
-            _Pragma("omp parallel") { LIKWID_MARKER_START(name); }             \
-        }                                                                      \
-    } while (0)
-
-#define PARALLEL_LIKWID_MARKER_STOP(name)                                      \
-    do {                                                                       \
-        if (!(warmup)) {                                                       \
-            _Pragma("omp parallel") { LIKWID_MARKER_STOP(name); }              \
-        }                                                                      \
-    } while (0)
-
-#else
-
-// No‑ops when LIKWID support is disabled:
-#define PARALLEL_LIKWID_MARKER_START(name)                                     \
-    do {                                                                       \
-    } while (0)
-#define PARALLEL_LIKWID_MARKER_STOP(name)                                      \
-    do {                                                                       \
-    } while (0)
-
-#endif
-
 #ifdef CUDA_MODE
 using harness_type = BenchHarnessCUDA;
 #else
 using harness_type = BenchHarnessCPU;
 #endif
 
+// helper: OpenMP thread‐counting (no‐op if _OPENMP isn’t defined)
+#ifdef _OPENMP
+#define SETUP_OMP_THREADS()                                                    \
+    _Pragma("omp parallel") { n_threads = omp_get_num_threads(); }
+#else
+#define SETUP_OMP_THREADS() /* nothing */
+#endif
+
+// helper: LIKWID init + register (no‐op if USE_LIKWID isn’t defined)
+#ifdef USE_LIKWID
+#define SETUP_LIKWID_MARKER(name)                                              \
+    LIKWID_MARKER_INIT;                                                        \
+    _Pragma("omp parallel") { LIKWID_MARKER_REGISTER((name).c_str()); }
+#else
+#define SETUP_LIKWID_MARKER(name) /* nothing */
+#endif
+
+#define SETUP_BENCH(bench_name)                                                \
+    float runtime = 0.0f;                                                      \
+    int n_iter = MIN_NUM_ITERS;                                                \
+    int n_threads = 1;                                                         \
+    SETUP_OMP_THREADS();                                                       \
+    SETUP_LIKWID_MARKER(bench_name);
+
 #define RUN_BENCH                                                              \
     std::unique_ptr<harness_type> bench_harness =                              \
         std::make_unique<harness_type>(bench_name, lambda, n_iter, runtime,    \
                                        MIN_BENCH_TIME);                        \
+                                                                               \
     std::cout << "Running bench: " << bench_name << std::endl;                 \
+                                                                               \
+    smax->kernel(bench_name)->initialize();                                    \
     bench_harness->warmup();                                                   \
+    smax->kernel(bench_name)->finalize();                                      \
     printf("Warmup complete\n");                                               \
+                                                                               \
+    smax->kernel(bench_name)->initialize();                                    \
     bench_harness->bench();                                                    \
+    smax->kernel(bench_name)->finalize();                                      \
     printf("Bench complete\n")
