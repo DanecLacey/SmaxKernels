@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
         CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, matB, &beta, matC,
         CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
 
-    std::string bench_name = "cusparse_csr_cuda_spmv";
+    std::string bench_name = "cusparse_csr_cuda_spmm";
     SETUP_BENCH(bench_name);
 
     CHECK_CUDA(cudaGetLastError());
