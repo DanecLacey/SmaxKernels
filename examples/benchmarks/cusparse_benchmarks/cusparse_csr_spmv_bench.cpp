@@ -14,8 +14,8 @@ int main(int argc, char *argv[]) {
 
     // Setup data structures
     INIT_SPMV(IT, VT);
-    DenseMatrix<VT> *hX = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
-    DenseMatrix<VT> *hY = new DenseMatrix<VT>(crs_mat->n_rows, 1, 0.0);
+    auto hX = std::make_unique<DenseMatrix<VT>>(crs_mat->n_cols, 1, 1.0);
+    auto hY = std::make_unique<DenseMatrix<VT>>(crs_mat->n_rows, 1, 0.0);
 
     const unsigned long long A_num_rows = crs_mat->n_rows;
     const unsigned long long A_num_cols = crs_mat->n_cols;
@@ -119,7 +119,5 @@ int main(int argc, char *argv[]) {
     CHECK_CUDA(cudaFree(dA_values));
     CHECK_CUDA(cudaFree(dX));
     CHECK_CUDA(cudaFree(dY));
-    delete hX;
-    delete hY;
     return 0;
 }
