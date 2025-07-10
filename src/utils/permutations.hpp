@@ -230,6 +230,135 @@ int build_symmetric_csr_parallel(IT *A_row_ptr, IT *A_col, int A_n_rows,
 }
 
 template <typename IT, typename ST>
+int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
+                                 IT *&A_sym_row_ptr, IT *&A_sym_col,
+                                 ST &A_sym_nnz) {
+
+    // Based on RACE::makeSymmetricGraph() at https://github.com/RRZE-HPC/RACE
+
+    A_sym_nnz = 0;
+    int threads = 1;
+#pragma omp parallel
+    {
+        threads = omp_get_num_threads();
+    }
+
+    std::vector<std::vector<int>> **thread_storage = new std::vector<std::vector<int>>*[threads]; // (std::vector<std::vector<int>> **)malloc(threads * sizeof(std::vector<std::vector<int>>*));
+#pragma omp parallel
+    {
+        std::vector<std::vector<int>> *local_vector = new std::vector<std::vector<int>>(A_n_rows);
+        thread_storage[omp_get_thread_num()] = local_vector;
+    }
+
+    // Check if matrix is symmetric
+    bool is_symmetric = true;
+#pragma omp parallel for schedule(static) reduction(&:is_symmetric) reduction(+:A_sym_nnz)
+    for (int r = 0; r < A_n_rows; ++r) {
+        int t_num = omp_get_thread_num();
+        for (IT j = A_row_ptr[r]; j < A_row_ptr[r + 1]; ++j) {
+            IT c = A_col[j];
+            if (c != r && c >= 0 && c < A_n_rows) { // Assuming square matrix!
+                bool has_pair = false;
+                for (int k = A_row_ptr[c]; k < A_row_ptr[c + 1]; ++k) {
+                    if (A_col[k] == r) {
+                        has_pair = true;
+                        break;
+                    }
+                }
+                if (!has_pair) {
+                    // add the missing pair
+                    is_symmetric &= false;
+                    // do an update to the rows and col
+                    (*thread_storage[t_num])[c].push_back(r);
+                    A_sym_nnz += 1;
+                }
+            }
+        } // loop over col in row
+    } // loop over row
+
+    A_sym_nnz += A_row_ptr[A_n_rows];
+
+    A_sym_row_ptr = new IT[A_n_rows + 1];
+    A_sym_col = new IT[A_sym_nnz];
+
+    if (is_symmetric) {
+        // TODO: Just copy the pointers
+        // A_sym_row_ptr = A_row_ptr;
+        // A_sym_col = A_col;
+        A_sym_nnz = A_row_ptr[A_n_rows];
+
+#pragma omp parallel
+        {
+#pragma omp for schedule(static)
+            for (int i = 0; i < A_n_rows + 1; ++i) {
+                A_sym_row_ptr[i] = A_row_ptr[i];
+            }
+#pragma omp for schedule(static)
+            for (int i = 0; i < A_sym_nnz; ++i) {
+                A_sym_col[i] = A_col[i];
+            }
+        }
+    } else {
+        // Create the new data structure adding the missing entries
+
+        // update rowPtr
+        A_sym_row_ptr[0] = A_row_ptr[0];
+
+        int *sizes = new int[A_n_rows];
+#pragma omp parallel for schedule(static)
+        for (int r = 0; r < A_n_rows; r++) {
+            sizes[r] = 0;
+        }
+
+        // TODO: Make parallel
+        for (int r = 0; r < A_n_rows; r++) {
+            for (int t = 0; t < threads; t++) {
+                sizes[r] += (*thread_storage[t])[r].size();
+            }
+        }
+
+        // NUMA init
+#pragma omp parallel for schedule(static)
+        for (int r = 0; r < A_n_rows; ++r) {
+            A_sym_row_ptr[r + 1] = (IT)0;
+        }
+        for (int r = 0; r < A_n_rows; ++r) {
+            int row_len =
+                (A_row_ptr[r + 1] - A_row_ptr[r]) + sizes[r];
+            A_sym_row_ptr[r + 1] = A_sym_row_ptr[r] + row_len;
+        }
+
+        if (A_sym_nnz != A_sym_row_ptr[A_n_rows]) {
+            IF_SMAX_DEBUG(ErrorHandler::log("New nnz count does not match the "
+                                            "last entry in A_sym_row_ptr"));
+            return 1;
+        }
+
+        // update col
+#pragma omp parallel for schedule(static)
+        for (int r = 0; r < A_n_rows; ++r) {
+            IT j, old_j;
+            for (j = A_sym_row_ptr[r], old_j = A_row_ptr[r];
+                 old_j < A_row_ptr[r + 1]; ++j, ++old_j) {
+                A_sym_col[j] = A_col[old_j];
+            }
+            // add extra nnzs now
+            int thread_counter = 0;
+            int thread_local_ctr = 0;
+            for (; j < A_sym_row_ptr[r + 1]; ++j) {
+                while (thread_local_ctr >= (*thread_storage[thread_counter])[r].size()){
+                    thread_local_ctr = 0;
+                    thread_counter += 1;
+                }
+                A_sym_col[j] = (*thread_storage[thread_counter])[r][thread_local_ctr];
+                thread_local_ctr += 1;
+            }
+        }
+    }
+    delete[] thread_storage;
+}
+
+template <typename IT, typename ST>
 int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, ST A_n_rows,
                                IT *&A_sym_row_ptr, IT *&A_sym_col,
                                ST &A_sym_nnz) {
@@ -238,8 +367,11 @@ int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, ST A_n_rows,
 #if 0
     build_symmetric_csr_old<IT, ST>(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr,
                                     A_sym_col, A_sym_nnz);
-#elif 1
+#elif 0
     build_symmetric_csr_parallel<IT, ST>(A_row_ptr, A_col, A_n_rows,
+                                         A_sym_row_ptr, A_sym_col, A_sym_nnz);
+#elif 1
+    build_symmetric_csr_parallel_adapted<IT, ST>(A_row_ptr, A_col, A_n_rows,
                                          A_sym_row_ptr, A_sym_col, A_sym_nnz);
 #endif
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
