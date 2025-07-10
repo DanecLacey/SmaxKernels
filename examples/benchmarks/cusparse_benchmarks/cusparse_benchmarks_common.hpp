@@ -4,6 +4,7 @@
 
 #include <cuda_runtime_api.h>
 #include <cusparse.h>
+#include <memory>
 
 #define CHECK_CUDA(func)                                                       \
     do {                                                                       \
