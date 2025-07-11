@@ -128,6 +128,8 @@ int build_symmetric_csr_old(IT *A_row_ptr, IT *A_col, int A_n_rows,
     delete[] nnz_per_row;
     delete[] col_visited;
     delete[] sym_visited;
+
+    return 0;
 }
 
 template <typename IT, typename ST>
@@ -227,12 +229,14 @@ int build_symmetric_csr_parallel(IT *A_row_ptr, IT *A_col, int A_n_rows,
             }
         }
     }
+
+    return 0;
 }
 
 template <typename IT, typename ST>
 int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
-                                 IT *&A_sym_row_ptr, IT *&A_sym_col,
-                                 ST &A_sym_nnz) {
+                                         IT *&A_sym_row_ptr, IT *&A_sym_col,
+                                         ST &A_sym_nnz) {
 
     // Based on RACE::makeSymmetricGraph() at https://github.com/RRZE-HPC/RACE
 
@@ -243,16 +247,21 @@ int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
         threads = omp_get_num_threads();
     }
 
-    std::vector<std::vector<int>> **thread_storage = new std::vector<std::vector<int>>*[threads]; // (std::vector<std::vector<int>> **)malloc(threads * sizeof(std::vector<std::vector<int>>*));
+    std::vector<std::vector<int>> **thread_storage =
+        new std::vector<std::vector<int>>
+            *[threads]; // (std::vector<std::vector<int>> **)malloc(threads *
+                        // sizeof(std::vector<std::vector<int>>*));
 #pragma omp parallel
     {
-        std::vector<std::vector<int>> *local_vector = new std::vector<std::vector<int>>(A_n_rows);
+        std::vector<std::vector<int>> *local_vector =
+            new std::vector<std::vector<int>>(A_n_rows);
         thread_storage[omp_get_thread_num()] = local_vector;
     }
 
     // Check if matrix is symmetric
     bool is_symmetric = true;
-#pragma omp parallel for schedule(static) reduction(&:is_symmetric) reduction(+:A_sym_nnz)
+#pragma omp parallel for schedule(static) reduction(& : is_symmetric)          \
+    reduction(+ : A_sym_nnz)
     for (int r = 0; r < A_n_rows; ++r) {
         int t_num = omp_get_thread_num();
         for (IT j = A_row_ptr[r]; j < A_row_ptr[r + 1]; ++j) {
@@ -323,8 +332,7 @@ int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
             A_sym_row_ptr[r + 1] = (IT)0;
         }
         for (int r = 0; r < A_n_rows; ++r) {
-            int row_len =
-                (A_row_ptr[r + 1] - A_row_ptr[r]) + sizes[r];
+            int row_len = (A_row_ptr[r + 1] - A_row_ptr[r]) + sizes[r];
             A_sym_row_ptr[r + 1] = A_sym_row_ptr[r] + row_len;
         }
 
@@ -346,16 +354,20 @@ int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
             int thread_counter = 0;
             int thread_local_ctr = 0;
             for (; j < A_sym_row_ptr[r + 1]; ++j) {
-                while (thread_local_ctr >= (*thread_storage[thread_counter])[r].size()){
+                while (thread_local_ctr >=
+                       (*thread_storage[thread_counter])[r].size()) {
                     thread_local_ctr = 0;
                     thread_counter += 1;
                 }
-                A_sym_col[j] = (*thread_storage[thread_counter])[r][thread_local_ctr];
+                A_sym_col[j] =
+                    (*thread_storage[thread_counter])[r][thread_local_ctr];
                 thread_local_ctr += 1;
             }
         }
     }
     delete[] thread_storage;
+
+    return 0;
 }
 
 template <typename IT, typename ST>
@@ -367,12 +379,12 @@ int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, ST A_n_rows,
 #if 0
     build_symmetric_csr_old<IT, ST>(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr,
                                     A_sym_col, A_sym_nnz);
-#elif 0
+#elif 1
     build_symmetric_csr_parallel<IT, ST>(A_row_ptr, A_col, A_n_rows,
                                          A_sym_row_ptr, A_sym_col, A_sym_nnz);
-#elif 1
-    build_symmetric_csr_parallel_adapted<IT, ST>(A_row_ptr, A_col, A_n_rows,
-                                         A_sym_row_ptr, A_sym_col, A_sym_nnz);
+#elif 0
+    build_symmetric_csr_parallel_adapted<IT, ST>(
+        A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col, A_sym_nnz);
 #endif
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
 
