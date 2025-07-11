@@ -928,3 +928,14 @@ void print_matrix(ULL n_rows, ULL n_cols, ULL nnz, IT *col, IT *row_ptr,
     }
     printf("\n");
 }
+
+// Just for unit tests. In practice, we leave nonzeros in a row unsorted
+template <typename IT, typename ST>
+void sort_csr_rows_by_col(IT *row_ptr, IT *col, ST n_rows, ST nnz) {
+    for (ST i = 0; i < n_rows; ++i) {
+        IT *row_start = col + row_ptr[i];
+        IT *row_end = col + row_ptr[i + 1];
+
+        std::sort(row_start, row_end);
+    }
+};

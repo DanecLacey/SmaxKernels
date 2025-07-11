@@ -48,9 +48,7 @@ REGISTER_TEST(build_symmetric_csr_3) {
     smax->utils->build_symmetric_csr<IT, IT>(
         A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col, A_sym_nnz);
 
-    print_array<IT>(A_sym_col, A_sym_nnz, std::string("sym_col"));
-    // print_array<IT>(A_sym_row_ptr, A_sym_n_rows + 1,
-    //                 std::string("sym_row_ptr"));
+    sort_csr_rows_by_col<IT, IT>(A_sym_row_ptr, A_sym_col, A_n_rows, A_sym_nnz);
 
     // Compare results
     compare_values<IT>(expected_A_sym_nnz, A_sym_nnz, std::string("nnz"));

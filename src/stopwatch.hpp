@@ -12,7 +12,6 @@ class Stopwatch {
     timeval *begin;
     timeval *end;
     Stopwatch(timeval *_begin, timeval *_end) : begin(_begin), end(_end) {};
-    Stopwatch() : begin(), end() {};
 
     void start(void) { gettimeofday(begin, 0); }
 
