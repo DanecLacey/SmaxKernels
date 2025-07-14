@@ -31,6 +31,14 @@ class Utils {
                            ST &n_elements, ST &nnz, IT *&chunk_ptr,
                            IT *&chunk_lengths, IT *&col, VT *&val, IT *&perm);
 
+    template <typename IT, typename VT, typename ST>
+    int convert_crs_to_bcrs(const ST _n_rows, const ST _n_cols, const ST _nnz,
+                                  const IT *_col, const IT *_row_ptr,
+                                  const VT *_val, ST& n_rows, ST& n_cols, ST& nnz, ST& b_height, ST& b_width,
+                                  ST& height_pad, ST& width_pad, IT *&col, IT *&row_ptr, VT *&val,
+                                  const ST target_b_height, const ST target_b_width,
+                                  const ST target_height_pad, const ST target_width_pad, const bool block_column_major);
+
     template <typename IT>
     int build_symmetric_csr(IT *A_row_ptr, IT *A_col, int A_n_rows,
                             IT *&A_sym_row_ptr, IT *&A_sym_col, int &A_sym_nnz);
