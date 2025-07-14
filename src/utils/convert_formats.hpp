@@ -3,6 +3,7 @@
 #include "../common.hpp"
 #include "utils_common.hpp"
 #include <algorithm>
+#include <set>
 
 namespace SMAX {
 
@@ -127,6 +128,119 @@ int Utils::convert_crs_to_scs(const ST _n_rows, const ST _n_cols, const ST _nnz,
     }
 
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting convert_crs_to_scs"));
+    return 0;
+};
+
+template <typename IT, typename VT, typename ST>
+int Utils::convert_crs_to_bcrs(const ST _n_rows, const ST _n_cols, const ST _nnz,
+                              const IT *_col, const IT *_row_ptr,
+                              const VT *_val, ST& n_rows, ST& n_cols, ST& nnz, ST& b_height, ST& b_width,
+                              ST& height_pad, ST& width_pad, IT *&col, IT *&row_ptr, VT *&val,
+                              const ST target_b_height, const ST target_b_width,
+                              const ST target_height_pad, const ST target_width_pad, const bool block_column_major) {
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering convert_crs_to_bcrs"));
+    // check if size match
+    if(_n_rows%target_b_height)
+    {
+        throw std::runtime_error("Target block height does not divide number of input rows");
+    }
+    if(_n_cols%target_b_width)
+    {
+        throw std::runtime_error("Target block width does not divide number of input columns");
+    }
+    if(target_height_pad < target_b_height)
+    {
+        throw std::runtime_error("Height padding has to be at least target block height");
+    }
+    if(target_height_pad < target_b_height)
+    {
+        throw std::runtime_error("Width padding has to be at least target block width");
+    }
+
+    // setup sizes
+    n_rows = _n_rows / target_b_height;
+    n_cols = _n_cols / target_b_width;
+    b_height = target_b_height;
+    b_width = target_b_width;
+    height_pad = target_height_pad;
+    width_pad = target_width_pad;
+
+    // temprorary arrays for row and column ptr
+    std::vector<IT> tmp_row_ptr(n_rows+1u);
+    std::vector<IT> tmp_col_ptr;
+
+    // reserve to sensical size, we will have at most nnz block entries
+    tmp_col_ptr.reserve(_nnz);
+
+    // for each block row, we gather our values in a sorted set
+    std::set<IT> tmp_uni_col;
+
+    tmp_row_ptr[0] = IT(0);
+    // we now run through block height rows and gather the columns to be added
+    for(ST b_row = 0; b_row < n_rows; ++b_row)
+    {
+        tmp_uni_col.clear();
+        for(ST l_row = b_row*b_height; l_row < (b_row+1)*b_height; ++l_row)
+        {
+            for(IT idx = _row_ptr[l_row]; idx < _row_ptr[l_row+1]; ++idx)
+            {
+                tmp_uni_col.insert(_col[idx]/b_width);
+            }
+        }
+        tmp_row_ptr[b_row+1] = tmp_uni_col.size() + tmp_row_ptr[b_row];
+        std::for_each(tmp_uni_col.begin(), tmp_uni_col.end(), [&](const auto& ele){tmp_col_ptr.push_back(ele);});
+    }
+
+    // clear set
+    tmp_uni_col.clear();
+
+    // we define nnz as non zero blocks, which is the size of our columns array
+    nnz = tmp_col_ptr.size();
+
+    // create actual matrix data
+    row_ptr = new IT[n_rows+1u];
+    col = new IT[nnz];
+    // copy known data
+    std::copy(tmp_row_ptr.begin(), tmp_row_ptr.end(), row_ptr);
+    std::copy(tmp_col_ptr.begin(), tmp_col_ptr.end(), col);
+
+    // clear used data
+    tmp_row_ptr.clear();
+    tmp_col_ptr.clear();
+
+    // need space for nnz blocks
+    val = new VT[nnz*height_pad*width_pad];
+
+    // init to zero
+    std::fill(val, val + nnz*height_pad*width_pad, VT(0));
+
+    // and now run through our csr matrix blockwise, track the column position and copy into the blocked matrix
+    for(ST b_row = 0; b_row < n_rows; ++b_row)
+    {
+        for(ST l_row = ST(0); l_row < ST(b_height); ++l_row)
+        {
+            ST b_idx = row_ptr[b_row];
+            for(IT idx = _row_ptr[b_row*b_height + l_row]; idx < _row_ptr[b_row*b_height + l_row + 1]; ++idx)
+            {
+                // advance block row index until it is the same
+                while(col[b_idx] < _col[idx]/b_width)
+                {
+                    ++b_idx;
+                }
+                // todo: only in debug modus?
+                if(col[b_idx] != _col[idx]/b_width)
+                {
+                    throw std::runtime_error("Blocked Column array does not fit with csr columns");
+                }
+                // and now write the value into the correct block idx
+                const IT blc_inc = block_column_major ? (height_pad * (_col[idx]%b_width) + l_row) : (width_pad * l_row + (_col[idx]%b_width));
+                // std::printf("b_row %i, b_idx %i, l_row %i, idx %i, blc_inc %i\n", int(b_row), int(b_idx), int(l_row), int(idx), int(blc_inc));
+                val[b_idx*height_pad*width_pad + blc_inc] = _val[idx];
+            }
+        }
+    }
+
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting convert_crs_to_bcrs"));
     return 0;
 };
 
