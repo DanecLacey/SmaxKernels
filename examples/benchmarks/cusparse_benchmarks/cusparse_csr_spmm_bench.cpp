@@ -9,8 +9,7 @@ using VT = float;
 
 int main(int argc, char *argv[]) {
 
-    // Just takes pinning overhead away from timers
-    init_pin();
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPMM(IT, VT);
@@ -94,7 +93,7 @@ int main(int argc, char *argv[]) {
         CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
 
     std::string bench_name = "cusparse_csr_cuda_spmm";
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
 
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaDeviceSynchronize());
@@ -114,7 +113,8 @@ int main(int argc, char *argv[]) {
 
     // device result check
     // CHECK_CUDA(
-    //     cudaMemcpy(dY->val, dC, B_size * sizeof(VT), cudaMemcpyDeviceToHost));
+    //     cudaMemcpy(dY->val, dC, B_size * sizeof(VT),
+    //     cudaMemcpyDeviceToHost));
     // for (int i = 0; i < A_num_rows; i++) {
     //     for (int j = 0; j < B_num_cols; j++) {
     //         printf("%f ", hC[i + j * ldc]);
@@ -137,5 +137,4 @@ int main(int argc, char *argv[]) {
     CHECK_CUDA(cudaFree(dA_values));
     CHECK_CUDA(cudaFree(dB));
     CHECK_CUDA(cudaFree(dC));
-    return 0;
 }

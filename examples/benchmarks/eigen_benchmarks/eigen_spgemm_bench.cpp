@@ -7,14 +7,13 @@
 #undef MIN_NUM_ITERS
 #define MIN_NUM_ITERS 10
 
+// Set datatypes
+using IT = int;
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-    // Set datatypes
-    using IT = int;
-    using VT = double;
-
-    // Just takes pinning overhead away from timers
-    init_pin();
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPGEMM(IT, VT);
@@ -64,7 +63,8 @@ int main(int argc, char *argv[]) {
 
     // Setup benchmark harness
     std::string bench_name = "eigen_spgemm";
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
 
     std::function<void()> lambda = [bench_name, &eigen_A, &eigen_B,
                                     &eigen_C]() {
@@ -77,8 +77,5 @@ int main(int argc, char *argv[]) {
 
     // Clean up
     FINALIZE_SPGEMM;
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_CLOSE;
-#endif
+    FINALIZE_LIKWID_MARKERS;
 }

@@ -207,19 +207,30 @@ using harness_type = BenchHarnessCPU;
 
 // helper: LIKWID init + register (no‐op if USE_LIKWID isn’t defined)
 #ifdef USE_LIKWID
-#define SETUP_LIKWID_MARKER(name)                                              \
-    LIKWID_MARKER_INIT;                                                        \
-    _Pragma("omp parallel") { LIKWID_MARKER_REGISTER((name).c_str()); }
+#define INIT_LIKWID_MARKERS(name)                                              \
+    do {                                                                       \
+        LIKWID_MARKER_INIT;                                                    \
+        _Pragma("omp parallel") { LIKWID_MARKER_REGISTER((name).c_str()); }    \
+    } while (0)
+
+#define FINALIZE_LIKWID_MARKERS                                                \
+    do {                                                                       \
+        LIKWID_MARKER_CLOSE;                                                   \
+    } while (0)
 #else
-#define SETUP_LIKWID_MARKER(name) /* nothing */
+#define INIT_LIKWID_MARKERS(name)                                              \
+    do {                                                                       \
+    } while (0)
+#define FINALIZE_LIKWID_MARKERS                                                \
+    do {                                                                       \
+    } while (0)
 #endif
 
-#define SETUP_BENCH(bench_name)                                                \
+#define SETUP_BENCH                                                            \
     float runtime = 0.0f;                                                      \
     int n_iter = MIN_NUM_ITERS;                                                \
     int n_threads = 1;                                                         \
-    SETUP_OMP_THREADS();                                                       \
-    SETUP_LIKWID_MARKER(bench_name);
+    SETUP_OMP_THREADS();
 
 #define RUN_BENCH                                                              \
     std::unique_ptr<harness_type> bench_harness =                              \

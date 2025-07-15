@@ -3,18 +3,17 @@
 #include "../benchmarks_common.hpp"
 #include "mkl_benchmarks_common.hpp"
 
+// Set datatypes
+#ifdef USE_MKL_ILP64
+using IT = long long int;
+#else
+using IT = int;
+#endif
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-    // Set datatypes
-#ifdef USE_MKL_ILP64
-    using IT = long long int;
-#else
-    using IT = int;
-#endif
-    using VT = double;
-
-    // Just takes pinning overhead away from timers
-    init_pin();
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPTRSV(IT, VT);
@@ -51,7 +50,8 @@ int main(int argc, char *argv[]) {
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "mkl_sptrsv";
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
 
     std::function<void()> lambda = [bench_name, A, descr, x, b]() {
         mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr, b->val,
@@ -67,6 +67,5 @@ int main(int argc, char *argv[]) {
     delete x;
     delete b;
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
-
-    return 0;
+    FINALIZE_LIKWID_MARKERS;
 }

@@ -3,14 +3,13 @@
 #include "../benchmarks_common.hpp"
 #include "smax_benchmarks_common.hpp"
 
+// Set datatypes
+using IT = unsigned int;
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-    // Set datatypes
-    using IT = unsigned int;
-    using VT = double;
-
-    // Just takes pinning overhead away from timers
-    init_pin();
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPMV(IT, VT);
@@ -64,7 +63,8 @@ int main(int argc, char *argv[]) {
     smax->kernel(bench_name)->register_C(vec_size, y->val);
 
     // Setup benchmark harness
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
     std::function<void()> lambda = [smax, bench_name]() {
         smax->kernel(bench_name)->apply();
     };
@@ -85,8 +85,5 @@ int main(int argc, char *argv[]) {
     delete[] A_scs_perm;
     delete x;
     delete y;
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_CLOSE;
-#endif
+    FINALIZE_LIKWID_MARKERS;
 }

@@ -3,18 +3,17 @@
 #include "../benchmarks_common.hpp"
 #include "mkl_benchmarks_common.hpp"
 
+// Set datatypes
+#ifdef USE_MKL_ILP64
+using IT = long long int;
+#else
+using IT = int;
+#endif
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-    // Set datatypes
-#ifdef USE_MKL_ILP64
-    using IT = long long int;
-#else
-    using IT = int;
-#endif
-    using VT = double;
-
-    // Just takes pinning overhead away from timers
-    init_pin();
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPMM(IT, VT);
@@ -49,7 +48,8 @@ int main(int argc, char *argv[]) {
 
     // Setup benchmark harness
     std::string bench_name = "mkl_spmm";
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
 
     std::function<void()> lambda = [bench_name, A, descr, X, crs_mat, n_vectors,
                                     Y]() {
@@ -73,6 +73,5 @@ int main(int argc, char *argv[]) {
     delete X;
     delete Y;
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
-
-    return 0;
+    FINALIZE_LIKWID_MARKERS;
 }

@@ -3,14 +3,13 @@
 #include "../benchmarks_common.hpp"
 #include "eigen_benchmarks_common.hpp"
 
+// Set datatypes
+using IT = int;
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-    // Set datatypes
-    using IT = int;
-    using VT = double;
-
-    // Just takes pinning overhead away from timers
-    init_pin();
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPTRSM(IT, VT);
@@ -37,7 +36,8 @@ int main(int argc, char *argv[]) {
 
     // Setup benchmark harness
     std::string bench_name = "eigen_sptrsm";
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
 
     std::function<void()> lambda = [bench_name, &eigen_mat, &X, &B]() {
         X.noalias() = eigen_mat.triangularView<Eigen::Lower>().solve(B);
@@ -49,8 +49,5 @@ int main(int argc, char *argv[]) {
 
     // Clean up
     FINALIZE_SPTRSM;
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_CLOSE;
-#endif
+    FINALIZE_LIKWID_MARKERS;
 }

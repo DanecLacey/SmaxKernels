@@ -10,8 +10,8 @@ using VT = float;
 int main(int argc, char *argv[]) {
 
     auto smax = std::make_unique<SMAX::Interface>();
-    // Just takes pinning overhead away from timers
-    init_pin();
+
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPMV(IT, VT);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     CHECK_CUDA(cudaMalloc(&dBuffer, bufferSize));
 
     std::string bench_name = "cusparse_SELL_cuda_spmv";
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
 
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaDeviceSynchronize());
@@ -139,5 +139,4 @@ int main(int argc, char *argv[]) {
     CHECK_CUDA(cudaFree(dA_values));
     CHECK_CUDA(cudaFree(dX));
     CHECK_CUDA(cudaFree(dY));
-    return 0;
 }

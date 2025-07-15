@@ -3,14 +3,13 @@
 #include "../benchmarks_common.hpp"
 #include "smax_benchmarks_common.hpp"
 
+// Set datatypes
+using IT = int;
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-    // Set datatypes
-    using IT = int;
-    using VT = double;
-
-    // Just takes pinning overhead away from timers
-    init_pin();
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPTRSM(IT, VT);
@@ -28,7 +27,8 @@ int main(int argc, char *argv[]) {
     REGISTER_SPTRSM_DATA(bench_name, crs_mat_D_plus_L, X, B);
 
     // Setup benchmark harness
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
     std::function<void()> lambda = [smax, bench_name]() {
         smax->kernel(bench_name)->apply();
     };
@@ -44,8 +44,5 @@ int main(int argc, char *argv[]) {
     FINALIZE_SPTRSM;
     delete X;
     delete B;
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_CLOSE;
-#endif
+    FINALIZE_LIKWID_MARKERS;
 }

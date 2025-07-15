@@ -7,18 +7,17 @@
 #undef MIN_NUM_ITERS
 #define MIN_NUM_ITERS 10
 
+// Set datatypes
+#ifdef USE_MKL_ILP64
+using IT = long long int;
+#else
+using IT = int;
+#endif
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-    // Set datatypes
-#ifdef USE_MKL_ILP64
-    using IT = long long int;
-#else
-    using IT = int;
-#endif
-    using VT = double;
-
-    // Just takes pinning overhead away from timers
-    init_pin();
+    init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPGEMM(IT, VT);
@@ -72,7 +71,8 @@ int main(int argc, char *argv[]) {
 
     // Setup benchmark harness
     std::string bench_name = "mkl_spgemm";
-    SETUP_BENCH(bench_name);
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
     std::function<void()> lambda = [bench_name, descr, A, B, &C]() {
         mkl_sparse_sp2m(SPARSE_OPERATION_NON_TRANSPOSE, descr, A,
                         SPARSE_OPERATION_NON_TRANSPOSE, descr, B,
@@ -114,6 +114,5 @@ int main(int argc, char *argv[]) {
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy A");
     CHECK_MKL_STATUS(mkl_sparse_destroy(B), "mkl_sparse_destroy B");
     CHECK_MKL_STATUS(mkl_sparse_destroy(C), "mkl_sparse_destroy C");
-
-    return 0;
+    FINALIZE_LIKWID_MARKERS;
 }
