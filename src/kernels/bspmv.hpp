@@ -104,10 +104,10 @@ class BSpMVKernel : public Kernel {
         return 0;
     }
 
-    // int set_block_column_major(bool flag) override {
-    //     this->flags->is_block_column_major = flag;
-    //     return 0;
-    // }
+    int set_block_column_major(bool flag) override {
+        this->flags->is_block_column_major = flag;
+        return 0;
+    }
 
     // Dispatch kernel based on platform
     int dispatch(Func func, const char *label, ULL A_offset, ULL x_offset,

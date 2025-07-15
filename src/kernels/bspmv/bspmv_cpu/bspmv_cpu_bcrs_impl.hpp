@@ -57,14 +57,14 @@ naive_bcrs_spmv(const ULL n_rows, const ULL n_cols, const ULL block_height, cons
                 if constexpr(block_column_major) {
                     for(IT jx = 0; jx < block_width; ++jx) {
                         for(IT ix = 0; ix < block_height; ++ix) {
-                            y_buffer[ix] += val[row*block_size + jx*height_padding + ix] * x[col[j]*width_padding + jx];
+                            y_buffer[ix] += val[j*block_size + jx*height_padding + ix] * x[col[j]*width_padding + jx];
                         }
                     }
                 }
                 else {
-                    for(IT ix = 0; ix < block_width; ++ix) {
-                        for(IT jx = 0; jx < block_height; ++jx) {
-                            y_buffer[ix] += val[row*block_size + ix*width_padding + jx] * x[col[j]*width_padding + jx];
+                    for(IT ix = 0; ix < block_height; ++ix) {
+                        for(IT jx = 0; jx < block_width; ++jx) {
+                            y_buffer[ix] += val[j*block_size + ix*width_padding + jx] * x[col[j]*width_padding + jx];
                         }
                     }
                 }
@@ -76,6 +76,8 @@ naive_bcrs_spmv(const ULL n_rows, const ULL n_cols, const ULL block_height, cons
               y[row*height_padding + ix] = y_buffer[ix];
             }
         }
+
+        delete[] y_buffer;
     }
     IF_SMAX_DEBUG_3(printf("Finish BSpMV\n"));
     // clang-format on

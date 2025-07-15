@@ -72,6 +72,10 @@ class Kernel {
         std::cerr << "set_mat_scs not supported for this kernel.\n";
         return 1;
     }
+    virtual int set_block_column_major(bool){
+        std::cerr << "set_mat_scs not supported for this kernel.\n";
+        return 1;
+    }
 
     // Swapping utility to override
     virtual int swap_operands(void) {
