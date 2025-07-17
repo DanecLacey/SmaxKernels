@@ -502,7 +502,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                         A_sym_nnz);
 
     // Step 2: Call kernel for desired traversal method
-    int n_levels = 0;
+    int n_levels = 1;
     if (type == "RS") {
         n_levels = Utils::generate_perm_row_sweep(A_n_rows, A_sym_row_ptr,
                                                   A_sym_col, lvl);
@@ -520,11 +520,17 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                                                   A_sym_col, lvl);
         n_levels = Utils::generate_color_perm_bal(A_n_rows, A_sym_row_ptr,
                                                   A_sym_col, lvl, n_levels);
+    } else if (type == "NONE") {
+// Generates dummy permutation
+#pragma omp parallel for
+        for (int i = 0; i < A_n_rows; ++i) {
+            lvl[i] = 0;
+        }
     } else {
         // Throwing errors in lib is not nice.
         // TODO: think of a way to tell user that the wrong type is
         // used.
-        UtilsErrorHandler::perm_type_dne(type, "BFS, RS, SC, PC, PC_BAL");
+        UtilsErrorHandler::perm_type_dne(type, "BFS, RS, SC, PC, PC_BAL, NONE");
     }
 
     // Step 3: Compute permuation - if necessary
@@ -796,7 +802,10 @@ bool Utils::sanity_check_perm(const int A_n_rows, const IT *A_row_ptr,
         for (int idx = A_row_ptr[row]; idx < A_row_ptr[row + 1]; idx++) {
             if (A_col[idx] >= row)
                 continue;
-            if (colors[row] == colors[A_col[idx]]) {
+            if (colors[row] == colors[A_col[idx]] &&
+                (colors[row] != 0 &&
+                 colors[A_col[idx]] != 0)) // Protect against NONE case
+            {
                 std::cout << "Found problem in color " << colors[row]
                           << " with nodes " << row << " and " << A_col[idx]
                           << std::endl;

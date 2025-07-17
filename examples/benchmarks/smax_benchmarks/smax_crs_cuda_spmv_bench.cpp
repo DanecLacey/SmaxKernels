@@ -4,8 +4,8 @@
 #include "smax_benchmarks_common.hpp"
 
 // Set datatypes
-using IT = unsigned int;
-using VT = double;
+using IT = int;
+using VT = float;
 
 int main(int argc, char *argv[]) {
 

@@ -25,3 +25,23 @@
             std::exit(EXIT_FAILURE);                                           \
         }                                                                      \
     } while (0)
+
+// helper for static_assert in a non‐instantiated branch
+template <class> inline constexpr bool always_false = false;
+
+#define DEFINE_CUSPARSE_TYPES(IT, VT)                                          \
+    /* pick index‐type enum */                                                 \
+    constexpr auto CUSPARSE_INDEX_TYPE = []() {                                \
+        if constexpr (std::is_same_v<IT, int>)                                 \
+            return CUSPARSE_INDEX_32I;                                         \
+        else if constexpr (std::is_same_v<IT, long> ||                         \
+                           std::is_same_v<IT, long long>)                      \
+            return CUSPARSE_INDEX_64I;                                         \
+    }();                                                                       \
+    /* pick value‐type enum */                                                 \
+    constexpr auto CUSPARSE_FLOAT_TYPE = []() {                                \
+        if constexpr (std::is_same_v<VT, float>)                               \
+            return CUDA_R_32F;                                                 \
+        else if constexpr (std::is_same_v<VT, double>)                         \
+            return CUDA_R_64F;                                                 \
+    }();

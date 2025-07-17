@@ -4,10 +4,12 @@
 #include "cusparse_benchmarks_common.hpp"
 
 // Set datatypes
+// NOTE: cuSPARSE only takes signed indices
 using IT = int;
-using VT = float;
+using VT = double;
 
 int main(int argc, char *argv[]) {
+    DEFINE_CUSPARSE_TYPES(IT, VT)
 
     auto smax = std::make_unique<SMAX::Interface>();
 
@@ -45,36 +47,36 @@ int main(int argc, char *argv[]) {
     const int A_values_size = A_scs_n_elements;
     int A_num_slices = A_scs_n_chunks; // 2
 
-    int *hA_sliceOffsets = A_scs_chunk_ptr;
-    int *hA_columns = A_scs_col;
-    float *hA_values = A_scs_val;
-    float *hX = X->val;
-    float *hY = Y->val;
-    float alpha = 1.0f;
-    float beta = 0.0f;
+    IT *hA_sliceOffsets = A_scs_chunk_ptr;
+    IT *hA_columns = A_scs_col;
+    VT *hA_values = A_scs_val;
+    VT *hX = X->val;
+    VT *hY = Y->val;
+    VT alpha = 1.0;
+    VT beta = 0.0;
 
     //--------------------------------------------------------------------------
     // Device memory management
-    int *dA_sliceOffsets, *dA_columns;
-    float *dA_values, *dX, *dY;
-    CHECK_CUDA(cudaMalloc((void **)&dA_sliceOffsets,
-                          (A_num_slices + 1) * sizeof(int)));
-    CHECK_CUDA(cudaMalloc((void **)&dA_columns, A_values_size * sizeof(int)));
-    CHECK_CUDA(cudaMalloc((void **)&dA_values, A_values_size * sizeof(float)));
-    CHECK_CUDA(cudaMalloc((void **)&dX, A_num_cols * sizeof(float)));
-    CHECK_CUDA(cudaMalloc((void **)&dY, A_num_rows * sizeof(float)));
+    IT *dA_sliceOffsets, *dA_columns;
+    VT *dA_values, *dX, *dY;
+    CHECK_CUDA(
+        cudaMalloc((void **)&dA_sliceOffsets, (A_num_slices + 1) * sizeof(IT)));
+    CHECK_CUDA(cudaMalloc((void **)&dA_columns, A_values_size * sizeof(IT)));
+    CHECK_CUDA(cudaMalloc((void **)&dA_values, A_values_size * sizeof(VT)));
+    CHECK_CUDA(cudaMalloc((void **)&dX, A_num_cols * sizeof(VT)));
+    CHECK_CUDA(cudaMalloc((void **)&dY, A_num_rows * sizeof(VT)));
 
     CHECK_CUDA(cudaMemcpy(dA_sliceOffsets, hA_sliceOffsets,
-                          (A_num_slices + 1) * sizeof(int),
+                          (A_num_slices + 1) * sizeof(IT),
                           cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dA_columns, hA_columns, A_values_size * sizeof(int),
+    CHECK_CUDA(cudaMemcpy(dA_columns, hA_columns, A_values_size * sizeof(IT),
                           cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dA_values, hA_values, A_values_size * sizeof(float),
+    CHECK_CUDA(cudaMemcpy(dA_values, hA_values, A_values_size * sizeof(VT),
                           cudaMemcpyHostToDevice));
     CHECK_CUDA(
-        cudaMemcpy(dX, hX, A_num_cols * sizeof(float), cudaMemcpyHostToDevice));
+        cudaMemcpy(dX, hX, A_num_cols * sizeof(VT), cudaMemcpyHostToDevice));
     CHECK_CUDA(
-        cudaMemcpy(dY, hY, A_num_rows * sizeof(float), cudaMemcpyHostToDevice));
+        cudaMemcpy(dY, hY, A_num_rows * sizeof(VT), cudaMemcpyHostToDevice));
     //--------------------------------------------------------------------------
 
     // CUSPARSE APIs
@@ -87,16 +89,18 @@ int main(int argc, char *argv[]) {
     // Create sparse matrix A in SELL format
     CHECK_CUSPARSE(cusparseCreateSlicedEll(
         &matA, A_num_rows, A_num_cols, A_nnz, A_values_size, A_slice_size,
-        dA_sliceOffsets, dA_columns, dA_values, CUSPARSE_INDEX_32I,
-        CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F));
+        dA_sliceOffsets, dA_columns, dA_values, CUSPARSE_INDEX_TYPE,
+        CUSPARSE_INDEX_TYPE, CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_FLOAT_TYPE));
     // Create dense vector X
-    CHECK_CUSPARSE(cusparseCreateDnVec(&vecX, A_num_cols, dX, CUDA_R_32F));
+    CHECK_CUSPARSE(
+        cusparseCreateDnVec(&vecX, A_num_cols, dX, CUSPARSE_FLOAT_TYPE));
     // Create dense vector y
-    CHECK_CUSPARSE(cusparseCreateDnVec(&vecY, A_num_rows, dY, CUDA_R_32F));
+    CHECK_CUSPARSE(
+        cusparseCreateDnVec(&vecY, A_num_rows, dY, CUSPARSE_FLOAT_TYPE));
     // allocate an external buffer if needed
     CHECK_CUSPARSE(cusparseSpMV_bufferSize(
         handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta,
-        vecY, CUDA_R_32F, CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize));
+        vecY, CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize));
     CHECK_CUDA(cudaMalloc(&dBuffer, bufferSize));
 
     std::string bench_name = "cusparse_SELL_cuda_spmv";
@@ -106,9 +110,9 @@ int main(int argc, char *argv[]) {
     CHECK_CUDA(cudaDeviceSynchronize());
 
     std::function<void()> lambda = [&]() {
-        CHECK_CUSPARSE(cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
-                                    &alpha, matA, vecX, &beta, vecY, CUDA_R_32F,
-                                    CUSPARSE_SPMV_ALG_DEFAULT, dBuffer));
+        CHECK_CUSPARSE(cusparseSpMV(
+            handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta,
+            vecY, CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMV_ALG_DEFAULT, dBuffer));
     };
     //--------------------------------------------------------------------------
     CHECK_CUDA(cudaDeviceSynchronize());

@@ -4,10 +4,12 @@
 #include "cusparse_benchmarks_common.hpp"
 
 // Set datatypes
+// NOTE: cuSPARSE only takes signed indices
 using IT = int;
 using VT = float;
 
 int main(int argc, char *argv[]) {
+    DEFINE_CUSPARSE_TYPES(IT, VT)
 
     init_pin(); // Just takes pinning overhead away from timers
 
@@ -35,12 +37,12 @@ int main(int argc, char *argv[]) {
     VT *hB = dX->val;
     VT *hC = dY->val;
 
-    VT alpha = 1.0f;
-    VT beta = 0.0f;
+    VT alpha = 1.0;
+    VT beta = 0.0;
 
     //--------------------------------------------------------------------------
     // Device memory management
-    int *dA_csrOffsets, *dA_columns;
+    IT *dA_csrOffsets, *dA_columns;
     VT *dA_values, *dB, *dC;
     CHECK_CUDA(
         cudaMalloc((void **)&dA_csrOffsets, (A_num_rows + 1) * sizeof(IT)));
@@ -68,29 +70,31 @@ int main(int argc, char *argv[]) {
     size_t bufferSize = 0;
     CHECK_CUSPARSE(cusparseCreate(&handle));
     // Create sparse matrix A in CSR format
-    CHECK_CUSPARSE(cusparseCreateCsr(&matA, A_num_rows, A_num_cols, A_nnz,
-                                     dA_csrOffsets, dA_columns, dA_values,
-                                     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
-                                     CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F));
+    CHECK_CUSPARSE(cusparseCreateCsr(
+        &matA, A_num_rows, A_num_cols, A_nnz, dA_csrOffsets, dA_columns,
+        dA_values, CUSPARSE_INDEX_TYPE, CUSPARSE_INDEX_TYPE,
+        CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_FLOAT_TYPE));
     // Create dense matrix B
     CHECK_CUSPARSE(cusparseCreateDnMat(&matB, A_num_cols, B_num_cols, ldb, dB,
-                                       CUDA_R_32F, CUSPARSE_ORDER_COL));
+                                       CUSPARSE_FLOAT_TYPE,
+                                       CUSPARSE_ORDER_COL));
     // Create dense matrix C
     CHECK_CUSPARSE(cusparseCreateDnMat(&matC, A_num_rows, B_num_cols, ldc, dC,
-                                       CUDA_R_32F, CUSPARSE_ORDER_COL));
+                                       CUSPARSE_FLOAT_TYPE,
+                                       CUSPARSE_ORDER_COL));
 
     // allocate an external buffer if needed
     CHECK_CUSPARSE(cusparseSpMM_bufferSize(
         handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
         CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, matB, &beta, matC,
-        CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, &bufferSize));
+        CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMM_ALG_DEFAULT, &bufferSize));
     CHECK_CUDA(cudaMalloc(&dBuffer, bufferSize));
 
     // execute preprocess (optional)
     CHECK_CUSPARSE(cusparseSpMM_preprocess(
         handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
         CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, matB, &beta, matC,
-        CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
+        CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
 
     std::string bench_name = "cusparse_csr_cuda_spmm";
     SETUP_BENCH;
@@ -99,10 +103,10 @@ int main(int argc, char *argv[]) {
     CHECK_CUDA(cudaDeviceSynchronize());
 
     std::function<void()> lambda = [&]() {
-        CHECK_CUSPARSE(cusparseSpMM(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
-                                    CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha,
-                                    matA, matB, &beta, matC, CUDA_R_32F,
-                                    CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
+        CHECK_CUSPARSE(cusparseSpMM(
+            handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+            CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, matB, &beta, matC,
+            CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
     };
     //--------------------------------------------------------------------------
     CHECK_CUDA(cudaDeviceSynchronize());
