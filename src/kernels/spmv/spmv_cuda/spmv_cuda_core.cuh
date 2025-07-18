@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../../common.hpp"
-#include "../../../platforms/cuda/cuda.cuh"
+#include "../../../platforms/gpu/gpu_manager.hpp"
 #include "spmv_cuda_crs_impl.cuh"
 #include "spmv_cuda_scs_impl.cuh"
 
