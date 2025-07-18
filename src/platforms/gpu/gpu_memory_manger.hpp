@@ -69,7 +69,7 @@ inline void memcpyH2D(const void *host_src, void *dev_dest, size_t N) {
 template <typename VT>
 inline void memcpyH2D(const host_unique_ptr<VT> &host_src,
                       device_unique_ptr<VT> &dev_dest, size_t N) {
-    memcpyH2D(host_src.get(), dev_dest.get(), N);
+    memcpyH2D<VT>(host_src.get(), dev_dest.get(), N);
 }
 
 template <typename VT>
@@ -81,11 +81,11 @@ inline void memcpyD2H(const void *dev_src, void *host_dest, size_t N) {
 template <typename VT>
 inline void memcpyD2H(const device_unique_ptr<VT> &dev_src,
                       host_unique_ptr<VT> &host_dest, size_t N) {
-    memcpyD2H(dev_src.get(), host_dest.get(), N);
+    memcpyD2H<VT>(dev_src.get(), host_dest.get(), N);
 }
 
 template <typename VT>
-inline void asyncMemcpyH2D(const VT *host_src, VT *dev_dest, size_t N,
+inline void asyncMemcpyH2D(const void *host_src, void *dev_dest, size_t N,
                            const gpu_stream &stream) {
     CHECK_DEVICE_ERR(
         GPU_BACKEND(MemcpyAsync)(dev_dest, host_src, N * sizeof(VT),
@@ -96,11 +96,11 @@ template <typename VT>
 inline void asyncMemcpyH2D(const host_unique_ptr<VT> &host_src,
                            device_unique_ptr<VT> &dev_dest, size_t N,
                            const gpu_stream &stream) {
-    asyncMemcpyH2D(host_src.get(), dev_dest.get(), N, stream);
+    asyncMemcpyH2D<VT>(host_src.get(), dev_dest.get(), N, stream);
 }
 
 template <typename VT>
-inline void asyncMemcpyD2H(const VT *dev_src, VT *host_dest, size_t N,
+inline void asyncMemcpyD2H(const void *dev_src, void *host_dest, size_t N,
                            const gpu_stream &stream) {
     CHECK_DEVICE_ERR(
         GPU_BACKEND(MemcpyAsync)(host_dest, dev_src, N * sizeof(VT),
@@ -111,7 +111,7 @@ template <typename VT>
 inline void asyncMemcpyD2H(const device_unique_ptr<VT> &dev_src,
                            host_unique_ptr<VT> &host_dest, size_t N,
                            const gpu_stream &stream) {
-    asyncMemcpyD2H(dev_src.get(), host_dest.get(), N, stream);
+    asyncMemcpyD2H<VT>(dev_src.get(), host_dest.get(), N, stream);
 }
 
 template <typename elem_type>
