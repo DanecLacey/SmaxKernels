@@ -147,14 +147,14 @@ class BenchHarnessCUDA : public BenchHarness {
     void record_start() override { start_ev.record_in_stream(); }
     void record_stop() override {
         stop_ev.record_in_stream();
-        stop_ev.synchronize();
+        //stop_ev.synchronize();
     }
     void warmup_record_start() override {
         start_ev.record_in_stream();
     }
     void warmup_record_stop() override {
         stop_ev.record_in_stream();
-        stop_ev.synchronize();
+        //stop_ev.synchronize();
     }
     float compute_elapsed() const override {
         return start_ev.elapsed_time_millSec(stop_ev);
