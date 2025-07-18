@@ -11,6 +11,9 @@ namespace SMAX {
 // Available kernels
 enum class KernelType { SPMV, SPMM, SPGEMV, SPGEMM, SPTRSV, SPTRSM, BSPMV };
 
+// Specific implementations for BSPMV for BCRS matrix
+enum class BCRSKernelType : int { naive_thread_per_row = 0, naive_warp_group = 1, naive_warp_shuffle = 2 };
+
 // Available platforms
 enum class PlatformType { CPU, CUDA };
 

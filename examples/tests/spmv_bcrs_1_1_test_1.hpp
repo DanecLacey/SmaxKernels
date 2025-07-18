@@ -18,37 +18,6 @@ REGISTER_TEST(bspmv_bcsr_1_1_test_1) {
     IT *A_crs_row_ptr = new IT[A_crs_n_rows + 1]{0, 3, 4, 4, 5};
     VT *A_crs_val = new VT[A_crs_nnz]{1.1, 1.3, 1.4, 2.2, 4.4};
 
-
-    // todo: test with 1d laplace matrix
-    // int A_crs_n_rows = 1602;
-    // int A_crs_n_cols = 1602;
-    // int A_crs_nnz = 3*1602 -2;
-    // IT *A_crs_col = new IT[A_crs_nnz];
-    // IT *A_crs_row_ptr = new IT[A_crs_n_rows + 1];
-    // VT *A_crs_val = new VT[A_crs_nnz];
-
-    // A_crs_col[0] = IT(0);
-    // A_crs_col[1] = IT(1);
-    // A_crs_row_ptr[0] = IT(0);
-    // A_crs_row_ptr[1] = IT(2);
-    // A_crs_val[0] = VT(2);
-    // A_crs_val[1] = VT(-1);
-    // for(int i = 1; i < A_crs_n_rows-1; ++i)
-    // {
-    //   A_crs_col[2+(i-1)*3] = IT(i-1);
-    //   A_crs_col[2+(i-1)*3+1] = IT(i);
-    //   A_crs_col[2+(i-1)*3+2] = IT(i+1);
-    //   A_crs_row_ptr[i+1] = A_crs_row_ptr[i] + IT(3);
-    //   A_crs_val[2+(i-1)*3] = VT(-1);
-    //   A_crs_val[2+(i-1)*3+1] = VT(2);
-    //   A_crs_val[2+(i-1)*3+2] = VT(-1);
-    // }
-    // A_crs_col[A_crs_nnz-2] = IT(A_crs_n_rows-2);
-    // A_crs_col[A_crs_nnz-1] = IT(A_crs_n_rows-1);
-    // A_crs_row_ptr[A_crs_n_rows] = IT(A_crs_nnz);
-    // A_crs_val[A_crs_nnz-2] = VT(-1);
-    // A_crs_val[A_crs_nnz-1] = VT(2);
-
     const bool use_blocked_column_major = true;
     const int target_b_height = 2;
     const int target_b_width = 2;

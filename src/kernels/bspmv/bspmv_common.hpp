@@ -43,6 +43,7 @@ struct Args {
 };
 
 struct Flags {
+    BCRSKernelType kernel_type = BCRSKernelType::naive_thread_per_row;
     bool is_mat_scs = false;
     bool is_block_column_major = false;
 };

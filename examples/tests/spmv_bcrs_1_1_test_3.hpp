@@ -49,6 +49,21 @@ REGISTER_TEST(bspmv_test) {
 
     compare_arrays(y, y_expected, A_bcrs_n_rows * A_bcrs_b_h_pad, "spmv_y");
 
+    // register cuda kernel and compare, if available
+    smax->register_kernel("my_spmv_cuda", SMAX::KernelType::BSPMV, SMAX::PlatformType::CUDA);
+    smax->kernel("my_spmv_cuda")->register_A(A_bcrs_n_rows, A_bcrs_n_cols, A_bcrs_nnz,
+                                        A_bcrs_b_height, A_bcrs_b_width, A_bcrs_b_h_pad,
+                                        A_bcrs_b_w_pad, A_bcrs_col, A_bcrs_row_ptr, A_bcrs_val);
+    smax->kernel("my_spmv_cuda")->register_B(A_bcrs_n_cols*A_bcrs_b_w_pad, x);
+    smax->kernel("my_spmv_cuda")->register_C(A_bcrs_n_rows*A_bcrs_b_h_pad, y);
+    smax->kernel("my_spmv_cuda")->set_block_column_major(block_column_major);
+    smax->kernel("my_spmv_cuda")->set_bspmv_kernel_implementation(SMAX::BCRSKernelType::naive_thread_per_row);
+
+    // Function to test
+    smax->kernel("my_spmv_cuda")->run();
+
+    compare_arrays(y, y_expected, A_bcrs_n_rows * A_bcrs_b_h_pad, "cuda_spmv_y");
+
     delete[] A_bcrs_col;
     delete[] A_bcrs_row_ptr;
     delete[] A_bcrs_val;

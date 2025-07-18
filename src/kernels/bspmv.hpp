@@ -5,7 +5,7 @@
 #include "../macros.hpp"
 #include "bspmv/bspmv_common.hpp"
 #include "bspmv/bspmv_cpu.hpp"
-// #include "bspmv/bspmv_cuda.hpp"
+#include "bspmv/bspmv_cuda.hpp"
 
 namespace SMAX::KERNELS {
 
@@ -109,6 +109,11 @@ class BSpMVKernel : public Kernel {
         return 0;
     }
 
+    int set_bspmv_kernel_implementation(BCRSKernelType impl) override {
+        this->flags->kernel_type = impl;
+        return 0;
+    }
+
     // Dispatch kernel based on platform
     int dispatch(Func func, const char *label, ULL A_offset, ULL x_offset,
                  ULL y_offset) {
@@ -128,7 +133,6 @@ class BSpMVKernel : public Kernel {
                             x_offset, y_offset);
         }
         case PlatformType::CUDA: {
-            std::runtime_error("Cuda kernel not implemented yet");
             return dispatch(BSPMV::initialize_cpu, "bspmv_finalize", A_offset,
                             x_offset, y_offset);
         }
@@ -145,7 +149,6 @@ class BSpMVKernel : public Kernel {
                             y_offset);
         }
         case PlatformType::CUDA: {
-            std::runtime_error("Cuda kernel not implemented yet");
             return dispatch(BSPMV::apply_cpu, "bspmv_apply", A_offset, x_offset,
                             y_offset);
         }
@@ -162,7 +165,6 @@ class BSpMVKernel : public Kernel {
                             x_offset, y_offset);
         }
         case PlatformType::CUDA: {
-            std::runtime_error("Cuda kernel not implemented yet");
             return dispatch(BSPMV::finalize_cpu, "bspmv_finalize", A_offset,
                             x_offset, y_offset);
         }
