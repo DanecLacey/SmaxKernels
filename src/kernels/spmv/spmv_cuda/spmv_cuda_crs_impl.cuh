@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../platforms/cuda/cuda.cuh"
+#include "../../../platforms/gpu/gpu_manager.hpp"
 
 #include <stdint.h>
 #include <stdio.h>

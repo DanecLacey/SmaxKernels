@@ -77,7 +77,7 @@ set(CPU_HEADER_DIRS
 
 set(CUDA_HEADER_DIRS
     src/kernels/spmv/spmv_cuda/
-    src/platforms/cuda
+    src/platforms/gpu
 )
 
 set(COMMON_HEADER_DIRS

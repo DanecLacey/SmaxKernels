@@ -130,7 +130,7 @@ class BenchHarnessCPU : public BenchHarness {
 
 class BenchHarnessCUDA : public BenchHarness {
 #ifdef CUDA_MODE
-    cudaEvent_t start_ev, stop_ev;
+    SMAX::gpu_event start_ev, stop_ev;
 
   public:
     using BenchHarness::BenchHarness; // inherit all of the base‐class ctors
@@ -138,34 +138,26 @@ class BenchHarnessCUDA : public BenchHarness {
     // one forwarding ctor that also creates the events exactly once
     template <typename... Args>
     BenchHarnessCUDA(Args &&...args)
-        : BenchHarness(std::forward<Args>(args)...) {
-        CUDA_CHECK(cudaEventCreate(&start_ev));
-        CUDA_CHECK(cudaEventCreate(&stop_ev));
-    }
+        : BenchHarness(std::forward<Args>(args)...), start_ev(), stop_ev() {}
 
-    ~BenchHarnessCUDA() override {
-        cudaEventDestroy(start_ev);
-        cudaEventDestroy(stop_ev);
-    }
+    ~BenchHarnessCUDA() override {}
 
   protected:
     void setup_timing() override { CUDA_CHECK(cudaDeviceSynchronize()); }
-    void record_start() override { CUDA_CHECK(cudaEventRecord(start_ev, 0)); }
+    void record_start() override { start_ev.record_in_stream(); }
     void record_stop() override {
-        CUDA_CHECK(cudaEventRecord(stop_ev, 0));
-        CUDA_CHECK(cudaEventSynchronize(stop_ev));
+        stop_ev.record_in_stream();
+        //stop_ev.synchronize();
     }
     void warmup_record_start() override {
-        CUDA_CHECK(cudaEventRecord(start_ev, 0));
+        start_ev.record_in_stream();
     }
     void warmup_record_stop() override {
-        CUDA_CHECK(cudaEventRecord(stop_ev, 0));
-        CUDA_CHECK(cudaEventSynchronize(stop_ev));
+        stop_ev.record_in_stream();
+        //stop_ev.synchronize();
     }
     float compute_elapsed() const override {
-        float ms = 0.f;
-        CUDA_CHECK(cudaEventElapsedTime(&ms, start_ev, stop_ev));
-        return ms;
+        return start_ev.elapsed_time_millSec(stop_ev);
     }
     float time_scale() const override { return 1000.0; }
 #endif
