@@ -364,9 +364,9 @@ int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
                 thread_local_ctr += 1;
             }
         }
+        delete[] sizes;
     }
     delete[] thread_storage;
-
     return 0;
 }
 
@@ -379,10 +379,10 @@ int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, ST A_n_rows,
 #if 0
     build_symmetric_csr_old<IT, ST>(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr,
                                     A_sym_col, A_sym_nnz);
-#elif 1
+#elif 0
     build_symmetric_csr_parallel<IT, ST>(A_row_ptr, A_col, A_n_rows,
                                          A_sym_row_ptr, A_sym_col, A_sym_nnz);
-#elif 0
+#elif 1
     build_symmetric_csr_parallel_adapted<IT, ST>(
         A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col, A_sym_nnz);
 #endif
