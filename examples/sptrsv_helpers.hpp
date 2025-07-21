@@ -25,8 +25,7 @@
     CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
     crs_mat->convert_coo_to_crs(coo_mat);                                      \
     CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;               \
-    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;                      \
-    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
 
 #define FINALIZE_SPTRSV                                                        \
     delete cli_args;                                                           \

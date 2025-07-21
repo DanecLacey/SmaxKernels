@@ -61,9 +61,7 @@ int main(void) {
     }
 
     // Declare permuted data
-    IT *A_perm_col = new IT[A_nnz];
-    IT *A_perm_row_ptr = new IT[A_n_rows + 1];
-    VT *A_perm_val = new VT[A_nnz];
+    CRSMatrix<IT, VT> *A_perm = new CRSMatrix<IT, VT>(A_n_rows, A_n_cols, A_nnz);
     VT *x_perm = new VT[A_n_cols];
     VT *b_perm = new VT[A_n_rows];
 
@@ -86,35 +84,22 @@ int main(void) {
 
     // Apply permutation vector to A
     smax->utils->apply_mat_perm<IT, VT>(A_n_rows, A_row_ptr, A_col, A_val,
-                                        A_perm_row_ptr, A_perm_col, A_perm_val,
+                                        A_perm->row_ptr, A_perm->col, A_perm->val,
                                         perm, inv_perm);
 
     printf("A_perm:\n");
-    print_matrix<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_perm_col, A_perm_row_ptr,
-                         A_perm_val);
+    print_matrix<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_perm->col, A_perm->row_ptr,
+                         A_perm->val);
 
     // Apply permutation vector to x and b
     smax->utils->apply_vec_perm<VT>(A_n_cols, x, x_perm, perm);
     smax->utils->apply_vec_perm<VT>(A_n_rows, b, b_perm, perm);
 
     // Declare L and U data
-    ULL L_n_rows = 0;
-    ULL L_n_cols = 0;
-    ULL L_nnz = 0;
-    IT *L_col = nullptr;
-    IT *L_row_ptr = nullptr;
-    VT *L_val = nullptr;
-    ULL U_n_rows = 0;
-    ULL U_n_cols = 0;
-    ULL U_nnz = 0;
-    IT *U_col = nullptr;
-    IT *U_row_ptr = nullptr;
-    VT *U_val = nullptr;
+    CRSMatrix<IT, VT> *L = new CRSMatrix<IT, VT>();
+    CRSMatrix<IT, VT> *U = new CRSMatrix<IT, VT>();
 
-    extract_D_L_U_arrays<IT, VT>(A_n_rows, A_n_cols, A_nnz, A_perm_row_ptr,
-                                 A_perm_col, A_perm_val, L_n_rows, L_n_cols,
-                                 L_nnz, L_row_ptr, L_col, L_val, U_n_rows,
-                                 U_n_cols, U_nnz, U_row_ptr, U_col, U_val);
+    extract_D_L_U<IT, VT>(*A_perm, *L, *U);
 
     // Register kernel tag, platform, and metadata
     smax->register_kernel("solve_perm_Lx=b", SMAX::KernelType::SPTRSV);
@@ -125,7 +110,7 @@ int main(void) {
 
     // Register operands to this kernel tag
     smax->kernel("solve_perm_Lx=b")
-        ->register_A(L_n_rows, L_n_cols, L_nnz, L_col, L_row_ptr, L_val);
+        ->register_A(L->n_rows, L->n_cols, L->nnz, L->col, L->row_ptr, L->val);
 
     // x and b are dense vectors
     smax->kernel("solve_perm_Lx=b")->register_B(A_n_rows, x_perm);
@@ -144,9 +129,7 @@ int main(void) {
     delete[] A_col;
     delete[] A_row_ptr;
     delete[] A_val;
-    delete[] A_perm_col;
-    delete[] A_perm_row_ptr;
-    delete[] A_perm_val;
+    delete A_perm;
     delete[] perm;
     delete[] inv_perm;
     delete[] x;
@@ -154,6 +137,8 @@ int main(void) {
     delete[] x_perm;
     delete[] b_perm;
     delete smax;
+    delete L;
+    delete U;
 
     return 0;
 }

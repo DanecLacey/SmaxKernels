@@ -743,6 +743,23 @@ template <typename VT> struct DenseMatrix {
 template <typename IT, typename VT>
 void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
                    CRSMatrix<IT, VT> &U) {
+    
+    // Clear data from targets
+    if (D_plus_L.row_ptr != nullptr)
+        delete[] D_plus_L.row_ptr;
+    if (D_plus_L.col != nullptr)
+        delete[] D_plus_L.col;
+    if (D_plus_L.val != nullptr)
+        delete[] D_plus_L.val;
+    if (U.row_ptr != nullptr)
+        delete[] U.row_ptr;
+    if (U.col != nullptr)
+        delete[] U.col;
+    if (U.val != nullptr)
+        delete[] U.val;
+    D_plus_L.nnz = 0;
+    U.nnz = 0;
+
     // Count nnz
     for (ULL i = 0; i < A.n_rows; ++i) {
         IT row_start = A.row_ptr[i];
@@ -801,78 +818,6 @@ void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
         // Update row pointers
         D_plus_L.row_ptr[i + 1] = D_plus_L_count;
         U.row_ptr[i + 1] = U_count;
-    }
-}
-
-template <typename IT, typename VT>
-void extract_D_L_U_arrays(ULL A_n_rows, ULL A_n_cols, ULL A_nnz, IT *A_row_ptr,
-                          IT *A_col, VT *A_val, ULL &D_plus_L_n_rows,
-                          ULL &D_plus_L_n_cols, ULL &D_plus_L_nnz,
-                          IT *&D_plus_L_row_ptr, IT *&D_plus_L_col,
-                          VT *&D_plus_L_val, ULL &U_n_rows, ULL &U_n_cols,
-                          ULL &U_nnz, IT *&U_row_ptr, IT *&U_col, VT *&U_val) {
-
-    // supress warnings
-    (void)A_nnz;
-
-    // Count nnz
-    for (ULL i = 0; i < A_n_rows; ++i) {
-        IT row_start = A_row_ptr[i];
-        IT row_end = A_row_ptr[i + 1];
-
-        // Loop over each non-zero entry in the current row
-        for (IT idx = row_start; idx < row_end; ++idx) {
-            IT col = A_col[idx];
-
-            if (static_cast<ULL>(col) <= i) {
-                ++D_plus_L_nnz;
-            } else {
-                ++U_nnz;
-            }
-        }
-    }
-
-    // Allocate heap space and assign known metadata
-    D_plus_L_val = new VT[D_plus_L_nnz];
-    D_plus_L_col = new IT[D_plus_L_nnz];
-    D_plus_L_row_ptr = new IT[A_n_rows + 1];
-    D_plus_L_row_ptr[0] = 0;
-    D_plus_L_n_rows = A_n_rows;
-    D_plus_L_n_cols = A_n_cols;
-
-    U_val = new VT[U_nnz];
-    U_col = new IT[U_nnz];
-    U_row_ptr = new IT[A_n_rows + 1];
-    U_row_ptr[0] = 0;
-    U_n_rows = A_n_rows;
-    U_n_cols = A_n_cols;
-
-    // Assign nonzeros
-    ULL D_plus_L_count = 0;
-    ULL U_count = 0;
-    for (ULL i = 0; i < A_n_rows; ++i) {
-        IT row_start = A_row_ptr[i];
-        IT row_end = A_row_ptr[i + 1];
-
-        // Loop over each non-zero entry in the current row
-        for (IT idx = row_start; idx < row_end; ++idx) {
-            IT col = A_col[idx];
-            VT val = A_val[idx];
-
-            if (static_cast<ULL>(col) <= i) {
-                // Diagonal or lower triangular part (D + L)
-                D_plus_L_val[D_plus_L_count] = val;
-                D_plus_L_col[D_plus_L_count++] = col;
-            } else {
-                // Strictly upper triangular part (U)
-                U_val[U_count] = val;
-                U_col[U_count++] = col;
-            }
-        }
-
-        // Update row pointers
-        D_plus_L_row_ptr[i + 1] = D_plus_L_count;
-        U_row_ptr[i + 1] = U_count;
     }
 }
 
