@@ -130,9 +130,8 @@ int main(void) {
     delete b;
     delete x_perm;
     delete b_perm;
-    delete smax;
-    delete L;
     delete U;
+    delete smax;
 
     return 0;
 }
