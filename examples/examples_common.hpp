@@ -282,6 +282,23 @@ class CliParser {
 template <typename IT, typename VT>
 void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
                    CRSMatrix<IT, VT> &U) {
+    
+    // Clear data from targets
+    if (D_plus_L.row_ptr != nullptr)
+        delete[] D_plus_L.row_ptr;
+    if (D_plus_L.col != nullptr)
+        delete[] D_plus_L.col;
+    if (D_plus_L.val != nullptr)
+        delete[] D_plus_L.val;
+    if (U.row_ptr != nullptr)
+        delete[] U.row_ptr;
+    if (U.col != nullptr)
+        delete[] U.col;
+    if (U.val != nullptr)
+        delete[] U.val;
+    D_plus_L.nnz = 0;
+    U.nnz = 0;
+
     // Count nnz
     for (ULL i = 0; i < A.n_rows; ++i) {
         IT row_start = A.row_ptr[i];

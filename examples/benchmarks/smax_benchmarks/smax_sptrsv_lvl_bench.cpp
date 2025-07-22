@@ -64,5 +64,6 @@ int main(int argc, char *argv[]) {
     FINALIZE_SPTRSV;
     delete x;
     delete b;
+    delete A_perm;
     FINALIZE_LIKWID_MARKERS;
 }

@@ -131,6 +131,8 @@ int main(void) {
     delete x_perm;
     delete b_perm;
     delete smax;
+    delete L;
+    delete U;
 
     return 0;
 }
