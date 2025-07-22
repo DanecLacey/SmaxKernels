@@ -3,14 +3,19 @@
 #include "../benchmarks_common.hpp"
 #include "eigen_benchmarks_common.hpp"
 
+// Set datatypes
+using IT = int;
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-    using IT = int;
-    using VT = double;
+    init_pin(); // Just takes pinning overhead away from timers
 
-    init_pin(); // avoid counting pinning in timing
-
+    // Setup data structures
     INIT_SPTRSV(IT, VT);
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
 
     Eigen::VectorXd b = Eigen::VectorXd::Constant(crs_mat->n_cols, 1.0);
     Eigen::VectorXd x = Eigen::VectorXd::Zero(crs_mat->n_rows);
@@ -30,38 +35,20 @@ int main(int argc, char *argv[]) {
     }
     eigen_mat.setFromTriplets(triplets.begin(), triplets.end());
 
+    // Setup benchmark harness
     std::string bench_name = "eigen_sptrsv";
-    float runtime = 0.0;
-    int n_iter = MIN_NUM_ITERS;
-    int n_threads = 1;
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
 
-#ifdef _OPENMP
-#pragma omp parallel
-    {
-        n_threads = omp_get_num_threads();
-    }
-#endif
-
-#ifdef USE_LIKWID
-    LIKWID_MARKER_INIT;
-#pragma omp parallel
-    {
-        LIKWID_MARKER_REGISTER(bench_name.c_str());
-    }
-#endif
-
-    std::function<void(bool)> lambda = [bench_name, &eigen_mat, &x,
-                                        &b](bool warmup) {
-        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
+    std::function<void()> lambda = [bench_name, &eigen_mat, &x, &b]() {
         x.noalias() = eigen_mat.triangularView<Eigen::Lower>().solve(b);
-        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
+    // Execute benchmark and print results
     RUN_BENCH;
     PRINT_SPTRSV_BENCH;
-    FINALIZE_SPTRSV;
 
-#ifdef USE_LIKWID
-    LIKWID_MARKER_CLOSE;
-#endif
+    // Clean up
+    FINALIZE_SPTRSV;
+    FINALIZE_LIKWID_MARKERS;
 }

@@ -3,14 +3,14 @@ set(BENCHMARK_DIRS
     smax_benchmarks
 )
 
+if(USE_CUSPARSE)
+    list(APPEND BENCHMARK_DIRS cusparse_benchmarks)
+endif()
 if(USE_EIGEN)
     list(APPEND BENCHMARK_DIRS eigen_benchmarks)
 endif()
 if(USE_MKL)
     list(APPEND BENCHMARK_DIRS mkl_benchmarks)
-endif()
-if(USE_PETSC)
-    list(APPEND BENCHMARK_DIRS petsc_benchmarks)
 endif()
 
 add_library(timing STATIC timing.cpp)

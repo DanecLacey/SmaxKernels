@@ -72,6 +72,8 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     VT *D_val = as<VT *>(args->D->val);
     ULL block_vector_size = args->X->n_cols;
 
+    // TODO: Don't need to split upper and lower triang into different kernels
+
     if (flags->vec_row_major) {
         // Lower triangular matrix is the default case
         if (flags->mat_upper_triang) {

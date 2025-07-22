@@ -35,7 +35,7 @@ make -j
 ```
 * Very basic demonstrations of the API are provided in `/examples/demos`.
 * More realistic examples can be found in `/examples/applications`.
-* There are pre-made benchmarks of the kernels provided by SmaxKernels, as well as optional third party [[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page), [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html), [PETSc](https://petsc.org/release/)] kernels to compare against, which are all found in `/examples/benchmarks`.
+* There are pre-made benchmarks of the kernels provided by SmaxKernels, as well as optional third party [[Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) and [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html) kernels to compare against, which are all found in `/examples/benchmarks`.
 * Validation of Smax kernels against MKL kernels are found in `/examples/validation` (requires MKL).
 * Unit tests are found in `/examples/tests`
 
@@ -43,7 +43,6 @@ make -j
 This project is very much still in development, and many features may be unfinished, broken, or subject to change.
 * This project requires C++17 features
 * It is assumed that all optional third party libraries are installed in `$INSTALL_PATH`
-* The PETSc library is found via. the PkgConfig module. So if benchmarking PETSc kernels, you should configure PETSc with `--with-pkg-config=1` when building.
 * 2025-06-19: It is strongly recommended to use intel compilers when interating with tests in `examples/validation` for ABI compatability. 
 
 ## Contributing ##

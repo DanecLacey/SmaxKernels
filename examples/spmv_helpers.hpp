@@ -6,12 +6,14 @@
 #define SPMV_FLOPS_PER_NZ 2
 
 #define INIT_SPMV(IT, VT)                                                      \
-    SpMVParser *parser = new SpMVParser;                                       \
-    SpMVParser::SpMVArgs *cli_args = parser->parse(argc, argv);                \
+    SpMVParser<IT> *parser = new SpMVParser<IT>;                               \
+    SpMVParser<IT>::SpMVArgs *cli_args = parser->parse(argc, argv);            \
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
     CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
-    crs_mat->convert_coo_to_crs(coo_mat);
+    crs_mat->convert_coo_to_crs(coo_mat);                                      \
+    IT _C = cli_args->_C;                                                      \
+    IT _sigma = cli_args->_sigma;
 
 #define FINALIZE_SPMV                                                          \
     delete parser;                                                             \
@@ -59,21 +61,30 @@
 
 #endif
 
-class SpMVParser : public CliParser {
+template <typename IT> class SpMVParser : public CliParser {
   public:
     struct SpMVArgs : public CliArgs {
-        // No extra fields
+        IT _C = 1;
+        IT _sigma = 1;
     };
 
     SpMVArgs *parse(int argc, char *argv[]) override {
-        if (argc != 2) {
-            std::cerr << "Usage: " << argv[0] << " <matrix_file.mtx>\n";
+        if (argc < 2 || argc > 4) {
+            std::cerr << "Usage: " << argv[0]
+                      << " <matrix_file.mtx> <optional: C> <optional: sigma>\n";
             std::exit(EXIT_FAILURE);
         }
 
         delete args_;
         auto *spmv_args = new SpMVArgs();
         spmv_args->matrix_file_name = argv[1];
+        if (argc == 3) {
+            spmv_args->_C = atoi(argv[2]);
+        }
+        if (argc == 4) {
+            spmv_args->_C = atoi(argv[2]);
+            spmv_args->_sigma = atoi(argv[3]);
+        }
         args_ = spmv_args;
         return spmv_args;
     }

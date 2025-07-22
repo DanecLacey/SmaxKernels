@@ -8,3 +8,4 @@ docs/
 scripts/
 CMakeCache.txt
 CMakeFiles/
+settings.json

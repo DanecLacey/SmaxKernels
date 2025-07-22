@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../../../common.hpp"
-#include "lvl_fused_core.hpp"
 #include "numerical_phase_core.hpp"
 #include "symbolic_phase_core.hpp"
 
@@ -33,14 +32,9 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
     IF_SMAX_DEBUG(ErrorHandler::log("Entering spgemm_apply_cpu_core"));
     IF_SMAX_TIME(timers->get("apply")->start());
 
-    if (flags->mat_permuted) {
-        // DL 24.06.25 NOTE: Experimental fusion based on lvl-schedule
-        lvl_fused_cpu<IT, VT>(timers, k_ctx, args, flags);
-    } else {
-        // DL 02.05.25 NOTE: Enforcing two-phase approach Gustavson's algorithm
-        symbolic_phase_cpu<IT, VT>(timers, k_ctx, args, flags);
-        numerical_phase_cpu<IT, VT>(timers, k_ctx, args, flags);
-    }
+    // DL 02.05.25 NOTE: Enforcing two-phase approach Gustavson's algorithm
+    symbolic_phase_cpu<IT, VT>(timers, k_ctx, args, flags);
+    numerical_phase_cpu<IT, VT>(timers, k_ctx, args, flags);
 
     IF_SMAX_TIME(timers->get("apply")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spgemm_apply_cpu_core"));

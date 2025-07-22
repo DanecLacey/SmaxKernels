@@ -12,10 +12,7 @@
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
     CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
-    crs_mat->convert_coo_to_crs(coo_mat);                                      \
-    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;               \
-    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;                      \
-    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+    crs_mat->convert_coo_to_crs(coo_mat);
 
 #define INIT_SPTRSV_LVL(IT, VT)                                                \
     SpTRSVParser *parser = new SpTRSVParser;                                   \
@@ -23,10 +20,7 @@
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
     CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
-    crs_mat->convert_coo_to_crs(coo_mat);                                      \
-    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;               \
-    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;                      \
-    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+    crs_mat->convert_coo_to_crs(coo_mat);
 
 #define FINALIZE_SPTRSV                                                        \
     delete cli_args;                                                           \

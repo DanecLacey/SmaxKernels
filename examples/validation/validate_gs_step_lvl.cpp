@@ -33,7 +33,9 @@ int main(int argc, char *argv[]) {
     using VT = double;
 
     INIT_GS(IT, VT);
-
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
     DenseMatrix<VT> *x_smax = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
     DenseMatrix<VT> *x_smax_perm = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
     DenseMatrix<VT> *x_mkl = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);

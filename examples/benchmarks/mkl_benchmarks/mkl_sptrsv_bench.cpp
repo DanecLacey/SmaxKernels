@@ -3,20 +3,23 @@
 #include "../benchmarks_common.hpp"
 #include "mkl_benchmarks_common.hpp"
 
+// Set datatypes
+#ifdef USE_MKL_ILP64
+using IT = long long int;
+#else
+using IT = int;
+#endif
+using VT = double;
+
 int main(int argc, char *argv[]) {
 
-#ifdef USE_MKL_ILP64
-    using IT = long long int;
-#else
-    using IT = int;
-#endif
-    using VT = double;
+    init_pin(); // Just takes pinning overhead away from timers
 
-    // Just to take overhead of pinning away from timers
-    init_pin();
-
+    // Setup data structures
     INIT_SPTRSV(IT, VT);
-
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
     DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
     DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
 
@@ -50,39 +53,22 @@ int main(int argc, char *argv[]) {
 
     // Make lambda, and pass to the benchmarking harness
     std::string bench_name = "mkl_sptrsv";
-    float runtime = 0.0;
-    int n_iter = MIN_NUM_ITERS;
-    int n_threads = 1;
-#ifdef _OPENMP
-#pragma omp parallel
-    {
-        n_threads = omp_get_num_threads();
-    }
-#endif
-#ifdef USE_LIKWID
-    LIKWID_MARKER_INIT;
-#pragma omp parallel
-    {
-        LIKWID_MARKER_REGISTER(bench_name.c_str());
-    }
-#endif
+    SETUP_BENCH;
+    INIT_LIKWID_MARKERS(bench_name);
 
-    std::function<void(bool)> lambda = [bench_name, A, descr, x,
-                                        b](bool warmup) {
-        PARALLEL_LIKWID_MARKER_START(bench_name.c_str());
-
+    std::function<void()> lambda = [bench_name, A, descr, x, b]() {
         mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A, descr, b->val,
                           x->val);
-
-        PARALLEL_LIKWID_MARKER_STOP(bench_name.c_str());
     };
 
+    // Execute benchmark and print results
     RUN_BENCH;
     PRINT_SPTRSV_BENCH;
+
+    // Clean up
     FINALIZE_SPTRSV;
     delete x;
     delete b;
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
-
-    return 0;
+    FINALIZE_LIKWID_MARKERS;
 }
