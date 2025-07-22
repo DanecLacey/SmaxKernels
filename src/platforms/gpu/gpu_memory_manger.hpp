@@ -115,7 +115,7 @@ inline void asyncMemcpyD2H(const device_unique_ptr<VT> &dev_src,
 }
 
 template <typename elem_type>
-void transfer_HtoD(const void *h_data, void *&d_data_out, size_t n_elems) {
+void allocate_copy_to_device(const void *host_data, void *&device_data_out, size_t n_elems) {
 #if SMAX_CUDA_MODE
 
     IF_SMAX_DEBUG_3(std::cout << "Allocating: " << n_elems
@@ -123,9 +123,9 @@ void transfer_HtoD(const void *h_data, void *&d_data_out, size_t n_elems) {
                               << " on device" << std::endl);
 
     elem_type *d_data = allocGPU<elem_type>(n_elems).release();
-    memcpyH2D<elem_type>(h_data, d_data, n_elems);
+    memcpyH2D<elem_type>(host_data, d_data, n_elems);
     // Must cast to void for interop with core data structures
-    d_data_out = static_cast<void *>(d_data);
+    device_data_out = static_cast<void *>(d_data);
 #else
     // TODO: Throw error
 #endif

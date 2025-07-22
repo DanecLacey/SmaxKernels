@@ -41,12 +41,12 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
         VT *A_val = as<VT *>(args->A->scs->val);
 
         // Copy typed pointers from host to device
-        transfer_HtoD<IT>(A_chunk_ptr, args->d_A->scs->chunk_ptr,
+        allocate_copy_to_device<IT>(A_chunk_ptr, args->d_A->scs->chunk_ptr,
                           A_n_chunks + 1);
-        transfer_HtoD<IT>(A_chunk_lengths, args->d_A->scs->chunk_lengths,
+        allocate_copy_to_device<IT>(A_chunk_lengths, args->d_A->scs->chunk_lengths,
                           A_n_chunks);
-        transfer_HtoD<IT>(A_col, args->d_A->scs->col, A_n_elements);
-        transfer_HtoD<VT>(A_val, args->d_A->scs->val, A_n_elements);
+        allocate_copy_to_device<IT>(A_col, args->d_A->scs->col, A_n_elements);
+        allocate_copy_to_device<VT>(A_val, args->d_A->scs->val, A_n_elements);
 
         // Copy metadata from host matrix
         args->d_A->scs->n_chunks = args->A->scs->n_chunks;
@@ -63,9 +63,9 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
         VT *A_val = as<VT *>(args->A->crs->val);
 
         // Copy typed pointers from host to device
-        transfer_HtoD<IT>(A_col, args->d_A->crs->col, A_nnz);
-        transfer_HtoD<IT>(A_row_ptr, args->d_A->crs->row_ptr, A_n_rows + 1);
-        transfer_HtoD<VT>(A_val, args->d_A->crs->val, A_nnz);
+        allocate_copy_to_device<IT>(A_col, args->d_A->crs->col, A_nnz);
+        allocate_copy_to_device<IT>(A_row_ptr, args->d_A->crs->row_ptr, A_n_rows + 1);
+        allocate_copy_to_device<VT>(A_val, args->d_A->crs->val, A_nnz);
 
         // Copy metadata from host matrix
         args->d_A->crs->n_rows = args->A->crs->n_rows;
@@ -78,8 +78,8 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
     VT *x = as<VT *>(args->x->val);
     VT *y = as<VT *>(args->y->val);
-    transfer_HtoD<VT>(x, args->d_x->val, x_size);
-    transfer_HtoD<VT>(y, args->d_y->val, y_size);
+    allocate_copy_to_device<VT>(x, args->d_x->val, x_size);
+    allocate_copy_to_device<VT>(y, args->d_y->val, y_size);
 
     IF_SMAX_TIME(timers->get("initialize")->stop());
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting spmv_initialize_cuda_core"));
