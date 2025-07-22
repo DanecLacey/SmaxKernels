@@ -12,27 +12,29 @@
 using ULL = unsigned long long int;
 
 int main(void) {
-    int A_n_rows = 3;
-    int A_n_cols = 3;
-    int A_nnz = 5;
-    u_int16_t *A_col = new u_int16_t[A_nnz]{0, 1, 1, 0, 2};
-    u_int16_t *A_row_ptr = new u_int16_t[A_n_rows + 1]{0, 2, 3, 5};
-    float *A_val = new float[A_nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
+    CRSMatrix<u_int16_t, float> *A = new CRSMatrix<u_int16_t, float>;
+    A->n_rows = 3;
+    A->n_cols = 3;
+    A->nnz = 5;
+    A->col = new u_int16_t[A->nnz]{0, 1, 1, 0, 2};
+    A->row_ptr = new u_int16_t[A->n_rows + 1]{0, 2, 3, 5};
+    A->val = new float[A->nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
 
-    int B_n_rows = 3;
-    int B_n_cols = 3;
-    int B_nnz = 5;
-    u_int16_t *B_col = new u_int16_t[A_nnz]{0, 2, 0, 1, 0};
-    u_int16_t *B_row_ptr = new u_int16_t[A_n_rows + 1]{0, 2, 4, 5};
-    float *B_val = new float[A_nnz]{1.1, 1.3, 2.1, 2.2, 3.1};
+    CRSMatrix<u_int16_t, float> *B = new CRSMatrix<u_int16_t, float>;
+    B->n_rows = 3;
+    B->n_cols = 3;
+    B->nnz = 5;
+    B->col = new u_int16_t[B->nnz]{0, 2, 0, 1, 0};
+    B->row_ptr = new u_int16_t[B->n_rows + 1]{0, 2, 4, 5};
+    B->val = new float[B->nnz]{1.1, 1.3, 2.1, 2.2, 3.1};
 
-    // NOTE: We require metadata of C is of type "unsigned long long int"
-    ULL C_n_rows = 0;
-    ULL C_n_cols = 0;
-    ULL C_nnz = 0;
-    u_int16_t *C_col = nullptr;
-    u_int16_t *C_row_ptr = nullptr;
-    float *C_val = nullptr;
+    CRSMatrix<u_int16_t, float> *C = new CRSMatrix<u_int16_t, float>;
+    C->n_rows = 0;
+    C->n_cols = 0;
+    C->nnz = 0;
+    C->col = nullptr;
+    C->row_ptr = nullptr;
+    C->val = nullptr;
 
     SMAX::Interface *smax = new SMAX::Interface();
 
@@ -41,11 +43,12 @@ int main(void) {
                           SMAX::FloatType::FLOAT32);
 
     smax->kernel("my_spgemm_AB")
-        ->register_A(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
+        ->register_A(A->n_rows, A->n_cols, A->nnz, A->col, A->row_ptr, A->val);
     smax->kernel("my_spgemm_AB")
-        ->register_B(B_n_rows, B_n_cols, B_nnz, B_col, B_row_ptr, B_val);
+        ->register_B(B->n_rows, B->n_cols, B->nnz, B->col, B->row_ptr, B->val);
     smax->kernel("my_spgemm_AB")
-        ->register_C(&C_n_rows, &C_n_cols, &C_nnz, &C_col, &C_row_ptr, &C_val);
+        ->register_C(&C->n_rows, &C->n_cols, &C->nnz, &C->col, &C->row_ptr,
+                     &C->val);
     // NOTE: Since C matrix is to be generated, we need pointers to metadata,
     // not just values
 
@@ -53,18 +56,11 @@ int main(void) {
 
     smax->utils->print_timers();
 
-    print_matrix<u_int16_t, float>(C_n_rows, C_n_cols, C_nnz, C_col, C_row_ptr,
-                                   C_val);
+    C->print();
 
-    delete[] A_col;
-    delete[] A_row_ptr;
-    delete[] A_val;
-    delete[] B_col;
-    delete[] B_row_ptr;
-    delete[] B_val;
-    delete[] C_col;
-    delete[] C_row_ptr;
-    delete[] C_val;
+    delete A;
+    delete B;
+    delete C;
     delete smax;
 
     return 0;

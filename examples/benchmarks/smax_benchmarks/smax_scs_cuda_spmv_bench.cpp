@@ -13,19 +13,7 @@ int main(int argc, char *argv[]) {
 
     // Setup data structures
     INIT_SPMV(IT, VT);
-    IT A_scs_C = _C;         // Defined at runtime
-    IT A_scs_sigma = _sigma; // Defined by runtime
-    IT A_scs_n_rows = 0;
-    IT A_scs_n_rows_padded = 0;
-    IT A_scs_n_cols = 0;
-    IT A_scs_n_chunks = 0;
-    IT A_scs_n_elements = 0;
-    IT A_scs_nnz = 0;
-    IT *A_scs_chunk_ptr = nullptr;
-    IT *A_scs_chunk_lengths = nullptr;
-    IT *A_scs_col = nullptr;
-    VT *A_scs_val = nullptr;
-    IT *A_scs_perm = nullptr;
+    SCSMatrix<IT, VT> *scs_mat = new SCSMatrix<IT, VT>(_C, _sigma);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
@@ -33,13 +21,14 @@ int main(int argc, char *argv[]) {
     // Convert CRS to Sell-C-sigma matrix
     smax->utils->convert_crs_to_scs<IT, VT, IT>(
         crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, crs_mat->col,
-        crs_mat->row_ptr, crs_mat->val, A_scs_C, A_scs_sigma, A_scs_n_rows,
-        A_scs_n_rows_padded, A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements,
-        A_scs_nnz, A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
-        A_scs_perm);
+        crs_mat->row_ptr, crs_mat->val, scs_mat->C, scs_mat->sigma,
+        scs_mat->n_rows, scs_mat->n_rows_padded, scs_mat->n_cols,
+        scs_mat->n_chunks, scs_mat->n_elements, scs_mat->nnz,
+        scs_mat->chunk_ptr, scs_mat->chunk_lengths, scs_mat->col, scs_mat->val,
+        scs_mat->perm);
 
     // Pad to the same length to emulate real iterative schemes
-    IT vec_size = std::max(A_scs_n_rows_padded, A_scs_n_cols);
+    IT vec_size = std::max(scs_mat->n_rows_padded, scs_mat->n_cols);
     DenseMatrix<VT> *x = new DenseMatrix<VT>(vec_size, 1, 1.0);
     DenseMatrix<VT> *y = new DenseMatrix<VT>(vec_size, 1, 0.0);
 
@@ -55,10 +44,11 @@ int main(int argc, char *argv[]) {
 
     // Register kenel data
     smax->kernel(bench_name)
-        ->register_A(A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded,
-                     A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,
-                     A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
-                     A_scs_perm);
+        ->register_A(scs_mat->C, scs_mat->sigma, scs_mat->n_rows,
+                     scs_mat->n_rows_padded, scs_mat->n_cols, scs_mat->n_chunks,
+                     scs_mat->n_elements, scs_mat->nnz, scs_mat->chunk_ptr,
+                     scs_mat->chunk_lengths, scs_mat->col, scs_mat->val,
+                     scs_mat->perm);
     smax->kernel(bench_name)->register_B(vec_size, x->val);
     smax->kernel(bench_name)->register_C(vec_size, y->val);
 
@@ -77,11 +67,7 @@ int main(int argc, char *argv[]) {
 
     // Clean up
     FINALIZE_SPMV;
-    delete[] A_scs_chunk_ptr;
-    delete[] A_scs_chunk_lengths;
-    delete[] A_scs_col;
-    delete[] A_scs_val;
-    delete[] A_scs_perm;
+    delete scs_mat;
     delete x;
     delete y;
 }

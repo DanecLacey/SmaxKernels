@@ -12,7 +12,6 @@ int main(int argc, char *argv[]) {
     using VT = double;
 
     INIT_SPTRSV_LVL(IT, VT);
-
     DenseMatrix<VT> *x_smax = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
     DenseMatrix<VT> *x_smax_perm = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
     DenseMatrix<VT> *x_mkl = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
@@ -45,13 +44,12 @@ int main(int argc, char *argv[]) {
     smax->utils->apply_vec_perm<VT>(n_rows, x_smax->val, x_smax_perm->val,
                                     perm);
 
-    CRSMatrix<IT, VT> *crs_mat_perm_D_plus_L = new CRSMatrix<IT, VT>;
-    CRSMatrix<IT, VT> *crs_mat_perm_U = new CRSMatrix<IT, VT>;
-    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_perm_D_plus_L,
-                          *crs_mat_perm_U);
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_D_plus_L, *crs_mat_U);
 
     // Smax SpTRSV
-    REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_perm_D_plus_L, x_smax_perm,
+    REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_D_plus_L, x_smax_perm,
                          b_perm);
     smax->kernel("my_lvl_sptrsv")->set_mat_perm(true);
     smax->kernel("my_lvl_sptrsv")->run();

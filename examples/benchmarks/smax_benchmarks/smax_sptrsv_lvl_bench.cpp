@@ -13,13 +13,15 @@ int main(int argc, char *argv[]) {
 
     // Setup data structures
     INIT_SPTRSV_LVL(IT, VT);
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
+
     DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
     DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
+    CRSMatrix<IT, VT> *crs_mat_perm =
+        new CRSMatrix<IT, VT>(crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz);
     int *perm = new int[crs_mat->n_rows];
     int *inv_perm = new int[crs_mat->n_rows];
-    int *A_perm_col = new int[crs_mat->nnz];
-    int *A_perm_row_ptr = new int[crs_mat->n_rows + 1];
-    double *A_perm_val = new double[crs_mat->nnz];
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
@@ -35,14 +37,11 @@ int main(int argc, char *argv[]) {
     smax->kernel(bench_name)->set_mat_perm(true);
     smax->utils->apply_mat_perm<IT, VT>(
         crs_mat->n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
-        A_perm_row_ptr, A_perm_col, A_perm_val, perm, inv_perm);
-    extract_D_L_U_arrays<IT, VT>(
-        crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, A_perm_row_ptr,
-        A_perm_col, A_perm_val, crs_mat_D_plus_L->n_rows,
-        crs_mat_D_plus_L->n_cols, crs_mat_D_plus_L->nnz,
-        crs_mat_D_plus_L->row_ptr, crs_mat_D_plus_L->col, crs_mat_D_plus_L->val,
-        crs_mat_U->n_rows, crs_mat_U->n_cols, crs_mat_U->nnz,
-        crs_mat_U->row_ptr, crs_mat_U->col, crs_mat_U->val);
+        crs_mat_perm->row_ptr, crs_mat_perm->col, crs_mat_perm->val, perm,
+        inv_perm);
+
+    // NOTE: We split after permuting A
+    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_D_plus_L, *crs_mat_U);
 
     // Register kenel data
     REGISTER_SPTRSV_DATA(bench_name, crs_mat_D_plus_L, x, b);
