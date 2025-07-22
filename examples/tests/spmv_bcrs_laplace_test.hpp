@@ -116,7 +116,10 @@ void test_blocked_conversion(int A_crs_n_rows, int A_crs_n_cols, int A_crs_nnz, 
     smax->kernel("my_spmv_cuda")->register_B(A_bcrs_n_cols*A_bcrs_b_w_pad, x);
     smax->kernel("my_spmv_cuda")->register_C(A_bcrs_n_rows*A_bcrs_b_h_pad, y);
     smax->kernel("my_spmv_cuda")->set_block_column_major(use_blocked_column_major);
-    smax->kernel("my_spmv_cuda")->set_bspmv_kernel_implementation(SMAX::BCRSKernelType::naive_thread_per_row);
+    if(column_major)
+        smax->kernel("my_spmv_cuda")->set_bspmv_kernel_implementation(SMAX::BCRSKernelType::naive_warp_shuffle);
+    else
+        smax->kernel("my_spmv_cuda")->set_bspmv_kernel_implementation(SMAX::BCRSKernelType::naive_warp_group);
 
     // Function to test
     smax->kernel("my_spmv_cuda")->run();

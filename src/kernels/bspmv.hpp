@@ -54,7 +54,7 @@ class BSpMVKernel : public Kernel {
         } else {
             if (args.size() != 10)
                 throw std::runtime_error(
-                    "BSpMVKernel register_A expects 6 CRS args");
+                    "BSpMVKernel register_A expects 10 CRS args");
 
             this->args->A->crs = std::make_unique<BCRSMatrix>();
 #if SMAX_CUDA_MODE
@@ -133,7 +133,7 @@ class BSpMVKernel : public Kernel {
                             x_offset, y_offset);
         }
         case PlatformType::CUDA: {
-            return dispatch(BSPMV::initialize_cpu, "bspmv_finalize", A_offset,
+            return dispatch(BSPMV::initialize_cuda, "bspmv_finalize", A_offset,
                             x_offset, y_offset);
         }
         default:
@@ -149,7 +149,7 @@ class BSpMVKernel : public Kernel {
                             y_offset);
         }
         case PlatformType::CUDA: {
-            return dispatch(BSPMV::apply_cpu, "bspmv_apply", A_offset, x_offset,
+            return dispatch(BSPMV::apply_cuda, "bspmv_apply", A_offset, x_offset,
                             y_offset);
         }
         default:
@@ -165,7 +165,7 @@ class BSpMVKernel : public Kernel {
                             x_offset, y_offset);
         }
         case PlatformType::CUDA: {
-            return dispatch(BSPMV::finalize_cpu, "bspmv_finalize", A_offset,
+            return dispatch(BSPMV::finalize_cuda, "bspmv_finalize", A_offset,
                             x_offset, y_offset);
         }
         default:

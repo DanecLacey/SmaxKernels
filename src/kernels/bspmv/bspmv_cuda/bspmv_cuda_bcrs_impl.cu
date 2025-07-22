@@ -52,7 +52,7 @@ naive_bcrs_spmv_cuda_thread_per_row(const ULL n_rows, const ULL b_height, const 
         }
         for(int k = 0; k < b_height; ++k)
         {
-            y[row*height_pad + k] = loc_y[k]*3.4;
+            y[row*height_pad + k] = loc_y[k];
         }
     }
 }
@@ -140,7 +140,7 @@ naive_bcrs_spmv_cuda_warp_per_row_by_shffl(const ULL n_rows, const ULL b_height,
         // now do a warp shuffle down into the first b_height threads
         for(ULL cur_cutoff = power_hint; cur_cutoff >= ULL(1); cur_cutoff /= ULL(2))
         {
-            loc_sum = __shfl_down_sync(0xffff, loc_sum, int(cur_cutoff*b_height));
+            loc_sum += __shfl_down_sync(0xffff, loc_sum, int(cur_cutoff*b_height));
         }
         // now correct values are inside the first b_height threads
         if(thread_idx < b_height)
