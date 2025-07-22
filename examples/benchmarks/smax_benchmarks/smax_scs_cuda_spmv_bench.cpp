@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Convert CRS to Sell-C-sigma matrix
-    smax->utils->convert_crs_to_scs<IT, VT, IT>(
+    smax->utils->convert_crs_to_scs<IT, VT, ULL>(
         crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, crs_mat->col,
         crs_mat->row_ptr, crs_mat->val, scs_mat->C, scs_mat->sigma,
         scs_mat->n_rows, scs_mat->n_rows_padded, scs_mat->n_cols,

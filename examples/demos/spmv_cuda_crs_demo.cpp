@@ -17,10 +17,10 @@ int main(void) {
     A->row_ptr = new int[A->n_rows + 1]{0, 2, 3, 5};
     A->val = new double[A->nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
 
-    DenseMatrix<double> *x = new DenseMatrix<VT>(A->n_cols, 1, 1.0);
+    DenseMatrix<double> *x = new DenseMatrix<double>(A->n_cols, 1, 1.0);
 
     // Initialize result
-    DenseMatrix<double> *y = new DenseMatrix<VT>(A->n_rows, 1, 0.0);
+    DenseMatrix<double> *y = new DenseMatrix<double>(A->n_rows, 1, 0.0);
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
