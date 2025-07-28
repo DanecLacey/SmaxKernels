@@ -120,6 +120,9 @@ int main(int argc, char *argv[]) {
     // crs_mat_C_smax->print();
     smax->utils->print_timers();
 
+    std::cout << "MKL nnz = " << crs_mat_C_mkl->nnz << std::endl;
+    std::cout << "SMAX nnz = " << crs_mat_C_smax->nnz << std::endl;
+
     // Compare
     compare_spgemm<IT, VT>(crs_mat_C_smax, crs_mat_C_mkl,
                            cli_args->matrix_file_name_A,

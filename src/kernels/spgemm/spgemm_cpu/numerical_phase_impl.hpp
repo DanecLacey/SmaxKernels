@@ -34,6 +34,8 @@ inline void basic_numerical_phase(
         }
     }
 
+    ULL *tl_n_mults = new ULL[n_threads];
+
     IF_SMAX_TIME(timers->get("Numerical_Setup")->stop());
     IF_SMAX_TIME(timers->get("Numerical_Gustavson")->start());
 
@@ -41,6 +43,7 @@ inline void basic_numerical_phase(
 #pragma omp parallel
     {
         SMAX_GET_THREAD_ID(ULL, tid)
+        IF_SMAX_DEBUG(tl_n_mults[tid] = 0);
 #pragma omp for schedule(static)
         for (ULL i = 0; i < A_n_rows; ++i) {
             for (IT j = A_row_ptr[i]; j < A_row_ptr[i + 1]; ++j) {
@@ -51,6 +54,7 @@ inline void basic_numerical_phase(
 
                     // Accumulate intermediate results
                     dense_accumulators[tid][right_col] += A_val[j] * B_val[k];
+                    IF_SMAX_DEBUG(++tl_n_mults[tid]);
                 }
             }
             // Write row-local accumulators to C
@@ -69,11 +73,15 @@ inline void basic_numerical_phase(
         }
     }
     IF_SMAX_TIME(timers->get("Numerical_Gustavson")->stop());
+    IF_SMAX_DEBUG(ULL n_mults = 0; for (int tid = 0; tid < n_threads; ++tid) {
+        n_mults += tl_n_mults[tid];
+    } ErrorHandler::log("n_mults = %llu", n_mults););
 
     for (ULL tid = 0; tid < n_threads; ++tid) {
         delete[] dense_accumulators[tid];
     }
     delete[] dense_accumulators;
+    delete[] tl_n_mults;
 }
 
 } // namespace SMAX::KERNELS::SPGEMM::CPU
