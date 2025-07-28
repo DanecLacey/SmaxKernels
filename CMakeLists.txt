@@ -19,7 +19,7 @@ if(USE_CUDA)
     if(CUDAToolkit_FOUND)
 
         if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-            set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
+            set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now
         endif()
 
         enable_language(CUDA)
@@ -64,6 +64,10 @@ set(KERNEL_HEADERS
     src/kernels/sptrsv.hpp
     src/kernels/sptrsv/sptrsv_common.hpp
     src/kernels/sptrsv/sptrsv_cpu.hpp
+    src/kernels/bspmv.hpp
+    src/kernels/bspmv/bspmv_common.hpp
+    src/kernels/bspmv/bspmv_cpu.hpp
+    src/kernels/bspmv/bspmv_cuda.hpp
 )
 
 set(CPU_HEADER_DIRS
@@ -72,11 +76,13 @@ set(CPU_HEADER_DIRS
     src/kernels/spmv/spmv_cpu/
     src/kernels/sptrsm/sptrsm_cpu/
     src/kernels/sptrsv/sptrsv_cpu/
+    src/kernels/bspmv/bspmv_cpu/
     src/platforms/cpu/
 )
 
 set(CUDA_HEADER_DIRS
     src/kernels/spmv/spmv_cuda/
+    src/kernels/bspmv/bspmv_cuda/
     src/platforms/cuda
 )
 
@@ -134,7 +140,7 @@ set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 
 # GPU builds
 if(USE_CUDA)
-    if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")   
+    if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
         set(SMAX_CUDA_MODE 1) # All checks pass, and we can use CUDA kernels!
         set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
         # Set CUDA flags based on build type
@@ -143,10 +149,10 @@ if(USE_CUDA)
         elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
         endif()
-        
+
         # Include CUDA headers
         list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
-        
+
         # Set CUDA threads-per-block if not already defined
         if(NOT DEFINED CUDA_TPB)
         set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
@@ -160,6 +166,7 @@ if(USE_CUDA)
         list(APPEND SOURCES
             src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
             src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cu
+            src/kernels/bspmv/bspmv_cuda/bspmv_cuda_bcrs_impl.cu
         )
     else()
         message(FATAL_ERROR "No supported GPU compiler found, even though USE_CUDA=ON.")

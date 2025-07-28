@@ -92,6 +92,13 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
         sptrsm->flags = std::make_unique<KERNELS::SPTRSM::Flags>();
         break;
     }
+    case KernelType::BSPMV: {
+        this->kernels[name] = std::make_unique<KERNELS::BSpMVKernel>(std::move(k_ctx));
+        auto* spmv = dynamic_cast<KERNELS::BSpMVKernel*>(this->kernels[name].get());
+        spmv->args = std::make_unique<KERNELS::BSPMV::Args>(this->uc);
+        spmv->flags = std::make_unique<KERNELS::BSPMV::Flags>();
+        break;
+    }
     default:
         std::cerr << "Error: Kernel not supported\n";
         return 1;

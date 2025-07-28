@@ -15,6 +15,7 @@
 #include "kernels/spmv.hpp"
 #include "kernels/sptrsm.hpp"
 #include "kernels/sptrsv.hpp"
+#include "kernels/bspmv.hpp"
 
 namespace SMAX {
 
