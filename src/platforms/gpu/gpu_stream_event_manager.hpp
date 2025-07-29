@@ -73,7 +73,7 @@ class gpu_stream {
     /**
      * @brief Nullptr constructor - deleted to prevent null initialization
      */
-    gpu_stream(nullptr_t) = delete;
+    gpu_stream(std::nullptr_t) = delete;
 
     /**
      * @brief Copy assignment operator - deleted to prevent copying
@@ -160,7 +160,7 @@ class gpu_event {
 
     gpu_event(const gpu_event &) = delete;
     gpu_event(int) = delete;
-    gpu_event(nullptr_t) = delete;
+    gpu_event(std::nullptr_t) = delete;
     gpu_event &operator=(const gpu_event &) = delete;
 
     void synchronize() const {
