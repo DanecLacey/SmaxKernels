@@ -7,4 +7,5 @@
 /* This is replaced by configure_file() */
 #define SMAX_DEBUG_MODE @SMAX_DEBUG_MODE@
 #define SMAX_CUDA_MODE @SMAX_CUDA_MODE@
+#define SMAX_HIP_MODE @SMAX_HIP_MODE@
 // clang-format on
