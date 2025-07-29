@@ -8,7 +8,10 @@
 #include <ostream>
 #include <queue>
 #include <unordered_set>
+    
+#include <omp.h>
 
+    
 namespace SMAX {
 
 template <typename IT, typename ST>
@@ -521,7 +524,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         n_levels = Utils::generate_color_perm_bal(A_n_rows, A_sym_row_ptr,
                                                   A_sym_col, lvl, n_levels);
     } else if (type == "NONE") {
-    // Generates dummy permutation
+        // Generates dummy permutation
 #pragma omp parallel for
         for (int i = 0; i < A_n_rows; ++i) {
             lvl[i] = i;

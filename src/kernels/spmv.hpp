@@ -29,7 +29,7 @@ class SpMVKernel : public Kernel {
                     "SpMVKernel register_A expects 13 Sell-C-sigma args");
 
             this->args->A->scs = std::make_unique<SCSMatrix>();
-#if SMAX_CUDA_MODE
+#if (SMAX_CUDA_MODE || SMAX_HIP_MODE)
             // Make device version of matrix
             this->args->d_A->scs = std::make_unique<SCSMatrix>();
 #endif
@@ -55,7 +55,7 @@ class SpMVKernel : public Kernel {
                     "SpMVKernel register_A expects 6 CRS args");
 
             this->args->A->crs = std::make_unique<CRSMatrix>();
-#if SMAX_CUDA_MODE
+#if (SMAX_CUDA_MODE || SMAX_HIP_MODE)
             // Make device version of matrix
             this->args->d_A->crs = std::make_unique<CRSMatrix>();
 #endif
