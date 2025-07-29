@@ -21,7 +21,7 @@
  * - __HIPCC__: AMD HIP backend
  * - __CUDACC__: NVIDIA CUDA backend
  */
-#ifdef SMAX_HIP_MODE
+#if SMAX_HIP_MODE
 /** @brief Backend identifier for HIP */
 #define BACKEND hip
 /** @brief Human-readable backend string for HIP */

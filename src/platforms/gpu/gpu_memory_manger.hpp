@@ -116,7 +116,7 @@ inline void asyncMemcpyD2H(const device_unique_ptr<VT> &dev_src,
 
 template <typename elem_type>
 void allocate_copy_to_device(const void *host_data, void *&device_data_out, size_t n_elems) {
-#if SMAX_CUDA_MODE
+#if SMAX_CUDA_MODE || SMAX_HIP_MODE
 
     IF_SMAX_DEBUG_3(std::cout << "Allocating: " << n_elems
                               << " spaces of size: " << sizeof(elem_type)
@@ -134,7 +134,7 @@ void allocate_copy_to_device(const void *host_data, void *&device_data_out, size
 template <typename elem_type>
 void transfer_DtoH(const void *d_data, void *&h_data_out, size_t n_elems) {
 
-#if SMAX_CUDA_MODE
+#if SMAX_CUDA_MODE || SMAX_HIP_MODE
     elem_type *h_data = static_cast<elem_type *>(h_data_out);
 
     IF_SMAX_DEBUG_3(std::cout << "Copying back: " << n_elems
