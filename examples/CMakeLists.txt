@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # If the lib is built with CUDA, the examples must also be
 if(SMAX_CUDA_MODE_EXPORT) # Detected from smax lib
+    set(BUILD_GPU_LANGUAGE CUDA)
     find_package(CUDAToolkit REQUIRED)
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
@@ -22,13 +23,11 @@ if(SMAX_CUDA_MODE_EXPORT) # Detected from smax lib
     enable_language(CUDA)
     add_compile_definitions(CUDA_MODE)
     include_directories(${CUDAToolkit_INCLUDE_DIRS}) # Why is this necessary?
-else()
+elseif(SMAX_HIP_MODE_EXPORT)
     # The examples cannot be built with CUDA if the lib was not
-    find_package(CUDAToolkit QUIET)
-    if (CUDAToolkit_FOUND)
-        message(WARNING "CUDA compiler found, but SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.
-        Building only CPU examples.")
-    endif()
+    set(BUILD_GPU_LANGUAGE HIP)
+    enable_language(HIP)
+    #set(CMAKE_HIP_ARCHITECTURES gfx801  gfx900)
 endif()
 
 # Set default build type if not defined
@@ -70,7 +69,9 @@ endif()
 
 # Compiler-specific flags
 # GPU builds
-if(SMAX_CUDA_MODE_EXPORT)
+if(SMAX_CUDA_MODE_EXPORT OR SMAX_HIP_MODE_EXPORT)
+    set(ROCM_ROOT "/opt/rocm" CACHE PATH "Root directory of the ROCm installation")
+    list(APPEND CMAKE_PREFIX_PATH "${ROCM_ROOT}")
     string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID) # Normalize compiler ID for consistent matching
     if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
         set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
@@ -79,8 +80,9 @@ if(SMAX_CUDA_MODE_EXPORT)
         elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
         endif()
-    else()
-        message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.")
+    #else()
+    #    message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.")
+    #    message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_HIP_MODE_EXPORT=${SMAX_HIP_MODE_EXPORT}.")
     endif()
 endif()
 

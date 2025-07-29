@@ -4,7 +4,7 @@ file(GLOB ALL_CPP_FILES *.cpp)
 # Create filtered list
 set(CPP_FILES "")
 
-if(NOT (SMAX_CUDA_MODE_EXPORT AND CUDAToolkit_FOUND))
+if(NOT (SMAX_CUDA_MODE_EXPORT OR SMAX_HIP_MODE_EXPORT))
     # Skip everything containing keyword "cuda"
     set(SKIP_ME "cuda")
     foreach(file ${ALL_CPP_FILES})
@@ -28,6 +28,7 @@ foreach(src ${CPP_FILES})
     get_filename_component(exec_name ${src} NAME_WE)
 
     # Add an executable for this source file
+    set_source_files_properties(${src} PROPERTIES LANGUAGE ${BUILD_GPU_LANGUAGE})
     add_executable(${exec_name} ${src})
 
     # Link against common libraries
