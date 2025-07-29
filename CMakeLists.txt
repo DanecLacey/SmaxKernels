@@ -14,6 +14,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Optional: restrict required version
 option(USE_CUDA "Enable CUDA support" OFF)
+option(USE_HIP "Enable HIP support" OFF)
+
+if(USE_CUDA AND USE_HIP)
+  message(FATAL_ERROR "Select either USE_CUDA or USE_HIP")
+endif()
+
+
 if(USE_CUDA)
     find_package(CUDAToolkit QUIET)
     if(CUDAToolkit_FOUND)
@@ -22,17 +29,27 @@ if(USE_CUDA)
             set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
         endif()
 
-        enable_language(CUDA)
+        set(BUILD_GPU_LANGUAGE CUDA)
     else()
         message(FATAL_ERROR "CUDAToolkit not found, even though USE_CUDA=ON.")
     endif()
 endif()
 
+if(USE_HIP)
+  set(ROCM_ROOT "/opt/rocm" CACHE PATH "Root directory of the ROCm installation")
+  list(APPEND CMAKE_PREFIX_PATH "${ROCM_ROOT}")
+  set(BUILD_GPU_LANGUAGE HIP)
+endif()
+  
 # List of source files for building the library
 set(SOURCES
-    src/interface.cpp
-    src/error_handler.cpp
+src/interface.cpp
+src/error_handler.cpp
 )
+if(USE_HIP OR USE_CUDA)
+    enable_language(${BUILD_GPU_LANGUAGE})
+    set_source_files_properties(${SOURCES} PROPERTIES LANGUAGE ${BUILD_GPU_LANGUAGE})
+endif()
 
 # List of header files for installation
 set(COMMON_HEADERS
@@ -136,6 +153,7 @@ set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 if(USE_CUDA)
     if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")   
         set(SMAX_CUDA_MODE 1) # All checks pass, and we can use CUDA kernels!
+        set(SMAX_HIP_MODE 0) # All checks pass, and we can use CUDA kernels!
         set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
         # Set CUDA flags based on build type
         if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -166,6 +184,42 @@ if(USE_CUDA)
     endif()
 else()
     set(SMAX_CUDA_MODE 0)
+endif()
+
+if(USE_HIP)
+    #if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")   
+        set(SMAX_CUDA_MODE 0) # All checks pass, and we can use CUDA kernels!
+        set(SMAX_HIP_MODE 1) # All checks pass, and we can use CUDA kernels!
+        set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
+        # Set CUDA flags based on build type
+        if(CMAKE_BUILD_TYPE STREQUAL "Release")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 ")
+        elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
+        endif()
+        
+        # Include CUDA headers
+        list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
+        
+        # Set CUDA threads-per-block if not already defined
+        if(NOT DEFINED CUDA_TPB)
+        set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
+        endif()
+        add_compile_definitions(CUDA_TPB=${CUDA_TPB})
+        message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
+        message(STATUS "CUDA Architecture set to ${CMAKE_CUDA_ARCHITECTURES}")
+        message(STATUS "CUDA compiler flags set to ${CMAKE_CUDA_FLAGS} ")
+
+        # Add CUDA source file
+        list(APPEND SOURCES
+            src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
+            src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cu
+        )
+    # else()
+    #     message(FATAL_ERROR "No supported GPU compiler found, even though USE_HIP=ON.")
+    # endif()
+else()
+    set(SMAX_HIP_MODE 0)
 endif()
 
 set(CXX_DEBUG_BASE_FLAGS "-g -O0 -Wall -Wextra -fno-omit-frame-pointer")
@@ -203,6 +257,7 @@ add_library(${LIBRARY_NAME} SHARED ${SOURCES})
 # For public use
 target_compile_definitions(${LIBRARY_NAME} PUBLIC
     SMAX_CUDA_MODE=${SMAX_CUDA_MODE}
+    SMAX_HIP_MODE=${SMAX_HIP_MODE}
     SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
 )
 
