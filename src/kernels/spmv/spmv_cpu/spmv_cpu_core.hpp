@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../../common.hpp"
+#include "spmv_cpu_bcrs_impl.hpp"
 #include "spmv_cpu_crs_impl.hpp"
 #include "spmv_cpu_scs_impl.hpp"
 
@@ -60,6 +61,34 @@ int apply_cpu_core(Timers *timers, KernelContext *k_ctx, Args *args,
             as<VT *>(args->A->scs->val),
             x + x_offset,
             y + y_offset);
+    } else if (flags->is_mat_bcrs) {
+        if (flags->is_block_column_major) {
+            naive_bcrs_spmv<IT, VT, true>(
+                args->A->bcrs->n_rows,
+                args->A->bcrs->n_cols,
+                args->A->bcrs->b_height,
+                args->A->bcrs->b_width,
+                args->A->bcrs->height_pad,
+                args->A->bcrs->width_pad,
+                as<IT *>(args->A->bcrs->col),
+                as<IT *>(args->A->bcrs->row_ptr),
+                as<VT *>(args->A->bcrs->val),
+                x + x_offset,
+                y + y_offset);
+        } else {
+            naive_bcrs_spmv<IT, VT, false>(
+                args->A->bcrs->n_rows,
+                args->A->bcrs->n_cols,
+                args->A->bcrs->b_height,
+                args->A->bcrs->b_width,
+                args->A->bcrs->height_pad,
+                args->A->bcrs->width_pad,
+                as<IT *>(args->A->bcrs->col),
+                as<IT *>(args->A->bcrs->row_ptr),
+                as<VT *>(args->A->bcrs->val),
+                x + x_offset,
+                y + y_offset);
+        }
     } else {
         naive_crs_spmv<IT, VT>(
             args->A->crs->n_rows,

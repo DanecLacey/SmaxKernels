@@ -9,30 +9,20 @@ REGISTER_TEST(spgemmAA_test) {
 
     using IT = uint16_t;
     using VT = float;
-    using ULL = unsigned long long int;
 
-    ULL A_n_rows = 3;
-    ULL A_n_cols = 3;
-    ULL A_nnz = 5;
-    IT *A_col = new IT[A_nnz]{0, 1, 1, 0, 2};
-    IT *A_row_ptr = new IT[A_n_rows + 1]{0, 2, 3, 5};
-    VT *A_val = new VT[A_nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
+    CRSMatrix<IT, VT> *A = new CRSMatrix<IT, VT>(3, 3, 5);
+    A->col = new IT[A->nnz]{0, 1, 1, 0, 2};
+    A->row_ptr = new IT[A->n_rows + 1]{0, 2, 3, 5};
+    A->val = new VT[A->nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
 
-    ULL C_n_rows = 0;
-    ULL C_n_cols = 0;
-    ULL C_nnz = 0;
-    IT *C_col = nullptr;
-    IT *C_row_ptr = nullptr;
-    VT *C_val = nullptr;
+    CRSMatrix<IT, VT> *C = new CRSMatrix<IT, VT>;
 
-    ULL expected_C_n_rows = 3;
-    ULL expected_C_n_cols = 3;
-    ULL expected_C_nnz = 6;
-    IT *expected_C_col = new IT[expected_C_nnz]{0, 1, 1, 0, 1, 2};
-    IT *expected_C_row_ptr = new IT[expected_C_n_rows + 1]{0, 2, 3, 6};
-    VT *expected_C_val = new VT[expected_C_nnz]{
-        1.21000003814697266,  3.96000027656555176, 4.84000015258789062,
-        13.63999938964843750, 3.72000002861022949, 10.88999938964843750};
+    CRSMatrix<IT, VT> *C_exp = new CRSMatrix<IT, VT>(3, 3, 6);
+    C_exp->col = new IT[C_exp->nnz]{0, 1, 1, 0, 1, 2};
+    C_exp->row_ptr = new IT[C_exp->n_rows + 1]{0, 2, 3, 6};
+    C_exp->val = new VT[C_exp->nnz]{1.21000003814697266, 3.96000027656555176,
+                                    4.84000015258789062, 13.63999938964843750,
+                                    3.72000002861022949, 10.88999938964843750};
 
     SMAX::Interface *smax = new SMAX::Interface();
 
@@ -41,31 +31,26 @@ REGISTER_TEST(spgemmAA_test) {
                           SMAX::FloatType::FLOAT32);
 
     smax->kernel("spgemm_AA")
-        ->register_A(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
+        ->register_A(A->n_rows, A->n_cols, A->nnz, A->col, A->row_ptr, A->val);
     smax->kernel("spgemm_AA")
-        ->register_B(A_n_rows, A_n_cols, A_nnz, A_col, A_row_ptr, A_val);
+        ->register_B(A->n_rows, A->n_cols, A->nnz, A->col, A->row_ptr, A->val);
     smax->kernel("spgemm_AA")
-        ->register_C(&C_n_rows, &C_n_cols, &C_nnz, &C_col, &C_row_ptr, &C_val);
+        ->register_C(&C->n_rows, &C->n_cols, &C->nnz, &C->col, &C->row_ptr,
+                     &C->val);
 
     // Function to test
     smax->kernel("spgemm_AA")->run();
 
-    compare_values<ULL>(expected_C_n_rows, C_n_rows, std::string("n_rows"));
-    compare_values<ULL>(expected_C_n_cols, C_n_cols, std::string("n_cols"));
-    compare_values<ULL>(expected_C_nnz, C_nnz, std::string("nnz"));
-    compare_arrays<IT>(expected_C_col, C_col, C_nnz, std::string("col"));
-    compare_arrays<IT>(expected_C_row_ptr, C_row_ptr, C_n_rows + 1,
+    compare_values<ULL>(C_exp->n_rows, C->n_rows, std::string("n_rows"));
+    compare_values<ULL>(C_exp->n_cols, C->n_cols, std::string("n_cols"));
+    compare_values<ULL>(C_exp->nnz, C->nnz, std::string("nnz"));
+    compare_arrays<IT>(C_exp->col, C->col, C->nnz, std::string("col"));
+    compare_arrays<IT>(C_exp->row_ptr, C->row_ptr, C->n_rows + 1,
                        std::string("row_ptr"));
-    compare_arrays<VT>(expected_C_val, C_val, C_nnz, std::string("val"));
+    compare_arrays<VT>(C_exp->val, C->val, C->nnz, std::string("val"));
 
-    delete[] A_col;
-    delete[] A_row_ptr;
-    delete[] A_val;
-    delete[] C_col;
-    delete[] C_row_ptr;
-    delete[] C_val;
-    delete[] expected_C_col;
-    delete[] expected_C_row_ptr;
-    delete[] expected_C_val;
+    delete A;
+    delete C;
+    delete C_exp;
     delete smax;
 }

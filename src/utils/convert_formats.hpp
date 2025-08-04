@@ -132,13 +132,15 @@ int Utils::convert_crs_to_scs(const ST _n_rows, const ST _n_cols, const ST _nnz,
 };
 
 template <typename IT, typename VT, typename ST>
-int Utils::convert_crs_to_bcrs(const ST _n_rows, const ST _n_cols, const ST _nnz,
-                              const IT *_col, const IT *_row_ptr,
-                              const VT *_val, ST& n_rows, ST& n_cols, ST& nnz, ST& b_height, ST& b_width,
-                              ST& height_pad, ST& width_pad, IT *&col, IT *&row_ptr, VT *&val,
-                              const ST target_b_height, const ST target_b_width,
-                              const ST target_height_pad, const ST target_width_pad, const bool block_column_major) {
+int Utils::convert_crs_to_bcrs(
+    const ST _n_rows, const ST _n_cols, const ST _n_blocks, const IT *_col,
+    const IT *_row_ptr, const VT *_val, ST &n_rows, ST &n_cols, ST &n_blocks,
+    ST &b_height, ST &b_width, ST &height_pad, ST &width_pad, IT *&col,
+    IT *&row_ptr, VT *&val, const ST target_b_height, const ST target_b_width,
+    const ST target_height_pad, const ST target_width_pad,
+    const bool block_column_major) {
     IF_SMAX_DEBUG(ErrorHandler::log("Entering convert_crs_to_bcrs"));
+    // clang-format off
     // check if size match
     if(_n_rows%target_b_height)
     {
@@ -169,8 +171,8 @@ int Utils::convert_crs_to_bcrs(const ST _n_rows, const ST _n_cols, const ST _nnz
     std::vector<IT> tmp_row_ptr(n_rows+1u);
     std::vector<IT> tmp_col_ptr;
 
-    // reserve to sensical size, we will have at most nnz block entries
-    tmp_col_ptr.reserve(_nnz);
+    // reserve to sensical size, we will have at most n_blocks block entries
+    tmp_col_ptr.reserve(_n_blocks);
 
     // for each block row, we gather our values in a sorted set
     std::set<IT> tmp_uni_col;
@@ -194,12 +196,12 @@ int Utils::convert_crs_to_bcrs(const ST _n_rows, const ST _n_cols, const ST _nnz
     // clear set
     tmp_uni_col.clear();
 
-    // we define nnz as non zero blocks, which is the size of our columns array
-    nnz = tmp_col_ptr.size();
+    // we define n_blocks as non zero blocks, which is the size of our columns array
+    n_blocks = tmp_col_ptr.size();
 
     // create actual matrix data
     row_ptr = new IT[n_rows+1u];
-    col = new IT[nnz];
+    col = new IT[n_blocks];
     // copy known data
     std::copy(tmp_row_ptr.begin(), tmp_row_ptr.end(), row_ptr);
     std::copy(tmp_col_ptr.begin(), tmp_col_ptr.end(), col);
@@ -208,11 +210,11 @@ int Utils::convert_crs_to_bcrs(const ST _n_rows, const ST _n_cols, const ST _nnz
     tmp_row_ptr.clear();
     tmp_col_ptr.clear();
 
-    // need space for nnz blocks
-    val = new VT[nnz*height_pad*width_pad];
+    // need space for n_blocks blocks
+    val = new VT[n_blocks*height_pad*width_pad];
 
     // init to zero
-    std::fill(val, val + nnz*height_pad*width_pad, VT(0));
+    std::fill(val, val + n_blocks*height_pad*width_pad, VT(0));
 
     // and now run through our csr matrix blockwise, track the column position and copy into the blocked matrix
     for(ST b_row = 0; b_row < n_rows; ++b_row)
@@ -239,7 +241,7 @@ int Utils::convert_crs_to_bcrs(const ST _n_rows, const ST _n_cols, const ST _nnz
             }
         }
     }
-
+    // clang-format on
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting convert_crs_to_bcrs"));
     return 0;
 };

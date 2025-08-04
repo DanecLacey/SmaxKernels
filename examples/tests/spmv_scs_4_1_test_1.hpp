@@ -11,77 +11,57 @@ REGISTER_TEST(spmv_scs_4_1_test_1) {
     using VT = double;
 
     // Initialize crs operand
-    int A_crs_n_rows = 3;
-    int A_crs_n_cols = 3;
-    int A_crs_nnz = 5;
-    IT *A_crs_col = new IT[A_crs_nnz]{0, 1, 1, 0, 2};
-    IT *A_crs_row_ptr = new IT[A_crs_n_rows + 1]{0, 2, 3, 5};
-    VT *A_crs_val = new VT[A_crs_nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
+    CRSMatrix<IT, VT> *A_crs = new CRSMatrix<IT, VT>(3, 3, 5);
+    A_crs->col = new IT[A_crs->nnz]{0, 1, 1, 0, 2};
+    A_crs->row_ptr = new IT[A_crs->n_rows + 1]{0, 2, 3, 5};
+    A_crs->val = new VT[A_crs->nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
 
     // Declare Sell-c-sigma operand
-    int A_scs_C = 4;     // Defined by user
-    int A_scs_sigma = 1; // Defined by user
-    int A_scs_n_rows = 0;
-    int A_scs_n_rows_padded = 0;
-    int A_scs_n_cols = 0;
-    int A_scs_n_chunks = 0;
-    int A_scs_n_elements = 0;
-    int A_scs_nnz = 0;
-    IT *A_scs_chunk_ptr = nullptr;
-    IT *A_scs_chunk_lengths = nullptr;
-    IT *A_scs_col = nullptr;
-    VT *A_scs_val = nullptr;
-    IT *A_scs_perm = nullptr;
+    SCSMatrix<IT, VT> *A_scs = new SCSMatrix<IT, VT>(4, 1);
 
     SMAX::Interface *smax = new SMAX::Interface();
 
-    smax->utils->convert_crs_to_scs<IT, VT, int>(
-        A_crs_n_rows, A_crs_n_cols, A_crs_nnz, A_crs_col, A_crs_row_ptr,
-        A_crs_val, A_scs_C, A_scs_sigma, A_scs_n_rows, A_scs_n_rows_padded,
-        A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements, A_scs_nnz,
-        A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val, A_scs_perm);
+    smax->utils->convert_crs_to_scs<IT, VT, ULL>(
+        A_crs->n_rows, A_crs->n_cols, A_crs->nnz, A_crs->col, A_crs->row_ptr,
+        A_crs->val, A_scs->C, A_scs->sigma, A_scs->n_rows, A_scs->n_rows_padded,
+        A_scs->n_cols, A_scs->n_chunks, A_scs->n_elements, A_scs->nnz,
+        A_scs->chunk_ptr, A_scs->chunk_lengths, A_scs->col, A_scs->val,
+        A_scs->perm);
 
     // Declare expected output from conversion utility
-    int A_scs_n_rows_expected = 3;
-    int A_scs_n_rows_padded_expected = 4;
-    int A_scs_n_cols_expected = 3;
-    int A_scs_n_chunks_expected = 1;
-    int A_scs_n_elements_expected = 8;
-    int A_scs_nnz_expected = 5;
-    IT *A_scs_chunk_ptr_expected = new IT[A_scs_n_chunks_expected + 1]{0, 8};
-    IT *A_scs_chunk_lengths_expected = new IT[A_scs_n_chunks_expected]{2};
-    IT *A_scs_col_expected = new IT[A_scs_n_elements_expected]{
+    SCSMatrix<IT, VT> *A_scs_exp = new SCSMatrix<IT, VT>(4, 1);
+    A_scs_exp->n_rows = 3;
+    A_scs_exp->n_rows_padded = 4;
+    A_scs_exp->n_cols = 3;
+    A_scs_exp->n_chunks = 1;
+    A_scs_exp->n_elements = 8;
+    A_scs_exp->nnz = 5;
+    A_scs_exp->chunk_ptr = new IT[A_scs_exp->n_chunks + 1]{0, 8};
+    A_scs_exp->chunk_lengths = new IT[A_scs_exp->n_chunks]{2};
+    A_scs_exp->col = new IT[A_scs_exp->n_elements]{
         0, 1, 0, 0, 1, 0, 2, 0,
     };
-    VT *A_scs_val_expected = new VT[A_scs_n_elements_expected]{
+    A_scs_exp->val = new VT[A_scs_exp->n_elements]{
         1.1, 2.2, 3.1, 0.0, 1.2, 0.0, 3.3, 0.0,
     };
-    IT *A_scs_perm_expected = new IT[A_scs_n_rows_expected]{0, 1, 2};
+    A_scs_exp->perm = new IT[A_scs_exp->n_rows]{0, 1, 2};
 
-    compare_values<int>(A_scs_n_rows, A_scs_n_rows_expected, "n_rows");
-    compare_values<int>(A_scs_n_rows_padded, A_scs_n_rows_padded_expected,
-                        "n_rows_padded");
-    compare_values<int>(A_scs_n_cols, A_scs_n_cols_expected, "n_cols");
-    compare_values<int>(A_scs_n_chunks, A_scs_n_chunks_expected, "n_chunks");
-    compare_values<int>(A_scs_n_elements, A_scs_n_elements_expected,
-                        "n_elements");
-    compare_values<int>(A_scs_nnz, A_scs_nnz_expected, "nnz");
+    // clang-format off
+    compare_values<ULL>(A_scs->n_rows, A_scs_exp->n_rows, "n_rows");
+    compare_values<ULL>(A_scs->n_rows_padded, A_scs_exp->n_rows_padded, "n_rows_padded");
+    compare_values<ULL>(A_scs->n_cols, A_scs_exp->n_cols, "n_cols");
+    compare_values<ULL>(A_scs->n_chunks, A_scs_exp->n_chunks, "n_chunks");
+    compare_values<ULL>(A_scs->n_elements, A_scs_exp->n_elements, "n_elements");
+    compare_values<ULL>(A_scs->nnz, A_scs_exp->nnz, "nnz");
+    compare_arrays<IT>(A_scs->chunk_ptr, A_scs_exp->chunk_ptr, A_scs->n_chunks + 1, "chunk_ptr");
+    compare_arrays<IT>(A_scs->chunk_lengths, A_scs_exp->chunk_lengths, A_scs->n_chunks, "chunk_lengths");
+    compare_arrays<IT>(A_scs->col, A_scs_exp->col, A_scs->n_elements, "col");
+    compare_arrays<VT>(A_scs->val, A_scs_exp->val, A_scs->n_elements, "val");
+    compare_arrays<IT>(A_scs->perm, A_scs_exp->perm, A_scs->n_rows, "perm");
+    // clang-format on
 
-    compare_arrays<IT>(A_scs_chunk_ptr, A_scs_chunk_ptr_expected,
-                       A_scs_n_chunks + 1, "chunk_ptr");
-    compare_arrays<IT>(A_scs_chunk_lengths, A_scs_chunk_lengths_expected,
-                       A_scs_n_chunks, "chunk_lengths");
-    compare_arrays<IT>(A_scs_col, A_scs_col_expected, A_scs_n_elements, "col");
-    compare_arrays<VT>(A_scs_val, A_scs_val_expected, A_scs_n_elements, "val");
-    compare_arrays<IT>(A_scs_perm, A_scs_perm_expected, A_scs_n_rows, "perm");
-
-    delete[] A_crs_col;
-    delete[] A_crs_row_ptr;
-    delete[] A_crs_val;
-    delete[] A_scs_chunk_ptr_expected;
-    delete[] A_scs_chunk_lengths_expected;
-    delete[] A_scs_col_expected;
-    delete[] A_scs_val_expected;
-    delete[] A_scs_perm_expected;
+    delete A_crs;
+    delete A_scs;
+    delete A_scs_exp;
     delete smax;
 }

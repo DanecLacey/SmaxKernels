@@ -282,7 +282,7 @@ class CliParser {
 template <typename IT, typename VT>
 void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
                    CRSMatrix<IT, VT> &U) {
-    
+
     // Clear data from targets
     if (D_plus_L.row_ptr != nullptr)
         delete[] D_plus_L.row_ptr;
@@ -416,6 +416,8 @@ template <typename VT> void print_exact_vector(VT *vec, ULL n_rows) {
 // Just for unit tests. In practice, we leave nonzeros in a row unsorted
 template <typename IT, typename ST>
 void sort_csr_rows_by_col(IT *row_ptr, IT *col, ST n_rows, ST nnz) {
+    // supress compiler warnings
+    (void)nnz;
     for (ST i = 0; i < n_rows; ++i) {
         IT *row_start = col + row_ptr[i];
         IT *row_end = col + row_ptr[i + 1];

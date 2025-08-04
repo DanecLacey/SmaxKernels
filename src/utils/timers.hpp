@@ -23,8 +23,6 @@ void print_spmv_timers(const std::string &kernel_name, const Kernel *kernel_ptr,
 void print_spgemm_timers(const std::string &kernel_name, Kernel *kernel_ptr, 
     const std::function<void(const std::string &, double)> &printer) {
 
-    auto* spgemm = dynamic_cast<KERNELS::SpGEMMKernel*>(kernel_ptr);
-
     long double initialize_time = kernel_ptr->timers->get("initialize")->get_wtime();
     long double apply_time = kernel_ptr->timers->get("apply")->get_wtime();
     long double symbolic_phase_time = kernel_ptr->timers->get("symbolic_phase")->get_wtime();

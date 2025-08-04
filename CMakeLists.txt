@@ -64,10 +64,6 @@ set(KERNEL_HEADERS
     src/kernels/sptrsv.hpp
     src/kernels/sptrsv/sptrsv_common.hpp
     src/kernels/sptrsv/sptrsv_cpu.hpp
-    src/kernels/bspmv.hpp
-    src/kernels/bspmv/bspmv_common.hpp
-    src/kernels/bspmv/bspmv_cpu.hpp
-    src/kernels/bspmv/bspmv_cuda.hpp
 )
 
 set(CPU_HEADER_DIRS
@@ -76,13 +72,11 @@ set(CPU_HEADER_DIRS
     src/kernels/spmv/spmv_cpu/
     src/kernels/sptrsm/sptrsm_cpu/
     src/kernels/sptrsv/sptrsv_cpu/
-    src/kernels/bspmv/bspmv_cpu/
     src/platforms/cpu/
 )
 
 set(CUDA_HEADER_DIRS
     src/kernels/spmv/spmv_cuda/
-    src/kernels/bspmv/bspmv_cuda/
     src/platforms/cuda
 )
 
@@ -166,7 +160,7 @@ if(USE_CUDA)
         list(APPEND SOURCES
             src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
             src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cu
-            src/kernels/bspmv/bspmv_cuda/bspmv_cuda_bcrs_impl.cu
+            src/kernels/spmv/spmv_cuda/spmv_cuda_bcrs_impl.cu
         )
     else()
         message(FATAL_ERROR "No supported GPU compiler found, even though USE_CUDA=ON.")

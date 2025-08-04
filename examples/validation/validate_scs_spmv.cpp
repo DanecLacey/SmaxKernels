@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
     // TODO: Make C and sigma runtime args
     // Declare Sell-c-sigma operand
-    SCSMatrix<int, double> *scs_mat = new SCSMatrix<int, double>(_C, _sigma);
+    SCSMatrix<IT, VT> *scs_mat = new SCSMatrix<IT, VT>(_C, _sigma);
 
     // Smax SpMV
     SMAX::Interface *smax = new SMAX::Interface();

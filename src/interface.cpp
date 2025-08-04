@@ -52,6 +52,12 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
                                PlatformType platform, IntType int_type,
                                FloatType float_type) {
 
+#if !SMAX_CUDA_MODE
+    if (platform == PlatformType::CUDA)
+        ErrorHandler::fatal(
+            "Cannot register CUDA kernel. SMAX not built with CUDA enabled.");
+#endif
+
     std::unique_ptr<KernelContext> k_ctx = std::make_unique<KernelContext>(
         kernel_type, platform, int_type, float_type);
 
@@ -90,13 +96,6 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
         auto* sptrsm = dynamic_cast<KERNELS::SpTRSMKernel*>(this->kernels[name].get());
         sptrsm->args = std::make_unique<KERNELS::SPTRSM::Args>(this->uc);
         sptrsm->flags = std::make_unique<KERNELS::SPTRSM::Flags>();
-        break;
-    }
-    case KernelType::BSPMV: {
-        this->kernels[name] = std::make_unique<KERNELS::BSpMVKernel>(std::move(k_ctx));
-        auto* spmv = dynamic_cast<KERNELS::BSpMVKernel*>(this->kernels[name].get());
-        spmv->args = std::make_unique<KERNELS::BSPMV::Args>(this->uc);
-        spmv->flags = std::make_unique<KERNELS::BSPMV::Flags>();
         break;
     }
     default:
