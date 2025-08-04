@@ -4,8 +4,10 @@ tests/test2
 tests/error.txt
 third_party/
 examples/build/
+examples/build/.smax_log
 docs/
 scripts/
 CMakeCache.txt
 CMakeFiles/
 settings.json
+.smax_log

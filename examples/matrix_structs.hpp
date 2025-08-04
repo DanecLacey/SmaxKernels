@@ -230,6 +230,7 @@ template <typename IT, typename VT> struct CRSMatrix {
         this->nnz = nnz;
         this->n_cols = n_cols;
 
+        // TODO: Actually shouldn't be necessary
         val = new VT[nnz];
         col = new IT[nnz];
         row_ptr = new IT[n_rows + 1];

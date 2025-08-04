@@ -5,10 +5,10 @@
 #include "testing_framework.hpp"
 #include "tests_common.hpp"
 
-using IT = int;
-using VT = double;
-
 REGISTER_TEST(bspmv_bcsr_1_1_test_2) {
+
+    using IT = int;
+    using VT = double;
 
     // Initialize crs operand
     CRSMatrix<IT, VT> *A_crs = new CRSMatrix<IT, VT>;

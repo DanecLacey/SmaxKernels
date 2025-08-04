@@ -11,12 +11,6 @@
 int main(void) {
     // Initialize operands
     CRSMatrix<int, double> *A = new CRSMatrix<int, double>;
-    // A->n_rows = 3;
-    // A->n_cols = 3;
-    // A->nnz = 5;
-    // A->col = new int[A->nnz]{0, 1, 1, 0, 2};
-    // A->row_ptr = new int[A->n_rows + 1]{0, 2, 3, 5};
-    // A->val = new double[A->nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
     A->n_rows = 4;
     A->n_cols = 4;
     A->nnz = 5;
