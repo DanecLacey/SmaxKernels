@@ -14,7 +14,7 @@ REGISTER_TEST(spmv_test) {
     A->val = new double[A->nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
 
     double *x = new double[A->n_cols];
-    for (int i = 0; i < A->n_cols; ++i) {
+    for (ULL i = 0; i < A->n_cols; ++i) {
         x[i] = 1.0;
     }
 

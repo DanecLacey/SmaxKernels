@@ -39,37 +39,25 @@ REGISTER_TEST(bspmv_bcsr_1_1_test_1) {
         use_blocked_column_major);
 
     // Declare expected output from conversion utility
-    int A_bcrs_n_rows_expected = 2;
-    int A_bcrs_n_cols_expected = 2;
-    int A_bcrs_b_width_expected = 2;
-    int A_bcrs_b_height_expected = 2;
-    int A_bcrs_b_w_pad_expected = 2;
-    int A_bcrs_b_h_pad_expected = 2;
-    int A_bcrs_n_blocks_expected = 3;
-    IT *A_bcrs_col_expected = new IT[A_bcrs_n_blocks_expected]{0, 1, 1};
-    IT *A_bcrs_row_ptr_expected = new IT[A_bcrs_n_rows_expected + 1]{0, 2, 3};
-    VT *A_bcrs_val_expected =
-        new VT[A_bcrs_n_blocks_expected * A_bcrs_b_w_pad_expected *
-               A_bcrs_b_h_pad_expected]{1.1, 0.0, 0.0, 2.2, 1.3, 0.0,
-                                        1.4, 0.0, 0.0, 0.0, 0.0, 4.4};
+    BCRSMatrix<IT, VT> *A_bcrs_exp =
+        new BCRSMatrix<IT, VT>(2, 2, 3, 2, 2, 2, 2);
+    A_bcrs_exp->col = new IT[A_bcrs_exp->n_blocks]{0, 1, 1};
+    A_bcrs_exp->row_ptr = new IT[A_bcrs_exp->n_rows + 1]{0, 2, 3};
+    A_bcrs_exp->val = new VT[A_bcrs_exp->n_blocks * A_bcrs_exp->b_w_pad *
+                             A_bcrs_exp->b_h_pad]{1.1, 0.0, 0.0, 2.2, 1.3, 0.0,
+                                                  1.4, 0.0, 0.0, 0.0, 0.0, 4.4};
 
-    compare_values<int>(A_bcrs->n_rows, A_bcrs_n_rows_expected, "n_rows");
-    compare_values<int>(A_bcrs->n_cols, A_bcrs_n_cols_expected, "n_cols");
-    compare_values<int>(A_bcrs->n_blocks, A_bcrs_n_blocks_expected, "n_blocks");
-
-    compare_arrays<IT>(A_bcrs->col, A_bcrs_col_expected,
-                       A_bcrs_n_blocks_expected, "col");
-    compare_arrays<IT>(A_bcrs->row_ptr, A_bcrs_row_ptr_expected,
-                       A_bcrs_n_rows_expected + 1, "row");
-    compare_arrays<VT>(A_bcrs->val, A_bcrs_val_expected,
-                       A_bcrs_n_blocks_expected * A_bcrs_b_h_pad_expected *
-                           A_bcrs_b_w_pad_expected,
-                       "val");
+    // clang-format off
+    compare_values<ULL>(A_bcrs->n_rows, A_bcrs_exp->n_rows, "n_rows");
+    compare_values<ULL>(A_bcrs->n_cols, A_bcrs_exp->n_cols, "n_cols");
+    compare_values<ULL>(A_bcrs->n_blocks, A_bcrs_exp->n_blocks, "n_blocks");
+    compare_arrays<IT>(A_bcrs->col, A_bcrs_exp->col, A_bcrs_exp->n_blocks, "col");
+    compare_arrays<IT>(A_bcrs->row_ptr, A_bcrs_exp->row_ptr, A_bcrs_exp->n_rows + 1, "row");
+    compare_arrays<VT>(A_bcrs->val, A_bcrs_exp->val, A_bcrs_exp->n_blocks * A_bcrs_exp->b_h_pad * A_bcrs_exp->b_w_pad, "val");
+    // clang-format on
 
     delete A_crs;
     delete A_bcrs;
-    delete[] A_bcrs_col_expected;
-    delete[] A_bcrs_row_ptr_expected;
-    delete[] A_bcrs_val_expected;
+    delete A_bcrs_exp;
     delete smax;
 }

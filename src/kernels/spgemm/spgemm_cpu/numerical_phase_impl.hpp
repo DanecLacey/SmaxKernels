@@ -73,7 +73,7 @@ inline void basic_numerical_phase(
         }
     }
     IF_SMAX_TIME(timers->get("Numerical_Gustavson")->stop());
-    IF_SMAX_DEBUG(ULL n_mults = 0; for (int tid = 0; tid < n_threads; ++tid) {
+    IF_SMAX_DEBUG(ULL n_mults = 0; for (ULL tid = 0; tid < n_threads; ++tid) {
         n_mults += tl_n_mults[tid];
     } ErrorHandler::log("n_mults = %llu", n_mults););
 

@@ -16,7 +16,7 @@ REGISTER_TEST(spmm_rowmaj_test) {
     A->val = new double[A->nnz]{1.1, 1.2, 2.2, 3.1, 3.3};
 
     double *X = new double[A->n_cols * n_vectors];
-    for (int i = 0; i < A->n_cols * n_vectors; ++i) {
+    for (ULL i = 0; i < A->n_cols * n_vectors; ++i) {
         X[i] = 1.0;
     }
 

@@ -40,7 +40,7 @@ naive_bcrs_spmv(const ULL n_rows, const ULL n_cols, const ULL block_height,
 #pragma omp for schedule(static)
           for (ULL row = 0; row < n_rows; ++row) {
             //format buffer
-            for(IT ix = 0; ix < block_height; ++ix)
+            for(ULL ix = 0; ix < block_height; ++ix)
             {
               y_buffer[ix] = VT(0);
             }
@@ -56,15 +56,15 @@ naive_bcrs_spmv(const ULL n_rows, const ULL n_cols, const ULL block_height,
                   //         val[block_size*j], col, x[col[j]], j);
                   // );
                 if constexpr(block_column_major) {
-                    for(IT jx = 0; jx < block_width; ++jx) {
-                        for(IT ix = 0; ix < block_height; ++ix) {
+                    for(ULL jx = 0; jx < block_width; ++jx) {
+                        for(ULL ix = 0; ix < block_height; ++ix) {
                             y_buffer[ix] += val[j*block_size + jx*height_padding + ix] * x[col[j]*width_padding + jx];
                         }
                     }
                 }
                 else {
-                    for(IT ix = 0; ix < block_height; ++ix) {
-                        for(IT jx = 0; jx < block_width; ++jx) {
+                    for(ULL ix = 0; ix < block_height; ++ix) {
+                        for(ULL jx = 0; jx < block_width; ++jx) {
                             y_buffer[ix] += val[j*block_size + ix*width_padding + jx] * x[col[j]*width_padding + jx];
                         }
                     }
@@ -72,7 +72,7 @@ naive_bcrs_spmv(const ULL n_rows, const ULL n_cols, const ULL block_height,
             }
 
             // write out
-            for(IT ix = 0; ix < block_height; ++ix)
+            for(ULL ix = 0; ix < block_height; ++ix)
             {
               y[row*height_padding + ix] = y_buffer[ix];
             }

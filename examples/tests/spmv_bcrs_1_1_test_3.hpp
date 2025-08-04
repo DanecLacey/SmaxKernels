@@ -19,7 +19,7 @@ REGISTER_TEST(bspmv_test) {
             1.1, 0.0, 0.0, 2.2, 1.3, 0.0, 1.4, 0.0, 0.0, 0.0, 0.0, 4.4};
 
     double *x = new double[A_bcrs->n_cols * A_bcrs->b_w_pad];
-    for (int i = 0; i < A_bcrs->n_cols * A_bcrs->b_width; ++i) {
+    for (ULL i = 0; i < A_bcrs->n_cols * A_bcrs->b_width; ++i) {
         x[i] = 1.0;
     }
 

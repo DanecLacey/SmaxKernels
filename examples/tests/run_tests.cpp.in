@@ -19,7 +19,6 @@ int main() {
     auto &tests = get_test_registry();
     int passed = 0;
     int total = tests.size();
-    int count = 0;
 
     for (const auto &[name, test_func] : tests) {
         std::cout << "Running " << name << "... ";
@@ -32,7 +31,6 @@ int main() {
         } catch (...) {
             std::cout << "FAILED: Unknown exception\n";
         }
-        ++count;
         print_progress(passed, total);
     }
 

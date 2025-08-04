@@ -12,10 +12,6 @@ int main(int argc, char *argv[]) {
     using VT = double;
 
     INIT_SPGEMM(IT, VT);
-    // Make permuted version of A with the same metadata
-    CRSMatrix<IT, VT> *crs_mat_A_perm = new CRSMatrix<IT, VT>(
-        crs_mat_A->n_rows, crs_mat_A->n_cols, crs_mat_A->nnz);
-
     CRSMatrix<IT, VT> *crs_mat_C_smax = new CRSMatrix<IT, VT>;
     CRSMatrix<IT, VT> *crs_mat_C_mkl = new CRSMatrix<IT, VT>;
 

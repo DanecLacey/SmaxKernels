@@ -63,6 +63,9 @@ class SpMVErrorHandler : public KernelErrorHandler {
 
     template <typename IT, typename VT>
     static void print_bcrs_elem(VT val, IT col, VT x, IT j, IT ix, IT jx) {
+        // supress compiler warnings
+        (void)jx;
+
         std::cout << "A_val[" << j << "," << ix << "," << "] = " << val
                   << std::endl;
         std::cout << "A_col[" << j << "," << ix << "," << "] = " << col

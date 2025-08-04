@@ -31,18 +31,18 @@ void test_blocked_conversion(CRSMatrix<int, double> *A_crs, bool column_major,
     if (print_dense_matrix) {
         std::cout << "\n--------------------------------------------\n";
         std::vector<std::string> strings(target_b_height);
-        for (int mrow = 0; mrow < A_bcrs->n_rows; ++mrow) {
+        for (ULL mrow = 0; mrow < A_bcrs->n_rows; ++mrow) {
             std::for_each(strings.begin(), strings.end(),
                           [](auto &str) { str.clear(); });
             int idx = A_bcrs->row_ptr[mrow];
-            for (int mcol = 0; mcol < A_bcrs->n_cols; ++mcol) {
-                while (mcol > A_bcrs->col[idx] &&
+            for (ULL mcol = 0; mcol < A_bcrs->n_cols; ++mcol) {
+                while (mcol > (ULL)A_bcrs->col[idx] &&
                        idx < A_bcrs->row_ptr[mrow + 1]) {
                     ++idx;
                 }
-                bool entry = A_bcrs->col[idx] == mcol;
-                for (int k = 0; k < A_bcrs->b_height; ++k) {
-                    for (int l = 0; l < A_bcrs->b_width; ++l) {
+                bool entry = (ULL)A_bcrs->col[idx] == mcol;
+                for (ULL k = 0; k < A_bcrs->b_height; ++k) {
+                    for (ULL l = 0; l < A_bcrs->b_width; ++l) {
                         if (entry) {
                             if (use_blocked_column_major)
                                 strings.at(k) +=
@@ -64,7 +64,7 @@ void test_blocked_conversion(CRSMatrix<int, double> *A_crs, bool column_major,
                     }
                 }
             }
-            for (int i = 0; i < A_bcrs->b_height; ++i) {
+            for (ULL i = 0; i < A_bcrs->b_height; ++i) {
                 std::cout << strings.at(i) << "\n";
             }
         }
@@ -72,7 +72,7 @@ void test_blocked_conversion(CRSMatrix<int, double> *A_crs, bool column_major,
     }
 
     double *x = new double[A_bcrs->n_cols * A_bcrs->b_w_pad];
-    for (int i = 0; i < A_bcrs->n_cols * A_bcrs->b_width; ++i) {
+    for (ULL i = 0; i < A_bcrs->n_cols * A_bcrs->b_width; ++i) {
         x[i] = 1.0 / double((i + 3) % 23 + 1);
     }
 
@@ -170,7 +170,7 @@ REGISTER_TEST(bspmv_laplace_test) {
     A_crs->row_ptr[1] = int(2);
     A_crs->val[0] = double(2);
     A_crs->val[1] = double(-1);
-    for (int i = 1; i < A_crs->n_rows - 1; ++i) {
+    for (ULL i = 1; i < A_crs->n_rows - 1; ++i) {
         A_crs->col[2 + (i - 1) * 3] = int(i - 1);
         A_crs->col[2 + (i - 1) * 3 + 1] = int(i);
         A_crs->col[2 + (i - 1) * 3 + 2] = int(i + 1);
