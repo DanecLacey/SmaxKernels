@@ -382,6 +382,83 @@ template <typename IT, typename VT> struct CRSMatrix {
     }
 };
 
+template <typename IT, typename VT> struct BCRSMatrix {
+    ULL n_blocks;
+    ULL n_rows;
+    ULL n_cols;
+    ULL b_height;
+    ULL b_width;
+    ULL b_h_pad;
+    ULL b_w_pad;
+    VT *val;
+    IT *col;
+    IT *row_ptr;
+
+    BCRSMatrix() {
+        n_blocks = 0;
+        n_rows = 0;
+        n_cols = 0;
+        b_height = 0;
+        b_width = 0;
+        b_h_pad = 0;
+        b_w_pad = 0;
+        val = nullptr;
+        col = nullptr;
+        row_ptr = nullptr;
+    }
+
+    BCRSMatrix(ULL _n_rows, ULL _n_cols, ULL _n_blocks, ULL _b_height,
+               ULL _b_width, ULL _b_h_pad, ULL _b_w_pad) {
+        n_rows = _n_rows;
+        n_cols = _n_cols;
+        n_blocks = _n_blocks;
+        b_height = _b_height;
+        b_width = _b_width;
+        b_h_pad = _b_h_pad;
+        b_w_pad = _b_w_pad;
+        val = new VT[n_blocks * b_h_pad * b_w_pad];
+        col = new IT[n_blocks];
+        row_ptr = new IT[n_rows + 1];
+    }
+
+    ~BCRSMatrix() {
+        delete[] val;
+        delete[] col;
+        delete[] row_ptr;
+    }
+
+    void print(void) {
+        std::cout << "N_blocks: " << this->n_blocks << std::endl;
+        std::cout << "N_rows: " << this->n_rows << std::endl;
+        std::cout << "N_cols: " << this->n_cols << std::endl;
+        std::cout << "b_height: " << this->b_height << std::endl;
+        std::cout << "b_width: " << this->b_width << std::endl;
+        std::cout << "b_h_pad: " << this->b_h_pad << std::endl;
+        std::cout << "b_w_pad: " << this->b_w_pad << std::endl;
+
+        std::cout << "Values: ";
+        for (ULL i = 0; i < this->n_blocks; ++i) {
+            for (ULL j = 0; j < this->b_h_pad; ++j) {
+                for (ULL k = 0; k < this->b_w_pad; ++k) {
+                    std::cout << this->val[i] << " ";
+                }
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << "\nCol Indices: ";
+        for (ULL i = 0; i < this->n_blocks; ++i)
+            std::cout << this->col[i] << " ";
+
+        std::cout << "\nRow Ptr: ";
+        for (ULL i = 0; i < this->n_rows + 1; ++i)
+            std::cout << this->row_ptr[i] << " ";
+
+        std::cout << std::endl;
+        std::cout << std::endl;
+    }
+};
+
 template <typename IT, typename VT> struct SCSMatrix {
     ULL C;
     ULL sigma;
