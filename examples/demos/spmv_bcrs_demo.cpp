@@ -29,7 +29,11 @@ int main(void) {
         A_bcrs->col, A_bcrs->row_ptr, A_bcrs->val, 2, 2, 2, 2,
         use_blocked_column_major);
 
-    smax->register_kernel("my_bcrs_spmv", SMAX::KernelType::BSPMV);
+    smax->register_kernel("my_bcrs_spmv", SMAX::KernelType::SPMV);
+
+    // A is expected to be in the BCRS format
+    smax->kernel("my_bcrs_spmv")->set_mat_bcrs(true);
+
     smax->kernel("my_bcrs_spmv")
         ->set_block_column_major(use_blocked_column_major);
 

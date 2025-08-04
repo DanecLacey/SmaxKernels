@@ -93,7 +93,8 @@ void test_blocked_conversion(CRSMatrix<int, double> *A_crs, bool column_major,
     smax->kernel("my_spmv")->run();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("my_bspmv", SMAX::KernelType::BSPMV);
+    smax->register_kernel("my_bspmv", SMAX::KernelType::SPMV);
+    smax->kernel("my_bspmv")->set_mat_bcrs(true);
     smax->kernel("my_bspmv")
         ->register_A(A_bcrs->n_rows, A_bcrs->n_cols, A_bcrs->n_blocks,
                      A_bcrs->b_height, A_bcrs->b_width, A_bcrs->b_h_pad,
@@ -110,8 +111,9 @@ void test_blocked_conversion(CRSMatrix<int, double> *A_crs, bool column_major,
 
     // register cuda kernel and compare, if available
 #if SMAX_CUDA_MODE
-    smax->register_kernel("my_spmv_cuda", SMAX::KernelType::BSPMV,
+    smax->register_kernel("my_spmv_cuda", SMAX::KernelType::SPMV,
                           SMAX::PlatformType::CUDA);
+    smax->kernel("my_spmv_cuda")->set_mat_bcrs(true);
     smax->kernel("my_spmv_cuda")
         ->register_A(A_bcrs->n_rows, A_bcrs->n_cols, A_bcrs->n_blocks,
                      A_bcrs->b_height, A_bcrs->b_width, A_bcrs->b_h_pad,
@@ -121,16 +123,17 @@ void test_blocked_conversion(CRSMatrix<int, double> *A_crs, bool column_major,
         ->register_B(A_bcrs->n_cols * A_bcrs->b_w_pad, x);
     smax->kernel("my_spmv_cuda")
         ->register_C(A_bcrs->n_rows * A_bcrs->b_h_pad, y);
+
+    // Give special kernel configuration
     smax->kernel("my_spmv_cuda")
         ->set_block_column_major(use_blocked_column_major);
-    if (column_major)
+    if (column_major) {
         smax->kernel("my_spmv_cuda")
-            ->set_bspmv_kernel_implementation(
-                SMAX::BCRSKernelType::naive_warp_shuffle);
-    else
+            ->set_kernel_implementation(SMAX::SpMVType::naive_warp_shuffle);
+    } else {
         smax->kernel("my_spmv_cuda")
-            ->set_bspmv_kernel_implementation(
-                SMAX::BCRSKernelType::naive_warp_group);
+            ->set_kernel_implementation(SMAX::SpMVType::naive_warp_group);
+    }
 
     // Function to test
     smax->kernel("my_spmv_cuda")->run();

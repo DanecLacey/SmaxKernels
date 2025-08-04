@@ -75,12 +75,17 @@ class Kernel {
         std::cerr << "set_mat_scs not supported for this kernel.\n";
         return 1;
     }
-    virtual int set_block_column_major(bool){
+    virtual int set_mat_bcrs(bool) {
+        std::cerr << "set_mat_bcrs not supported for this kernel.\n";
+        return 1;
+    }
+    virtual int set_block_column_major(bool) {
         std::cerr << "set_block_column_major not supported for this kernel.\n";
         return 1;
     }
-    virtual int set_bspmv_kernel_implementation(BCRSKernelType){
-        std::cerr << "set_bspmv_kernel_implementation not supported for this kernel.\n";
+    virtual int set_kernel_implementation(SpMVType) {
+        std::cerr << "set_kernel_implementation(SpMVType) not supported for "
+                     "this kernel.\n";
         return 1;
     }
 

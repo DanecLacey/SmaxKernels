@@ -3,6 +3,7 @@ tests/test1
 tests/test2
 tests/error.txt
 third_party/
+examples/error.txt
 examples/build/
 examples/build/.smax_log
 docs/

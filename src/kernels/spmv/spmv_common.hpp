@@ -41,7 +41,10 @@ struct Args {
 };
 
 struct Flags {
+    SpMVType kernel_type = SpMVType::naive_thread_per_row;
     bool is_mat_scs = false;
+    bool is_mat_bcrs = false;
+    bool is_block_column_major = false;
 };
 
 class SpMVErrorHandler : public KernelErrorHandler {
@@ -56,6 +59,16 @@ class SpMVErrorHandler : public KernelErrorHandler {
         std::cout << "A_val[" << j << "] = " << val << std::endl;
         std::cout << "A_col[" << j << "] = " << col << std::endl;
         std::cout << "x[A_col[" << j << "] = " << x << std::endl;
+    }
+
+    template <typename IT, typename VT>
+    static void print_bcrs_elem(VT val, IT col, VT x, IT j, IT ix, IT jx) {
+        std::cout << "A_val[" << j << "," << ix << "," << "] = " << val
+                  << std::endl;
+        std::cout << "A_col[" << j << "," << ix << "," << "] = " << col
+                  << std::endl;
+        std::cout << "x[A_col[" << j << "," << ix << "," << "] = " << x
+                  << std::endl;
     }
 };
 

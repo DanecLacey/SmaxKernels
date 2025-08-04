@@ -34,7 +34,8 @@ REGISTER_TEST(bspmv_test) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Register kernel tag, platform, and metadata
-    smax->register_kernel("my_spmv", SMAX::KernelType::BSPMV);
+    smax->register_kernel("my_spmv", SMAX::KernelType::SPMV);
+    smax->kernel("my_spmv")->set_mat_bcrs(true);
     smax->kernel("my_spmv")->register_A(
         A_bcrs->n_rows, A_bcrs->n_cols, A_bcrs->n_blocks, A_bcrs->b_height,
         A_bcrs->b_width, A_bcrs->b_h_pad, A_bcrs->b_w_pad, A_bcrs->col,
@@ -50,8 +51,9 @@ REGISTER_TEST(bspmv_test) {
 
 #if SMAX_CUDA_MODE
     // register cuda kernel and compare, if available
-    smax->register_kernel("my_spmv_cuda", SMAX::KernelType::BSPMV,
+    smax->register_kernel("my_spmv_cuda", SMAX::KernelType::SPMV,
                           SMAX::PlatformType::CUDA);
+    smax->kernel("my_spmv_cuda")->set_mat_bcrs(true);
     smax->kernel("my_spmv_cuda")
         ->register_A(A_bcrs->n_rows, A_bcrs->n_cols, A_bcrs->n_blocks,
                      A_bcrs->b_height, A_bcrs->b_width, A_bcrs->b_h_pad,
@@ -61,10 +63,11 @@ REGISTER_TEST(bspmv_test) {
         ->register_B(A_bcrs->n_cols * A_bcrs->b_w_pad, x);
     smax->kernel("my_spmv_cuda")
         ->register_C(A_bcrs->n_rows * A_bcrs->b_h_pad, y);
+
+    // Give special kernel configuration
     smax->kernel("my_spmv_cuda")->set_block_column_major(block_column_major);
     smax->kernel("my_spmv_cuda")
-        ->set_bspmv_kernel_implementation(
-            SMAX::BCRSKernelType::naive_thread_per_row);
+        ->set_kernel_implementation(SMAX::SpMVType::naive_thread_per_row);
 
     // Function to test
     smax->kernel("my_spmv_cuda")->run();
