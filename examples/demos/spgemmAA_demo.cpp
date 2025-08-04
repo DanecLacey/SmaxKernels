@@ -8,8 +8,6 @@
 #include "../examples_common.hpp"
 #include "SmaxKernels/interface.hpp"
 
-using ULL = unsigned long long int;
-
 int main(void) {
     CRSMatrix<u_int16_t, float> *A = new CRSMatrix<u_int16_t, float>;
     A->n_rows = 3;

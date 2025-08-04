@@ -351,8 +351,8 @@ int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
                 A_sym_col[j] = A_col[old_j];
             }
             // add extra nnzs now
-            int thread_counter = 0;
-            int thread_local_ctr = 0;
+            ULL thread_counter = 0;
+            ULL thread_local_ctr = 0;
             for (; j < A_sym_row_ptr[r + 1]; ++j) {
                 while (thread_local_ctr >=
                        (*thread_storage[thread_counter])[r].size()) {
@@ -521,7 +521,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         n_levels = Utils::generate_color_perm_bal(A_n_rows, A_sym_row_ptr,
                                                   A_sym_col, lvl, n_levels);
     } else if (type == "NONE") {
-    // Generates dummy permutation
+        // Generates dummy permutation
 #pragma omp parallel for
         for (int i = 0; i < A_n_rows; ++i) {
             lvl[i] = i;
@@ -665,7 +665,6 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr,
     for (int row = 0; row < A_n_rows; row++) {
         bool repeat = true;
         // Repeat until conflicts resolved
-        int rep = 0;
         while (repeat) {
             std::unordered_set<int> forbidden;
             std::unordered_set<int> critical;

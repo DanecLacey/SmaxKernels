@@ -52,6 +52,12 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
                                PlatformType platform, IntType int_type,
                                FloatType float_type) {
 
+#if !SMAX_CUDA_MODE
+    if (platform == PlatformType::CUDA)
+        ErrorHandler::fatal(
+            "Cannot register CUDA kernel. SMAX not built with CUDA enabled.");
+#endif
+
     std::unique_ptr<KernelContext> k_ctx = std::make_unique<KernelContext>(
         kernel_type, platform, int_type, float_type);
 
