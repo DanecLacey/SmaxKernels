@@ -127,6 +127,7 @@ option(USE_EIGEN "Enable Eigen support" OFF)
 option(USE_MKL "Enable MKL support" OFF)
 option(USE_CUSPARSE "Enable CUSPARSE support" OFF)
 if(USE_MKL)
+    add_compile_definitions(USE_MKL)
     # Option to select MKL integer interface:
     #   OFF = LP64 (32-bit indices)
     #   ON  = ILP64 (64-bit indices)
