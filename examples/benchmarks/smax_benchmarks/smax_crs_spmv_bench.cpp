@@ -13,8 +13,7 @@ int main(int argc, char *argv[]) {
 
     // Setup data structures
     INIT_SPMV(IT, VT);
-    (void)_C;     // supress compiler warnings
-    (void)_sigma; // supress compiler warnings
+
     DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
     DenseMatrix<VT> *y = new DenseMatrix<VT>(crs_mat->n_rows, 1, 0.0);
 

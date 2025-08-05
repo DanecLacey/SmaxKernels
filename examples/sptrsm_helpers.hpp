@@ -165,6 +165,8 @@ void compare_sptrsm(const ULL n_rows, const ULL n_vectors, const VT *y_SMAX,
         if ((i + 1) % n_rows == 0 && i > 0)
             ++vec_count;
     }
+    // supress compiler warnings
+    (void)vec_count;
 
 #if VERBOSITY == 0
     working_file << std::scientific << std::left << std::setw(PRINT_WIDTH)

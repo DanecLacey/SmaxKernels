@@ -17,8 +17,10 @@ int main(int argc, char *argv[]) {
 
     // Setup data structures
     INIT_SPMV(IT, VT);
+    IT _C = cli_args->_C;
+
     int A_scs_C = _C;
-    int A_scs_sigma = 1; // Fixed for cudsparse
+    int A_scs_sigma = 1; // Fixed for cusparse!
     int A_scs_n_rows = 0;
     int A_scs_n_rows_padded = 0;
     int A_scs_n_cols = 0;

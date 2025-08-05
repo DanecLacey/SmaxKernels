@@ -1,6 +1,6 @@
-#include "../examples_common.hpp"
-#include "../spgemm_helpers.hpp"
-#include "validation_common.hpp"
+#include "../../examples_common.hpp"
+#include "../../spgemm_helpers.hpp"
+#include "../validation_common.hpp"
 
 int main(int argc, char *argv[]) {
 

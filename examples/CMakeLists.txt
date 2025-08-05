@@ -15,11 +15,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # If the lib is built with CUDA, the examples must also be
 if(SMAX_CUDA_MODE_EXPORT) # Detected from smax lib
-    find_package(CUDAToolkit REQUIRED)
+    enable_language(CUDA)
+    unset(CMAKE_CUDA_ARCHITECTURES CACHE)
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
     endif()
-    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
     add_compile_definitions(CUDA_MODE)
     include_directories(${CUDAToolkit_INCLUDE_DIRS}) # Why is this necessary?
 else()
@@ -78,10 +79,16 @@ if(SMAX_CUDA_MODE_EXPORT)
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3")
         elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
+
+            # Force code generation for SM_80 (A100)
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --generate-code arch=compute_80,code=sm_80")
         endif()
     else()
         message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.")
     endif()
+    message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
+    message(STATUS "CUDA Architecture set to ${CMAKE_CUDA_ARCHITECTURES}")
+    message(STATUS "CUDA compiler flags set to ${CMAKE_CUDA_FLAGS} ")
 endif()
 
 # CPU builds (default)
@@ -226,27 +233,65 @@ else()
     message(STATUS "MKL support is disabled.")
 endif()
 
-if(USE_MKL)
-    # DL 05.04.25 TODO: Would be useful to have other intermediate levels
-    set(VERBOSITY 1 CACHE STRING "Set the validation verbosity level (0 or 1)")
+# Enable validation checks, depending on the backend
+# if(USE_MKL)
+#     # DL 05.04.25 TODO: Would be useful to have other intermediate levels
+#     set(VERBOSITY 1 CACHE STRING "Set the validation verbosity level (0 or 1)")
 
-    # Validate debug level input
-    if(NOT VERBOSITY MATCHES "^[01]$")
-        message(FATAL_ERROR "VERBOSITY must be 0 or 1 (got: ${VERBOSITY})")
-    endif()
+#     # Validate debug level input
+#     if(NOT VERBOSITY MATCHES "^[01]$")
+#         message(FATAL_ERROR "VERBOSITY must be 0 or 1 (got: ${VERBOSITY})")
+#     endif()
 
-    # Set the verbosity level as a compile definition
-    set_property(CACHE VERBOSITY PROPERTY STRINGS 0 1)
-    message(STATUS "Verbosity Level: ${VERBOSITY}")
+#     # Set the verbosity level as a compile definition
+#     set_property(CACHE VERBOSITY PROPERTY STRINGS 0 1)
+#     message(STATUS "Verbosity Level: ${VERBOSITY}")
 
-    add_subdirectory(validation)
-    add_custom_target(validation DEPENDS ${validation_targets})
-    if(NOT CPU_COMPILER_ID STREQUAL "INTELLLVM" AND NOT CPU_COMPILER_ID STREQUAL "INTELL")
-        message(WARNING "Validation checks not built with an Intel compiler. Expect ABI problems.")
-    endif()
-else()
-    message(WARNING "Validation checks not built. MKL is required.")
+#     add_subdirectory(validation)
+#     add_custom_target(validation DEPENDS ${validation_targets})
+#     if(NOT CPU_COMPILER_ID STREQUAL "INTELLLVM" AND NOT CPU_COMPILER_ID STREQUAL "INTEL")
+#         message(WARNING "Validation checks not built with an Intel compiler. Expect ABI problems.")
+#     endif()
+# else()
+#     message(WARNING "Validation checks not built. MKL is required.")
+# endif()
+
+set(VERBOSITY 1 CACHE STRING "Set the validation verbosity level (0 or 1)")
+if(NOT VERBOSITY MATCHES "^[01]$")
+    message(FATAL_ERROR "VERBOSITY must be 0 or 1 (got: ${VERBOSITY})")
 endif()
+set_property(CACHE VERBOSITY PROPERTY STRINGS 0 1)
+message(STATUS "Validation verbosity level: ${VERBOSITY}")
+
+if(NOT (USE_MKL OR USE_CUSPARSE))
+    message(WARNING "No validation back‐ends enabled (set USE_MKL or USE_CUSPARSE). Skipping validation.")
+endif()
+
+set(validation_targets)
+
+# MKL validation
+if(USE_MKL)
+    message(STATUS "Configuring MKL validation")
+    add_subdirectory(validation/mkl)
+    list(APPEND validation_targets ${mkl_validation_targets})
+
+    if(NOT CPU_COMPILER_ID STREQUAL "INTELLLVM" AND NOT CPU_COMPILER_ID STREQUAL "INTEL")
+        message(WARNING "MKL validation built without an Intel compiler. Expect possible ABI issues.")
+    endif()
+endif()
+
+# cuSPARSE validation
+if(USE_CUSPARSE)
+    message(STATUS "Configuring cuSPARSE validation")
+    add_subdirectory(validation/cusparse)
+    list(APPEND validation_targets ${cusparse_validation_targets})
+endif()
+
+# Finally build a combined validation target
+add_custom_target(validation
+    DEPENDS ${validation_targets}
+    COMMENT "Building all enabled validation checks"
+)
 
 # === fast mmio Support ===
 if(USE_FAST_MMIO)

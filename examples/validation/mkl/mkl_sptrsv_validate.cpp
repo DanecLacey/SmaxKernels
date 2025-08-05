@@ -1,6 +1,6 @@
-#include "../examples_common.hpp"
-#include "../sptrsm_helpers.hpp"
-#include "validation_common.hpp"
+#include "../../examples_common.hpp"
+#include "../../sptrsv_helpers.hpp"
+#include "../validation_common.hpp"
 
 int main(int argc, char *argv[]) {
 
@@ -11,22 +11,22 @@ int main(int argc, char *argv[]) {
 #endif
     using VT = double;
 
-    INIT_SPTRSM(IT, VT);
+    INIT_SPTRSV(IT, VT);
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+    DenseMatrix<VT> *x_smax = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
+    DenseMatrix<VT> *x_mkl = new DenseMatrix<VT>(crs_mat->n_cols, 1, 0.0);
+    DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
 
-    DenseMatrix<VT> *X_smax =
-        new DenseMatrix<VT>(crs_mat->n_cols, n_vectors, 0.0);
-    DenseMatrix<VT> *X_mkl =
-        new DenseMatrix<VT>(crs_mat->n_cols, n_vectors, 0.0);
-    DenseMatrix<VT> *B = new DenseMatrix<VT>(crs_mat->n_cols, n_vectors, 1.0);
-
-    // Smax SpTRSM
+    // Smax SpTRSV
     SMAX::Interface *smax = new SMAX::Interface();
-    register_kernel<IT, VT>(smax, std::string("my_sptrsm"),
-                            SMAX::KernelType::SPTRSM, SMAX::PlatformType::CPU);
-    REGISTER_SPTRSM_DATA("my_sptrsm", crs_mat_D_plus_L, X_smax, B)
-    smax->kernel("my_sptrsm")->run();
+    register_kernel<IT, VT>(smax, std::string("my_sptrsv"),
+                            SMAX::KernelType::SPTRSV, SMAX::PlatformType::CPU);
+    REGISTER_SPTRSV_DATA("my_sptrsv", crs_mat_D_plus_L, x_smax, b)
+    smax->kernel("my_sptrsv")->run();
 
-    // MKL SpTRSM
+    // MKL SpTRSV
     sparse_matrix_t A;
     struct matrix_descr descr;
     descr.type = SPARSE_MATRIX_TYPE_TRIANGULAR;
@@ -51,19 +51,17 @@ int main(int argc, char *argv[]) {
     // Optimize the matrix
     CHECK_MKL_STATUS(mkl_sparse_optimize(A), "mkl_sparse_optimize");
 
-    CHECK_MKL_STATUS(mkl_sparse_d_trsm(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A,
-                                       descr, SPARSE_LAYOUT_COLUMN_MAJOR,
-                                       B->val, n_vectors, crs_mat->n_rows,
-                                       X_mkl->val, crs_mat->n_rows),
-                     "mkl_sparse_d_trsm");
+    CHECK_MKL_STATUS(mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0, A,
+                                       descr, b->val, x_mkl->val),
+                     "mkl_sparse_d_trsv");
 
     // Compare
-    compare_sptrsm<VT>(crs_mat->n_rows, n_vectors, X_smax->val, X_mkl->val,
+    compare_sptrsv<VT>(crs_mat->n_rows, x_smax->val, x_mkl->val,
                        cli_args->matrix_file_name);
 
-    delete X_smax;
-    delete X_mkl;
-    delete B;
+    delete x_smax;
+    delete x_mkl;
+    delete b;
     CHECK_MKL_STATUS(mkl_sparse_destroy(A), "mkl_sparse_destroy");
-    FINALIZE_SPTRSM;
+    FINALIZE_SPTRSV;
 }

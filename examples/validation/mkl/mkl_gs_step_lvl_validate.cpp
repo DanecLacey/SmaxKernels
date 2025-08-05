@@ -1,6 +1,6 @@
-#include "../examples_common.hpp"
-#include "../gs_helpers.hpp"
-#include "validation_common.hpp"
+#include "../../examples_common.hpp"
+#include "../../gs_helpers.hpp"
+#include "../validation_common.hpp"
 #include <cmath>
 #include <iostream>
 

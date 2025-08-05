@@ -38,7 +38,7 @@ int main(void) {
         ->set_block_column_major(use_blocked_column_major);
 
     // Register operands to this kernel tag
-    // A is assumed to be in CRS format
+    // A is assumed to be in BCRS format
     smax->kernel("my_bcrs_spmv")
         ->register_A(A_bcrs->n_rows, A_bcrs->n_cols, A_bcrs->n_blocks,
                      A_bcrs->b_height, A_bcrs->b_width, A_bcrs->b_h_pad,

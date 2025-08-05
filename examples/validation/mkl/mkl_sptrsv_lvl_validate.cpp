@@ -1,6 +1,6 @@
-#include "../examples_common.hpp"
-#include "../sptrsv_helpers.hpp"
-#include "validation_common.hpp"
+#include "../../examples_common.hpp"
+#include "../../sptrsv_helpers.hpp"
+#include "../validation_common.hpp"
 
 int main(int argc, char *argv[]) {
 

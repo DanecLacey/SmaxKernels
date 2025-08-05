@@ -15,15 +15,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Optional: restrict required version
 option(USE_CUDA "Enable CUDA support" OFF)
 if(USE_CUDA)
-    find_package(CUDAToolkit QUIET)
-    if(CUDAToolkit_FOUND)
-
-        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-            set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now
-        endif()
-
-        enable_language(CUDA)
-    else()
+    enable_language(CUDA)
+    unset(CMAKE_CUDA_ARCHITECTURES CACHE)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now
+    endif()
+    find_package(CUDAToolkit REQUIRED)
+    if(NOT CUDAToolkit_FOUND)
         message(FATAL_ERROR "CUDAToolkit not found, even though USE_CUDA=ON.")
     endif()
 endif()
