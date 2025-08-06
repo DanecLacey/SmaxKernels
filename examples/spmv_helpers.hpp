@@ -64,8 +64,8 @@ template <typename IT> class SpMVParser : public CliParser {
     struct SpMVArgs : public CliArgs {
         IT _C = 1;
         IT _sigma = 1;
-        IT _hpad = 1;
-        IT _wpad = 1;
+        IT _hpad = 2; // Default to 2, since cusparse<t>bsrmv only supports > 1
+        IT _wpad = 2;
         bool _use_cm = false;
         std::string _ck = "";
     };
@@ -79,7 +79,7 @@ template <typename IT> class SpMVParser : public CliParser {
                 << "<-hpad : [uint]> padded height for BCRS format\n"
                 << "<-wpad : [uint]> padded width for BCRS format\n"
                 << "<-cm : [0/1]> use blocked column major BCRS format\n"
-                << "<-ck : [str: 'tpw', 'nws', 'nwg'] BCRS kernel type>\n";
+                << "<-ck : [str: 'tpr', 'nws', 'nwg'] BCRS kernel type>\n";
             std::exit(EXIT_FAILURE);
         }
 
@@ -101,7 +101,7 @@ template <typename IT> class SpMVParser : public CliParser {
                 spmv_args->_use_cm = static_cast<bool>(atoi(argv[++i]));
             } else if (arg == "-ck") {
                 spmv_args->_ck = std::string(argv[++i]);
-                std::vector<std::string> kernels = {"tpw", "nws", "nwg"};
+                std::vector<std::string> kernels = {"tpr", "nws", "nwg"};
                 bool found = std::find(kernels.begin(), kernels.end(),
                                        spmv_args->_ck) != kernels.end();
                 if (!found) {

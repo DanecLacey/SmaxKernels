@@ -5,7 +5,7 @@
 #include "testing_framework.hpp"
 #include "tests_common.hpp"
 
-REGISTER_TEST(bspmv_bcsr_1_1_test_1) {
+REGISTER_TEST(bspmv_bcrs_1_1_test_1) {
 
     using IT = int;
     using VT = double;

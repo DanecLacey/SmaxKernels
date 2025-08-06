@@ -9,8 +9,6 @@ using VT = float;
 
 int main(int argc, char *argv[]) {
 
-    init_pin(); // Just takes pinning overhead away from timers
-
     // Setup data structures
     INIT_SPMV(IT, VT);
 
@@ -45,4 +43,5 @@ int main(int argc, char *argv[]) {
     FINALIZE_SPMV;
     delete x;
     delete y;
+    delete smax;
 }

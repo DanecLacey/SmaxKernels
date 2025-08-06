@@ -18,7 +18,7 @@
 #include "testing_framework.hpp"
 #include "tests_common.hpp"
 
-REGISTER_TEST(build_symmetric_csr_3) {
+REGISTER_TEST(build_symmetric_crs_3) {
 
     using IT = int;
     using VT = double;
@@ -44,10 +44,10 @@ REGISTER_TEST(build_symmetric_csr_3) {
     SMAX::Interface *smax = new SMAX::Interface();
 
     // Function to test
-    smax->utils->build_symmetric_csr<IT, ULL>(
+    smax->utils->build_symmetric_crs<IT, ULL>(
         A->row_ptr, A->col, A->n_rows, A_sym->row_ptr, A_sym->col, A_sym->nnz);
 
-    sort_csr_rows_by_col<IT, IT>(A_sym->row_ptr, A_sym->col, A->n_rows,
+    sort_crs_rows_by_col<IT, IT>(A_sym->row_ptr, A_sym->col, A->n_rows,
                                  A_sym->nnz);
 
     // Compare results

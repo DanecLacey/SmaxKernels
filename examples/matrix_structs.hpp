@@ -284,7 +284,7 @@ template <typename IT, typename VT> struct CRSMatrix {
     }
 
     void write_to_mtx_file(std::string file_out_name) {
-        // Convert csr back to coo for mtx format printing
+        // Convert crs back to coo for mtx format printing
         std::vector<int> temp_rows(nnz);
         std::vector<int> temp_cols(nnz);
         std::vector<double> temp_values(nnz);
@@ -517,7 +517,7 @@ template <typename IT, typename VT> struct SCSMatrix {
 
     // TODO: Adapt to SCS
     // void write_to_mtx_file(std::string file_out_name) {
-    //     // Convert csr back to coo for mtx format printing
+    //     // Convert crs back to coo for mtx format printing
     //     std::vector<int> temp_rows(nnz);
     //     std::vector<int> temp_cols(nnz);
     //     std::vector<double> temp_values(nnz);

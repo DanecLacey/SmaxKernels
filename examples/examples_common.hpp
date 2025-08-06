@@ -415,7 +415,7 @@ template <typename VT> void print_exact_vector(VT *vec, ULL n_rows) {
 
 // Just for unit tests. In practice, we leave nonzeros in a row unsorted
 template <typename IT, typename ST>
-void sort_csr_rows_by_col(IT *row_ptr, IT *col, ST n_rows, ST nnz) {
+void sort_crs_rows_by_col(IT *row_ptr, IT *col, ST n_rows, ST nnz) {
     // supress compiler warnings
     (void)nnz;
     for (ST i = 0; i < n_rows; ++i) {

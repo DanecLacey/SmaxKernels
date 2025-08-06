@@ -12,7 +12,7 @@
 namespace SMAX {
 
 template <typename IT, typename ST>
-int build_symmetric_csr_old(IT *A_row_ptr, IT *A_col, int A_n_rows,
+int build_symmetric_crs_old(IT *A_row_ptr, IT *A_col, int A_n_rows,
                             IT *&A_sym_row_ptr, IT *&A_sym_col, ST &A_sym_nnz) {
     A_sym_row_ptr = new IT[A_n_rows + 1];
     A_sym_row_ptr[0] = (IT)0;
@@ -133,7 +133,7 @@ int build_symmetric_csr_old(IT *A_row_ptr, IT *A_col, int A_n_rows,
 }
 
 template <typename IT, typename ST>
-int build_symmetric_csr_parallel(IT *A_row_ptr, IT *A_col, int A_n_rows,
+int build_symmetric_crs_parallel(IT *A_row_ptr, IT *A_col, int A_n_rows,
                                  IT *&A_sym_row_ptr, IT *&A_sym_col,
                                  ST &A_sym_nnz) {
 
@@ -234,7 +234,7 @@ int build_symmetric_csr_parallel(IT *A_row_ptr, IT *A_col, int A_n_rows,
 }
 
 template <typename IT, typename ST>
-int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
+int build_symmetric_crs_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
                                          IT *&A_sym_row_ptr, IT *&A_sym_col,
                                          ST &A_sym_nnz) {
 
@@ -371,22 +371,22 @@ int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
 }
 
 template <typename IT, typename ST>
-int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, ST A_n_rows,
+int Utils::build_symmetric_crs(IT *A_row_ptr, IT *A_col, ST A_n_rows,
                                IT *&A_sym_row_ptr, IT *&A_sym_col,
                                ST &A_sym_nnz) {
 
-    IF_SMAX_DEBUG(ErrorHandler::log("Entering build_symmetric_csr"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering build_symmetric_crs"));
 #if 0
-    build_symmetric_csr_old<IT, ST>(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr,
+    build_symmetric_crs_old<IT, ST>(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr,
                                     A_sym_col, A_sym_nnz);
 #elif 0
-    build_symmetric_csr_parallel<IT, ST>(A_row_ptr, A_col, A_n_rows,
+    build_symmetric_crs_parallel<IT, ST>(A_row_ptr, A_col, A_n_rows,
                                          A_sym_row_ptr, A_sym_col, A_sym_nnz);
 #elif 1
-    build_symmetric_csr_parallel_adapted<IT, ST>(
+    build_symmetric_crs_parallel_adapted<IT, ST>(
         A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col, A_sym_nnz);
 #endif
-    IF_SMAX_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting build_symmetric_crs"));
 
     return 0;
 };
@@ -498,7 +498,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     // Step 1: Build symmetric structure of A + A^T
     IT *A_sym_row_ptr, *A_sym_col;
     int A_sym_nnz = 0;
-    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
+    build_symmetric_crs(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
                         A_sym_nnz);
 
     // Step 2: Call kernel for desired traversal method

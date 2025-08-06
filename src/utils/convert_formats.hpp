@@ -216,7 +216,7 @@ int Utils::convert_crs_to_bcrs(
     // init to zero
     std::fill(val, val + n_blocks*height_pad*width_pad, VT(0));
 
-    // and now run through our csr matrix blockwise, track the column position and copy into the blocked matrix
+    // and now run through our crs matrix blockwise, track the column position and copy into the blocked matrix
     for(ST b_row = 0; b_row < n_rows; ++b_row)
     {
         for(ST l_row = ST(0); l_row < ST(b_height); ++l_row)
@@ -232,7 +232,7 @@ int Utils::convert_crs_to_bcrs(
                 // todo: only in debug modus?
                 if(col[b_idx] != _col[idx]/b_width)
                 {
-                    throw std::runtime_error("Blocked Column array does not fit with csr columns");
+                    throw std::runtime_error("Blocked Column array does not fit with crs columns");
                 }
                 // and now write the value into the correct block idx
                 const IT blc_inc = block_column_major ? (height_pad * (_col[idx]%b_width) + l_row) : (width_pad * l_row + (_col[idx]%b_width));
