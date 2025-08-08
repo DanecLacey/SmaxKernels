@@ -161,7 +161,7 @@ __global__ void naive_bcrs_spmv_cuda_warp_per_row_by_shffl(
         for (ULL cur_cutoff = power_hint; cur_cutoff >= ULL(1);
              cur_cutoff /= ULL(2)) {
             loc_sum +=
-                __shfl_down_sync(0xffff, loc_sum, int(cur_cutoff * b_height));
+                __shfl_down_sync(0xffffffff, loc_sum, int(cur_cutoff * b_height));
         }
         // now correct values are inside the first b_height threads
         if (thread_idx < b_height)

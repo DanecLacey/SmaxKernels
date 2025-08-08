@@ -185,7 +185,7 @@ REGISTER_TEST(bspmv_laplace_test) {
     A_crs->val[A_crs->nnz - 2] = double(-1);
     A_crs->val[A_crs->nnz - 1] = double(2);
 
-    // test_blocked_conversion(A_crs, true, print_dense_matrix);
+    test_blocked_conversion(A_crs, true, print_dense_matrix);
     test_blocked_conversion(A_crs, false, print_dense_matrix);
 
     delete A_crs;
