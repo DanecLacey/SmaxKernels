@@ -873,4 +873,27 @@ void Utils::apply_vec_perm(int n_rows, VT *vec, VT *vec_perm, int *perm) {
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting apply_vec_perm"));
 };
 
+template <typename IT, typename VT>
+void Utils::level_aware_copy(IT *src_row_ptr, IT *dest_row_ptr, IT *src_col,
+                             IT *dest_col, VT *src_val, VT *dest_val) {
+
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering level_aware_copy"));
+
+    dest_row_ptr[0] = src_row_ptr[0];
+    for (int lvl_idx = 0; lvl_idx < uc->n_levels; lvl_idx++) {
+#pragma omp parallel for schedule(static)
+        for (int row = uc->lvl_ptr[lvl_idx]; row < uc->lvl_ptr[lvl_idx + 1];
+             row++) {
+            dest_row_ptr[row + 1] = src_row_ptr[row + 1];
+            for (int idx = src_row_ptr[row]; idx < src_row_ptr[row + 1];
+                 idx++) {
+                dest_val[idx] = src_val[idx];
+                dest_col[idx] = src_col[idx];
+            }
+        }
+    }
+
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting level_aware_copy"));
+}
+
 } // namespace SMAX

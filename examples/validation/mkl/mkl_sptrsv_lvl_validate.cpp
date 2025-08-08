@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     CRSMatrix<IT, VT> *crs_mat_D_plus_L_perm = new CRSMatrix<IT, VT>;
     CRSMatrix<IT, VT> *crs_mat_U_perm = new CRSMatrix<IT, VT>;
     extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_D_plus_L_perm,
-                          *crs_mat_U_perm);
+                          *crs_mat_U_perm, smax, true);
 
     // Smax SpTRSV
     REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_D_plus_L_perm, x_smax_perm,

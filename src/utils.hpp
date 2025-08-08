@@ -34,6 +34,7 @@ class Utils {
     template <typename IT, typename ST>
     int build_symmetric_crs(IT *A_row_ptr, IT *A_col, ST A_n_rows,
                             IT *&A_sym_row_ptr, IT *&A_sym_col, ST &A_sym_nnz);
+                            
     template <typename IT, typename VT, typename ST>
     int convert_crs_to_bcrs(const ST _n_rows, const ST _n_cols, const ST _nnz,
                             const IT *_col, const IT *_row_ptr, const VT *_val,
@@ -79,6 +80,10 @@ class Utils {
 
     template <typename VT>
     void apply_vec_perm(int n_rows, VT *vec, VT *vec_perm, int *perm);
+
+    template <typename IT, typename VT>
+    void level_aware_copy(IT *src_row_ptr, IT *dest_row_ptr, IT *src_col,
+                                 IT *dest_col, VT *src_val, VT *dest_val);
 };
 
 } // namespace SMAX

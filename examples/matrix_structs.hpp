@@ -256,11 +256,19 @@ template <typename IT, typename VT> struct CRSMatrix {
                 row_ptr = new IT[n_rows + 1];
 
                 // 4) Copy data
-                std::copy(other.val, other.val + nnz, val);
-                std::copy(other.col, other.col + nnz, col);
-                std::copy(other.row_ptr, other.row_ptr + n_rows + 1, row_ptr);
+                row_ptr[0] = other.row_ptr[0];
+#pragma omp parallel for schedule(static)
+                for (ULL i = 0; i < n_rows; ++i) {
+                    row_ptr[i + 1] = other.row_ptr[i + 1];
+                    for (ULL j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
+                        col[j] = other.col[j];
+                        val[j] = other.val[j];
+                    }
+                }
             } else {
-                val = col = row_ptr = nullptr;
+                val = nullptr;
+                col = nullptr;
+                row_ptr = nullptr;
             }
         }
         return *this;
