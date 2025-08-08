@@ -21,6 +21,10 @@ Interface::Interface() {
     // Initialize utils with modifiable Interface data
     this->uc = new UtilitiesContainer();
     this->utils = new Utils(this->kernels, this->uc);
+
+#ifdef SMAX_USE_LIKWID
+    LIKWID_MARKER_INIT;
+#endif
 }
 
 Interface::~Interface() {
@@ -30,6 +34,10 @@ Interface::~Interface() {
     delete this->utils;
 
     ErrorHandler::close_log();
+
+#ifdef SMAX_USE_LIKWID
+    LIKWID_MARKER_CLOSE;
+#endif
 }
 
 Kernel *Interface::kernel(const std::string &kernel_name) {
@@ -78,6 +86,13 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
         break;
     }
     case KernelType::SPGEMM: {
+#ifdef SMAX_USE_LIKWID
+        #pragma omp parallel
+        {
+        LIKWID_MARKER_REGISTER("Symbolic Phase");
+        LIKWID_MARKER_REGISTER("Numerical Phase");
+        }
+#endif
         this->kernels[name] = std::make_unique<KERNELS::SpGEMMKernel>(std::move(k_ctx));
         auto* spgemm = dynamic_cast<KERNELS::SpGEMMKernel*>(this->kernels[name].get());
         spgemm->args = std::make_unique<KERNELS::SPGEMM::Args>(this->uc);

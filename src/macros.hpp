@@ -5,6 +5,9 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+#ifdef SMAX_USE_LIKWID
+#include <likwid-marker.h>
+#endif
 
 namespace SMAX {
 

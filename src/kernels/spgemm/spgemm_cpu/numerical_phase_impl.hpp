@@ -42,6 +42,9 @@ inline void basic_numerical_phase(
 // Gustavson's algorithm (numerical)
 #pragma omp parallel
     {
+#ifdef SMAX_USE_LIKWID
+        LIKWID_MARKER_START("Numerical Phase");
+#endif
         SMAX_GET_THREAD_ID(ULL, tid)
         IF_SMAX_DEBUG(tl_n_mults[tid] = 0);
 #pragma omp for schedule(static)
@@ -71,6 +74,9 @@ inline void basic_numerical_phase(
                 dense_accumulators[tid][C_col[j]] = (VT)0.0;
             }
         }
+#ifdef SMAX_USE_LIKWID
+        LIKWID_MARKER_STOP("Numerical Phase");
+#endif
     }
     IF_SMAX_TIME(timers->get("Numerical_Gustavson")->stop());
     IF_SMAX_DEBUG(ULL n_mults = 0; for (ULL tid = 0; tid < n_threads; ++tid) {

@@ -18,6 +18,10 @@ int main(int argc, char *argv[]) {
     DenseMatrix<VT> *b = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
     DenseMatrix<VT> *b_perm = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
 
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat, *crs_mat_D_plus_L, *crs_mat_U);
+
     ULL n_rows = crs_mat->n_rows;
 
     // Declare permutation vectors
@@ -44,12 +48,13 @@ int main(int argc, char *argv[]) {
     smax->utils->apply_vec_perm<VT>(n_rows, x_smax->val, x_smax_perm->val,
                                     perm);
 
-    CRSMatrix<IT, VT> *crs_mat_D_plus_L = new CRSMatrix<IT, VT>;
-    CRSMatrix<IT, VT> *crs_mat_U = new CRSMatrix<IT, VT>;
-    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_D_plus_L, *crs_mat_U);
+    CRSMatrix<IT, VT> *crs_mat_D_plus_L_perm = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *crs_mat_U_perm = new CRSMatrix<IT, VT>;
+    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_D_plus_L_perm,
+                          *crs_mat_U_perm);
 
     // Smax SpTRSV
-    REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_D_plus_L, x_smax_perm,
+    REGISTER_SPTRSV_DATA("my_lvl_sptrsv", crs_mat_D_plus_L_perm, x_smax_perm,
                          b_perm);
     smax->kernel("my_lvl_sptrsv")->set_mat_perm(true);
     smax->kernel("my_lvl_sptrsv")->run();

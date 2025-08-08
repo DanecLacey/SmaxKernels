@@ -383,36 +383,6 @@ template <typename VT> void print_exact_vector(VT *vec, ULL n_rows) {
     printf("]\n\n");
 }
 
-// template <typename IT, typename VT>
-// void print_matrix(ULL n_rows, ULL n_cols, ULL nnz, IT *col, IT *row_ptr,
-//                   VT *val, bool symbolic = false) {
-
-//     std::cout << "n_rows = " << n_rows << std::endl;
-//     std::cout << "n_cols = " << n_cols << std::endl;
-//     std::cout << "nnz = " << nnz << std::endl;
-
-//     printf("col = [");
-//     for (ULL i = 0; i < nnz; ++i) {
-//         std::cout << col[i] << ", ";
-//     }
-//     printf("]\n");
-
-//     printf("row_ptr = [");
-//     for (ULL i = 0; i <= n_rows; ++i) {
-//         std::cout << row_ptr[i] << ", ";
-//     }
-//     printf("]\n");
-
-//     if (!symbolic) {
-//         printf("val = [");
-//         for (ULL i = 0; i < nnz; ++i) {
-//             std::cout << val[i] << ", ";
-//         }
-//         printf("]\n");
-//     }
-//     printf("\n");
-// }
-
 // Just for unit tests. In practice, we leave nonzeros in a row unsorted
 template <typename IT, typename ST>
 void sort_crs_rows_by_col(IT *row_ptr, IT *col, ST n_rows, ST nnz) {
