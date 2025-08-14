@@ -2,6 +2,7 @@
 
 #include "../../../common.hpp"
 #include "../../../platforms/cuda/cuda.cuh"
+#include "spmv_cuda_bcrs_impl.cuh"
 #include "spmv_cuda_crs_impl.cuh"
 #include "spmv_cuda_scs_impl.cuh"
 
@@ -54,6 +55,33 @@ int initialize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
 
         x_size = A_n_cols;
         y_size = A_n_rows_padded;
+    } else if (flags->is_mat_bcrs) {
+        ULL A_n_rows = args->A->bcrs->n_rows;
+        ULL A_n_cols = args->A->bcrs->n_cols;
+        ULL A_nnz = args->A->bcrs->nnz;
+        ULL A_height_pad = args->A->bcrs->height_pad;
+        ULL A_width_pad = args->A->bcrs->width_pad;
+        IT *A_col = as<IT *>(args->A->bcrs->col);
+        IT *A_row_ptr = as<IT *>(args->A->bcrs->row_ptr);
+        VT *A_val = as<VT *>(args->A->bcrs->val);
+
+        // Copy typed pointers from host to device
+        transfer_HtoD<IT>(A_col, args->d_A->bcrs->col, A_nnz);
+        transfer_HtoD<IT>(A_row_ptr, args->d_A->bcrs->row_ptr, A_n_rows + 1);
+        transfer_HtoD<VT>(A_val, args->d_A->bcrs->val,
+                          A_nnz * A_height_pad * A_width_pad);
+
+        // Copy metadata from host matrix
+        args->d_A->bcrs->n_rows = args->A->bcrs->n_rows;
+        args->d_A->bcrs->n_cols = args->A->bcrs->n_cols;
+        args->d_A->bcrs->nnz = args->A->bcrs->nnz;
+        args->d_A->bcrs->b_height = args->A->bcrs->b_height;
+        args->d_A->bcrs->b_width = args->A->bcrs->b_width;
+        args->d_A->bcrs->height_pad = args->A->bcrs->height_pad;
+        args->d_A->bcrs->width_pad = args->A->bcrs->width_pad;
+
+        x_size = A_n_cols * A_width_pad;
+        y_size = A_n_rows * A_height_pad;
     } else {
         ULL A_n_rows = args->A->crs->n_rows;
         ULL A_n_cols = args->A->crs->n_cols;
@@ -111,8 +139,22 @@ int apply_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
             as<VT *>(args->d_A->scs->val),
             as<VT *>(args->d_x->val) + x_offset,
             as<VT *>(args->d_y->val) + y_offset);
+    } else if (flags->is_mat_bcrs){
+        naive_bcrs_spmv_cuda_launcher<IT, VT>(
+            args->d_A->bcrs->n_rows,
+            args->d_A->bcrs->b_height,
+            args->d_A->bcrs->b_width,
+            args->d_A->bcrs->height_pad,
+            args->d_A->bcrs->width_pad,
+            as<IT *>(args->d_A->bcrs->col),
+            as<IT *>(args->d_A->bcrs->row_ptr),
+            as<VT *>(args->d_A->bcrs->val),
+            as<VT *>(args->d_x->val) + x_offset,
+            as<VT *>(args->d_y->val) + y_offset,
+            int(flags->kernel_type),
+            flags->is_block_column_major);
     }
-    else{
+    else { 
         naive_crs_spmv_cuda_launcher<IT, VT>(
             args->d_A->crs->n_rows, 
             as<IT *>(args->d_A->crs->col), 
@@ -148,6 +190,8 @@ int finalize_cuda_core(Timers *timers, KernelContext *k_ctx, Args *args,
     ULL y_size;
     if (flags->is_mat_scs) {
         y_size = args->A->scs->n_rows;
+    } else if (flags->is_mat_bcrs) {
+        y_size = args->A->bcrs->n_rows * args->A->bcrs->height_pad;
     } else {
         y_size = args->A->crs->n_rows;
     }

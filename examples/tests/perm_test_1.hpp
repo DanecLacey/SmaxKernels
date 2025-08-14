@@ -1,5 +1,4 @@
 #pragma once
-// clange-format off
 //        0   1   2   3   4   5   6   7
 //       _______________________________
 //  0   |11                            |
@@ -23,29 +22,24 @@ REGISTER_TEST(perm_test_1) {
     using VT = double;
 
     // Initialize operands
-    IT A_n_rows = 8;
-    IT A_n_cols = 8;
-    IT A_nnz = 16;
-    IT *A_col = new IT[A_nnz]{0, 0, 1, 1, 2, 1, 3, 1, 3, 4, 0, 5, 6, 2, 3, 7};
-    IT *A_row_ptr = new IT[A_n_rows + 1]{0, 1, 3, 5, 7, 10, 12, 13, 16};
-    VT *A_val = new VT[A_nnz]{11, 21, 22, 32, 33, 42, 44, 52,
-                              54, 55, 61, 66, 77, 83, 84, 88};
+    CRSMatrix<IT, VT> *A = new CRSMatrix<IT, VT>(8, 8, 16);
+    A->col = new IT[A->nnz]{0, 0, 1, 1, 2, 1, 3, 1, 3, 4, 0, 5, 6, 2, 3, 7};
+    A->row_ptr = new IT[A->n_rows + 1]{0, 1, 3, 5, 7, 10, 12, 13, 16};
+    A->val = new VT[A->nnz]{11, 21, 22, 32, 33, 42, 44, 52,
+                            54, 55, 61, 66, 77, 83, 84, 88};
 
     // Declare permuted data
-    IT *A_bfs_col = new IT[A_nnz];
-    IT *A_bfs_row_ptr = new IT[A_n_rows + 1];
-    VT *A_bfs_val = new VT[A_nnz];
-
-    IT *A_rs_col = new IT[A_nnz];
-    IT *A_rs_row_ptr = new IT[A_n_rows + 1];
-    VT *A_rs_val = new VT[A_nnz];
+    CRSMatrix<IT, VT> *A_bfs =
+        new CRSMatrix<IT, VT>(A->n_rows, A->n_cols, A->nnz);
+    CRSMatrix<IT, VT> *A_rs =
+        new CRSMatrix<IT, VT>(A->n_rows, A->n_cols, A->nnz);
 
     // Declare permutation vectors
-    IT *perm_bfs = new IT[A_n_rows];
-    IT *inv_perm_bfs = new IT[A_n_rows];
+    IT *perm_bfs = new IT[A->n_rows];
+    IT *inv_perm_bfs = new IT[A->n_rows];
 
-    IT *perm_rs = new IT[A_n_rows];
-    IT *inv_perm_rs = new IT[A_n_rows];
+    IT *perm_rs = new IT[A->n_rows];
+    IT *inv_perm_rs = new IT[A->n_rows];
 
     // Initialize interface object
     SMAX::Interface *smax = new SMAX::Interface();
@@ -62,7 +56,7 @@ REGISTER_TEST(perm_test_1) {
     omp_set_num_threads(1);
 #endif
 
-    smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_bfs,
+    smax->utils->generate_perm<IT>(A->n_rows, A->row_ptr, A->col, perm_bfs,
                                    inv_perm_bfs, std::string("BFS"));
 
 #ifdef _OPENMP
@@ -80,7 +74,7 @@ REGISTER_TEST(perm_test_1) {
     compare_arrays<IT>(expected_levels, bfs_levels, expected_max_level + 1,
                        "BFS level sizes");
 
-    smax->utils->generate_perm<IT>(A_n_rows, A_row_ptr, A_col, perm_rs,
+    smax->utils->generate_perm<IT>(A->n_rows, A->row_ptr, A->col, perm_rs,
                                    inv_perm_rs, std::string("RS"));
 
     compare_values<IT>(smax->get_n_levels(), expected_max_level,
@@ -100,43 +94,36 @@ REGISTER_TEST(perm_test_1) {
 
     // Compare with expected permutation vectors
     // If comparison fails, throw std::runtime_error("description")
-    int *expected_perm_bfs = new int[A_n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
-    int *expected_perm_rs = new int[A_n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
+    int *expected_perm_bfs = new int[A->n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
+    int *expected_perm_rs = new int[A->n_cols]{0, 6, 1, 5, 2, 3, 4, 7};
 
-    compare_arrays<IT>(expected_perm_bfs, perm_bfs, A_n_rows, "BFS level sets");
-    compare_arrays<IT>(expected_perm_rs, perm_rs, A_n_rows, "RS level sets");
+    compare_arrays<IT>(expected_perm_bfs, perm_bfs, A->n_rows,
+                       "BFS level sets");
+    compare_arrays<IT>(expected_perm_rs, perm_rs, A->n_rows, "RS level sets");
 
     // Apply permutations to A
-    smax->utils->apply_mat_perm<IT, VT>(A_n_rows, A_row_ptr, A_col, A_val,
-                                        A_bfs_row_ptr, A_bfs_col, A_bfs_val,
+    smax->utils->apply_mat_perm<IT, VT>(A->n_rows, A->row_ptr, A->col, A->val,
+                                        A_bfs->row_ptr, A_bfs->col, A_bfs->val,
                                         perm_bfs, inv_perm_bfs);
 
-    smax->utils->apply_mat_perm<IT, VT>(A_n_rows, A_row_ptr, A_col, A_val,
-                                        A_rs_row_ptr, A_rs_col, A_rs_val,
+    smax->utils->apply_mat_perm<IT, VT>(A->n_rows, A->row_ptr, A->col, A->val,
+                                        A_rs->row_ptr, A_rs->col, A_rs->val,
                                         perm_rs, inv_perm_rs);
 
-    VT *expected_val_bfs = new VT[A_nnz]{11, 77, 21, 22, 61, 66, 32, 33,
+    VT *expected_val_bfs = new VT[A->nnz]{11, 77, 21, 22, 61, 66, 32, 33,
+                                          42, 44, 52, 54, 55, 83, 84, 88};
+    VT *expected_val_rs = new VT[A->nnz]{11, 77, 21, 22, 61, 66, 32, 33,
                                          42, 44, 52, 54, 55, 83, 84, 88};
-    VT *expected_val_rs = new VT[A_nnz]{11, 77, 21, 22, 61, 66, 32, 33,
-                                        42, 44, 52, 54, 55, 83, 84, 88};
-
-    compare_arrays(expected_val_bfs, A_bfs_val, A_nnz,
-                   "BFS actual permutation");
-    compare_arrays(expected_val_rs, A_rs_val, A_nnz,
-                   "row sweep actual permutation");
 
     // Compare with expected matrices
+    compare_arrays(expected_val_bfs, A_bfs->val, A->nnz,
+                   "BFS actual permutation");
+    compare_arrays(expected_val_rs, A_rs->val, A->nnz,
+                   "row sweep actual permutation");
 
-    delete[] A_col;
-    delete[] A_row_ptr;
-    delete[] A_val;
-    delete[] A_bfs_col;
-    delete[] A_bfs_row_ptr;
-    delete[] A_bfs_val;
-    delete[] A_rs_col;
-    delete[] A_rs_row_ptr;
-    delete[] A_rs_val;
-
+    delete A;
+    delete A_bfs;
+    delete A_rs;
     delete[] perm_bfs;
     delete[] inv_perm_bfs;
     delete[] perm_rs;
@@ -149,5 +136,4 @@ REGISTER_TEST(perm_test_1) {
     delete[] rs_levels;
 
     delete smax;
-    // clange-format on
 }

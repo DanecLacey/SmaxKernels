@@ -11,45 +11,74 @@ using VT = double;
 int main(int argc, char *argv[]) {
     DEFINE_CUSPARSE_TYPES(IT, VT)
 
+    auto smax = std::make_unique<SMAX::Interface>();
+
     init_pin(); // Just takes pinning overhead away from timers
 
     // Setup data structures
     INIT_SPMV(IT, VT);
-    auto hX = std::make_unique<DenseMatrix<VT>>(crs_mat->n_cols, 1, 1.0);
-    auto hY = std::make_unique<DenseMatrix<VT>>(crs_mat->n_rows, 1, 0.0);
+    IT _C = cli_args->_C;
 
-    const unsigned long long A_num_rows = crs_mat->n_rows;
-    const unsigned long long A_num_cols = crs_mat->n_cols;
-    const unsigned long long A_nnz = crs_mat->nnz;
-    IT *hA_csrOffsets = crs_mat->row_ptr;
-    IT *hA_columns = crs_mat->col;
-    VT *hA_values = crs_mat->val;
+    int A_scs_C = _C;
+    int A_scs_sigma = 1; // Fixed for cusparse!
+    int A_scs_n_rows = 0;
+    int A_scs_n_rows_padded = 0;
+    int A_scs_n_cols = 0;
+    int A_scs_n_chunks = 0;
+    int A_scs_n_elements = 0;
+    int A_scs_nnz = 0;
+    IT *A_scs_chunk_ptr = nullptr;
+    IT *A_scs_chunk_lengths = nullptr;
+    IT *A_scs_col = nullptr;
+    VT *A_scs_val = nullptr;
+    IT *A_scs_perm = nullptr;
+    smax->utils->convert_crs_to_scs<IT, VT, int>(
+        crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz, crs_mat->col,
+        crs_mat->row_ptr, crs_mat->val, A_scs_C, A_scs_sigma, A_scs_n_rows,
+        A_scs_n_rows_padded, A_scs_n_cols, A_scs_n_chunks, A_scs_n_elements,
+        A_scs_nnz, A_scs_chunk_ptr, A_scs_chunk_lengths, A_scs_col, A_scs_val,
+        A_scs_perm);
 
+    auto X = std::make_unique<DenseMatrix<VT>>(crs_mat->n_cols, 1, 1.0);
+    auto Y = std::make_unique<DenseMatrix<VT>>(crs_mat->n_rows, 1, 0.0);
+
+    const int A_num_rows = crs_mat->n_rows;
+    const int A_num_cols = crs_mat->n_cols;
+    const int A_nnz = crs_mat->nnz;
+    const int A_slice_size = A_scs_C;
+    const int A_values_size = A_scs_n_elements;
+    int A_num_slices = A_scs_n_chunks; // 2
+
+    IT *hA_sliceOffsets = A_scs_chunk_ptr;
+    IT *hA_columns = A_scs_col;
+    VT *hA_values = A_scs_val;
+    VT *hX = X->val;
+    VT *hY = Y->val;
     VT alpha = 1.0;
     VT beta = 0.0;
 
     //--------------------------------------------------------------------------
     // Device memory management
-    IT *dA_csrOffsets, *dA_columns;
+    IT *dA_sliceOffsets, *dA_columns;
     VT *dA_values, *dX, *dY;
     CHECK_CUDA(
-        cudaMalloc((void **)&dA_csrOffsets, (A_num_rows + 1) * sizeof(IT)));
-    CHECK_CUDA(cudaMalloc((void **)&dA_columns, A_nnz * sizeof(IT)));
-    CHECK_CUDA(cudaMalloc((void **)&dA_values, A_nnz * sizeof(VT)));
+        cudaMalloc((void **)&dA_sliceOffsets, (A_num_slices + 1) * sizeof(IT)));
+    CHECK_CUDA(cudaMalloc((void **)&dA_columns, A_values_size * sizeof(IT)));
+    CHECK_CUDA(cudaMalloc((void **)&dA_values, A_values_size * sizeof(VT)));
     CHECK_CUDA(cudaMalloc((void **)&dX, A_num_cols * sizeof(VT)));
     CHECK_CUDA(cudaMalloc((void **)&dY, A_num_rows * sizeof(VT)));
 
-    CHECK_CUDA(cudaMemcpy(dA_csrOffsets, hA_csrOffsets,
-                          (A_num_rows + 1) * sizeof(IT),
+    CHECK_CUDA(cudaMemcpy(dA_sliceOffsets, hA_sliceOffsets,
+                          (A_num_slices + 1) * sizeof(IT),
                           cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dA_columns, hA_columns, A_nnz * sizeof(IT),
+    CHECK_CUDA(cudaMemcpy(dA_columns, hA_columns, A_values_size * sizeof(IT),
                           cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dA_values, hA_values, A_nnz * sizeof(VT),
+    CHECK_CUDA(cudaMemcpy(dA_values, hA_values, A_values_size * sizeof(VT),
                           cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dX, hX->val, A_num_cols * sizeof(VT),
-                          cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dY, hY->val, A_num_rows * sizeof(VT),
-                          cudaMemcpyHostToDevice));
+    CHECK_CUDA(
+        cudaMemcpy(dX, hX, A_num_cols * sizeof(VT), cudaMemcpyHostToDevice));
+    CHECK_CUDA(
+        cudaMemcpy(dY, hY, A_num_rows * sizeof(VT), cudaMemcpyHostToDevice));
     //--------------------------------------------------------------------------
 
     // CUSPARSE APIs
@@ -59,11 +88,11 @@ int main(int argc, char *argv[]) {
     void *dBuffer = NULL;
     size_t bufferSize = 0;
     CHECK_CUSPARSE(cusparseCreate(&handle));
-    // Create sparse matrix A in CSR format
-    CHECK_CUSPARSE(cusparseCreateCsr(
-        &matA, A_num_rows, A_num_cols, A_nnz, dA_csrOffsets, dA_columns,
-        dA_values, CUSPARSE_INDEX_TYPE, CUSPARSE_INDEX_TYPE,
-        CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_FLOAT_TYPE));
+    // Create sparse matrix A in SELL format
+    CHECK_CUSPARSE(cusparseCreateSlicedEll(
+        &matA, A_num_rows, A_num_cols, A_nnz, A_values_size, A_slice_size,
+        dA_sliceOffsets, dA_columns, dA_values, CUSPARSE_INDEX_TYPE,
+        CUSPARSE_INDEX_TYPE, CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_FLOAT_TYPE));
     // Create dense vector X
     CHECK_CUSPARSE(
         cusparseCreateDnVec(&vecX, A_num_cols, dX, CUSPARSE_FLOAT_TYPE));
@@ -76,19 +105,13 @@ int main(int argc, char *argv[]) {
         vecY, CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize));
     CHECK_CUDA(cudaMalloc(&dBuffer, bufferSize));
 
-    // execute preprocess (optional)
-    CHECK_CUSPARSE(cusparseSpMV_preprocess(
-        handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta,
-        vecY, CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMV_ALG_DEFAULT, dBuffer));
-
-    std::string bench_name = "cusparse_csr_cuda_spmv";
+    std::string bench_name = "cusparse_SELL_cuda_spmv";
     SETUP_BENCH;
 
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaDeviceSynchronize());
 
-    std::function<void()> lambda = [handle, matA, vecX, vecY, dBuffer, beta,
-                                    alpha]() {
+    std::function<void()> lambda = [&]() {
         CHECK_CUSPARSE(cusparseSpMV(
             handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta,
             vecY, CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMV_ALG_DEFAULT, dBuffer));
@@ -101,10 +124,10 @@ int main(int argc, char *argv[]) {
     PRINT_SPMV_BENCH;
 
     // device result check
-    // CHECK_CUDA(cudaMemcpy(hY->val, dY, A_num_rows * sizeof(VT),
-    //                       cudaMemcpyDeviceToHost));
+    // CHECK_CUDA(
+    //     cudaMemcpy(hY, dY, A_num_rows * sizeof(VT), cudaMemcpyDeviceToHost));
     // for (int i = 0; i < A_num_rows; i++) {
-    //     printf("%f\n", hY->val[i]);
+    //     printf("%f\n", hY[i]);
     // }
     //--------------------------------------------------------------------------
 
@@ -117,7 +140,7 @@ int main(int argc, char *argv[]) {
     CHECK_CUSPARSE(cusparseDestroy(handle));
     // device memory deallocation
     CHECK_CUDA(cudaFree(dBuffer));
-    CHECK_CUDA(cudaFree(dA_csrOffsets));
+    CHECK_CUDA(cudaFree(dA_sliceOffsets));
     CHECK_CUDA(cudaFree(dA_columns));
     CHECK_CUDA(cudaFree(dA_values));
     CHECK_CUDA(cudaFree(dX));

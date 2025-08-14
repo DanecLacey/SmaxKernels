@@ -20,7 +20,7 @@ inline void crs_sptrsv_lvl(const int n_levels, const ULL n_cols,
     // clang-format off
     if constexpr (Lower) {
         for (int lvl_idx = 0; lvl_idx < n_levels; ++lvl_idx) {
-#pragma omp parallel for
+#pragma omp parallel for schedule(static)
             for (int row_idx = lvl_ptr[lvl_idx]; row_idx < lvl_ptr[lvl_idx + 1]; ++row_idx) {
                 VT sum = (VT)0.0;
                 IT row_start = row_ptr[row_idx]; // To help compiler
@@ -49,7 +49,7 @@ inline void crs_sptrsv_lvl(const int n_levels, const ULL n_cols,
         }
     } else {
         for (int lvl_idx = n_levels - 1; lvl_idx >= 0; --lvl_idx) {
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(static)
             // DL 12.05.2025 NOTE: Traversal order within a level does not matter.
             for (int row_idx = lvl_ptr[lvl_idx]; row_idx < lvl_ptr[lvl_idx + 1]; ++row_idx) {
                 VT sum = (VT)0.0;

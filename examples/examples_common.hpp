@@ -281,9 +281,11 @@ class CliParser {
 
 template <typename IT, typename VT>
 void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
-                   CRSMatrix<IT, VT> &U) {
-    
+                   CRSMatrix<IT, VT> &U, SMAX::Interface *smax = nullptr,
+                   bool use_level_sched = false) {
+
     // Clear data from targets
+    // NOTE: Why not just use "clear()" methods?
     if (D_plus_L.row_ptr != nullptr)
         delete[] D_plus_L.row_ptr;
     if (D_plus_L.col != nullptr)
@@ -299,6 +301,10 @@ void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
     D_plus_L.nnz = 0;
     U.nnz = 0;
 
+    // Make tmp structs
+    CRSMatrix<IT, VT> *D_plus_L_tmp = new CRSMatrix<IT, VT>;
+    CRSMatrix<IT, VT> *U_tmp = new CRSMatrix<IT, VT>;
+
     // Count nnz
     for (ULL i = 0; i < A.n_rows; ++i) {
         IT row_start = A.row_ptr[i];
@@ -309,30 +315,30 @@ void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
             IT col = A.col[idx];
 
             if (static_cast<ULL>(col) <= i) {
-                ++D_plus_L.nnz;
+                ++D_plus_L_tmp->nnz;
             } else {
-                ++U.nnz;
+                ++U_tmp->nnz;
             }
         }
     }
 
     // Allocate heap space and assign known metadata
-    D_plus_L.val = new VT[D_plus_L.nnz];
-    D_plus_L.col = new IT[D_plus_L.nnz];
-    D_plus_L.row_ptr = new IT[A.n_rows + 1];
-    D_plus_L.row_ptr[0] = 0;
-    D_plus_L.n_rows = A.n_rows;
-    D_plus_L.n_cols = A.n_cols;
+    D_plus_L_tmp->val = new VT[D_plus_L_tmp->nnz];
+    D_plus_L_tmp->col = new IT[D_plus_L_tmp->nnz];
+    D_plus_L_tmp->row_ptr = new IT[A.n_rows + 1];
+    D_plus_L_tmp->row_ptr[0] = 0;
+    D_plus_L_tmp->n_rows = A.n_rows;
+    D_plus_L_tmp->n_cols = A.n_cols;
 
-    U.val = new VT[U.nnz];
-    U.col = new IT[U.nnz];
-    U.row_ptr = new IT[A.n_rows + 1];
-    U.row_ptr[0] = 0;
-    U.n_rows = A.n_rows;
-    U.n_cols = A.n_cols;
+    U_tmp->val = new VT[U_tmp->nnz];
+    U_tmp->col = new IT[U_tmp->nnz];
+    U_tmp->row_ptr = new IT[A.n_rows + 1];
+    U_tmp->row_ptr[0] = 0;
+    U_tmp->n_rows = A.n_rows;
+    U_tmp->n_cols = A.n_cols;
 
     // Assign nonzeros
-    ULL D_plus_L_count = 0;
+    ULL D_plus_L_tmp_count = 0;
     ULL U_count = 0;
     for (ULL i = 0; i < A.n_rows; ++i) {
         IT row_start = A.row_ptr[i];
@@ -345,19 +351,50 @@ void extract_D_L_U(const CRSMatrix<IT, VT> &A, CRSMatrix<IT, VT> &D_plus_L,
 
             if (static_cast<ULL>(col) <= i) {
                 // Diagonal or lower triangular part (D + L)
-                D_plus_L.val[D_plus_L_count] = val;
-                D_plus_L.col[D_plus_L_count++] = col;
+                D_plus_L_tmp->val[D_plus_L_tmp_count] = val;
+                D_plus_L_tmp->col[D_plus_L_tmp_count++] = col;
             } else {
                 // Strictly upper triangular part (U)
-                U.val[U_count] = val;
-                U.col[U_count++] = col;
+                U_tmp->val[U_count] = val;
+                U_tmp->col[U_count++] = col;
             }
         }
 
         // Update row pointers
-        D_plus_L.row_ptr[i + 1] = D_plus_L_count;
-        U.row_ptr[i + 1] = U_count;
+        D_plus_L_tmp->row_ptr[i + 1] = D_plus_L_tmp_count;
+        U_tmp->row_ptr[i + 1] = U_count;
     }
+
+    D_plus_L.val = new VT[D_plus_L_tmp->nnz];
+    D_plus_L.col = new IT[D_plus_L_tmp->nnz];
+    D_plus_L.row_ptr = new IT[A.n_rows + 1];
+    D_plus_L.row_ptr[0] = 0;
+    D_plus_L.n_rows = A.n_rows;
+    D_plus_L.n_cols = A.n_cols;
+    D_plus_L.nnz = D_plus_L_tmp->nnz;
+
+    U.val = new VT[U_tmp->nnz];
+    U.col = new IT[U_tmp->nnz];
+    U.row_ptr = new IT[A.n_rows + 1];
+    U.row_ptr[0] = 0;
+    U.n_rows = A.n_rows;
+    U.n_cols = A.n_cols;
+    U.nnz = U_tmp->nnz;
+
+    if (use_level_sched) {
+        // Copy triangular matrices in a NUMA friendly way for SpTRSV
+        smax->utils->level_aware_copy(D_plus_L_tmp->row_ptr, D_plus_L.row_ptr,
+                                      D_plus_L_tmp->col, D_plus_L.col,
+                                      D_plus_L_tmp->val, D_plus_L.val);
+        smax->utils->level_aware_copy(U_tmp->row_ptr, U.row_ptr, U_tmp->col,
+                                      U.col, U_tmp->val, U.val);
+    } else {
+        D_plus_L = *D_plus_L_tmp;
+        U = *U_tmp;
+    }
+
+    delete D_plus_L_tmp;
+    delete U_tmp;
 }
 
 template <typename VT> void print_vector(VT *vec, ULL n_rows) {
@@ -383,39 +420,11 @@ template <typename VT> void print_exact_vector(VT *vec, ULL n_rows) {
     printf("]\n\n");
 }
 
-// template <typename IT, typename VT>
-// void print_matrix(ULL n_rows, ULL n_cols, ULL nnz, IT *col, IT *row_ptr,
-//                   VT *val, bool symbolic = false) {
-
-//     std::cout << "n_rows = " << n_rows << std::endl;
-//     std::cout << "n_cols = " << n_cols << std::endl;
-//     std::cout << "nnz = " << nnz << std::endl;
-
-//     printf("col = [");
-//     for (ULL i = 0; i < nnz; ++i) {
-//         std::cout << col[i] << ", ";
-//     }
-//     printf("]\n");
-
-//     printf("row_ptr = [");
-//     for (ULL i = 0; i <= n_rows; ++i) {
-//         std::cout << row_ptr[i] << ", ";
-//     }
-//     printf("]\n");
-
-//     if (!symbolic) {
-//         printf("val = [");
-//         for (ULL i = 0; i < nnz; ++i) {
-//             std::cout << val[i] << ", ";
-//         }
-//         printf("]\n");
-//     }
-//     printf("\n");
-// }
-
 // Just for unit tests. In practice, we leave nonzeros in a row unsorted
 template <typename IT, typename ST>
-void sort_csr_rows_by_col(IT *row_ptr, IT *col, ST n_rows, ST nnz) {
+void sort_crs_rows_by_col(IT *row_ptr, IT *col, ST n_rows, ST nnz) {
+    // supress compiler warnings
+    (void)nnz;
     for (ST i = 0; i < n_rows; ++i) {
         IT *row_start = col + row_ptr[i];
         IT *row_end = col + row_ptr[i + 1];

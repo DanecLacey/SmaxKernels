@@ -86,6 +86,9 @@ inline void padded_symbolic_phase(Timers *timers, const ULL A_n_rows,
 // Padded Gustavson's algorithm (symbolic)
 #pragma omp parallel
     {
+#ifdef SMAX_USE_LIKWID
+        LIKWID_MARKER_START("Symbolic Phase");
+#endif
         SMAX_GET_THREAD_ID(ULL, tid)
         ULL offset = tl_offsets[tid];
         bool *tl_used_cols = used_cols[tid];
@@ -118,6 +121,9 @@ inline void padded_symbolic_phase(Timers *timers, const ULL A_n_rows,
             tl_nnz[tid] = local_tl_nnz;
             C_nnz_per_row[i] = local_row_nnz;
         }
+#ifdef SMAX_USE_LIKWID
+        LIKWID_MARKER_STOP("Symbolic Phase");
+#endif
     }
 
     IF_SMAX_TIME(timers->get("Symbolic_Gustavson")->stop());

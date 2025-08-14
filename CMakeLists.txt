@@ -15,15 +15,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Optional: restrict required version
 option(USE_CUDA "Enable CUDA support" OFF)
 if(USE_CUDA)
-    find_package(CUDAToolkit QUIET)
-    if(CUDAToolkit_FOUND)
-
-        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-            set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
-        endif()
-
-        enable_language(CUDA)
-    else()
+    enable_language(CUDA)
+    unset(CMAKE_CUDA_ARCHITECTURES CACHE)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now
+    endif()
+    find_package(CUDAToolkit REQUIRED)
+    if(NOT CUDAToolkit_FOUND)
         message(FATAL_ERROR "CUDAToolkit not found, even though USE_CUDA=ON.")
     endif()
 endif()
@@ -134,7 +132,7 @@ set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 
 # GPU builds
 if(USE_CUDA)
-    if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")   
+    if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
         set(SMAX_CUDA_MODE 1) # All checks pass, and we can use CUDA kernels!
         set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
         # Set CUDA flags based on build type
@@ -143,10 +141,10 @@ if(USE_CUDA)
         elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
         endif()
-        
+
         # Include CUDA headers
         list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
-        
+
         # Set CUDA threads-per-block if not already defined
         if(NOT DEFINED CUDA_TPB)
         set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
@@ -160,12 +158,61 @@ if(USE_CUDA)
         list(APPEND SOURCES
             src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
             src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cu
+            src/kernels/spmv/spmv_cuda/spmv_cuda_bcrs_impl.cu
         )
     else()
         message(FATAL_ERROR "No supported GPU compiler found, even though USE_CUDA=ON.")
     endif()
 else()
     set(SMAX_CUDA_MODE 0)
+endif()
+
+# Build configuration options
+option(USE_TIMERS "Enable Timers support" ON)
+option(USE_OPENMP "Enable OpenMP support" ON)
+option(USE_LIKWID "Enable LIKWID support" OFF)
+
+# Create the shared library target
+add_library(${LIBRARY_NAME} SHARED ${SOURCES})
+
+# Enable Timers if selected
+if(USE_TIMERS)
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_TIMERS=1)
+    message(STATUS "Enabling Timers support.")
+else()
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_TIMERS=0)
+endif()
+
+# Enable and configure OpenMP support
+if(USE_OPENMP)
+    find_package(OpenMP REQUIRED)
+    if(OpenMP_CXX_FOUND)
+        message(STATUS "OpenMP found, enabling OpenMP support.")
+        set(OpenMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
+        # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        target_link_libraries(${LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
+    else()
+        message(FATAL_ERROR "OpenMP requested but not found.")
+    endif()
+else()
+    message(STATUS "OpenMP support is disabled.")
+endif()
+
+# Enable and configure LIKWID support
+if(USE_LIKWID)
+    find_package(likwid REQUIRED)
+    if(likwid_FOUND)
+        message(STATUS "LIKWID found, enabling LIKWID support.")
+        set(SMAX_LIKWID_MODE 1)
+        target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_LIKWID LIKWID_PERFMON)
+        include_directories(${LIKWID_INCLUDES})
+        target_link_libraries(${LIBRARY_NAME} PUBLIC ${LIKWID_LIBRARIES})
+    else()
+        message(FATAL_ERROR "LIKWID requested but not found.")
+    endif()
+else()
+    message(STATUS "LIKWID support is disabled.")
+    set(SMAX_LIKWID_MODE 0)
 endif()
 
 set(CXX_DEBUG_BASE_FLAGS "-g -O0 -Wall -Wextra -fno-omit-frame-pointer")
@@ -197,11 +244,9 @@ endif()
 
 message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
 
-# Create the shared library target
-add_library(${LIBRARY_NAME} SHARED ${SOURCES})
-
 # For public use
 target_compile_definitions(${LIBRARY_NAME} PUBLIC
+    SMAX_LIKWID_MODE=${SMAX_LIKWID_MODE}
     SMAX_CUDA_MODE=${SMAX_CUDA_MODE}
     SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
 )
@@ -248,49 +293,6 @@ if(CUDAToolkit_FOUND)
         src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
         PROPERTIES LANGUAGE CUDA
     )
-endif()
-
-# Build configuration options
-option(USE_TIMERS "Enable Timers support" ON)
-option(USE_OPENMP "Enable OpenMP support" ON)
-option(USE_LIKWID "Enable LIKWID support" OFF)
-
-# Enable Timers if selected
-if(USE_TIMERS)
-    target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_TIMERS=1)
-    message(STATUS "Enabling Timers support.")
-else()
-    target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_TIMERS=0)
-endif()
-
-# Enable and configure OpenMP support
-if(USE_OPENMP)
-    find_package(OpenMP REQUIRED)
-    if(OpenMP_CXX_FOUND)
-        message(STATUS "OpenMP found, enabling OpenMP support.")
-        set(OpenMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
-        # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-        target_link_libraries(${LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
-    else()
-        message(FATAL_ERROR "OpenMP requested but not found.")
-    endif()
-else()
-    message(STATUS "OpenMP support is disabled.")
-endif()
-
-# Enable and configure LIKWID support
-if(USE_LIKWID)
-    find_package(likwid REQUIRED)
-    if(likwid_FOUND)
-        message(STATUS "LIKWID found, enabling LIKWID support.")
-        target_compile_definitions(${LIBRARY_NAME} PUBLIC USE_LIKWID LIKWID_PERFMON)
-        include_directories(${LIKWID_INCLUDES})
-        set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES})
-    else()
-        message(FATAL_ERROR "LIKWID requested but not found.")
-    endif()
-else()
-    message(STATUS "LIKWID support is disabled.")
 endif()
 
 # Set default install paths (lib, include, etc.)

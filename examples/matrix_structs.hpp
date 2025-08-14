@@ -121,10 +121,6 @@ struct COOMatrix {
                                      matrix_file_name);
         }
 
-        if (nrows != ncols) {
-            throw std::runtime_error("Matrix must be square.");
-        }
-
         bool symm_flag = mm_is_symmetric(matcode);
 
         std::vector<int> row_data, col_data;
@@ -230,6 +226,7 @@ template <typename IT, typename VT> struct CRSMatrix {
         this->nnz = nnz;
         this->n_cols = n_cols;
 
+        // TODO: Actually shouldn't be necessary
         val = new VT[nnz];
         col = new IT[nnz];
         row_ptr = new IT[n_rows + 1];
@@ -255,11 +252,20 @@ template <typename IT, typename VT> struct CRSMatrix {
                 row_ptr = new IT[n_rows + 1];
 
                 // 4) Copy data
-                std::copy(other.val, other.val + nnz, val);
-                std::copy(other.col, other.col + nnz, col);
-                std::copy(other.row_ptr, other.row_ptr + n_rows + 1, row_ptr);
+                row_ptr[0] = other.row_ptr[0];
+#pragma omp parallel for schedule(static)
+                for (ULL i = 0; i < n_rows; ++i) {
+                    row_ptr[i + 1] = other.row_ptr[i + 1];
+                    for (ULL j = other.row_ptr[i]; j < other.row_ptr[i + 1];
+                         ++j) {
+                        col[j] = other.col[j];
+                        val[j] = other.val[j];
+                    }
+                }
             } else {
-                val = col = row_ptr = nullptr;
+                val = nullptr;
+                col = nullptr;
+                row_ptr = nullptr;
             }
         }
         return *this;
@@ -283,7 +289,7 @@ template <typename IT, typename VT> struct CRSMatrix {
     }
 
     void write_to_mtx_file(std::string file_out_name) {
-        // Convert csr back to coo for mtx format printing
+        // Convert crs back to coo for mtx format printing
         std::vector<int> temp_rows(nnz);
         std::vector<int> temp_cols(nnz);
         std::vector<double> temp_values(nnz);
@@ -382,6 +388,83 @@ template <typename IT, typename VT> struct CRSMatrix {
     }
 };
 
+template <typename IT, typename VT> struct BCRSMatrix {
+    ULL n_blocks;
+    ULL n_rows;
+    ULL n_cols;
+    ULL b_height;
+    ULL b_width;
+    ULL b_h_pad;
+    ULL b_w_pad;
+    VT *val;
+    IT *col;
+    IT *row_ptr;
+
+    BCRSMatrix() {
+        n_blocks = 0;
+        n_rows = 0;
+        n_cols = 0;
+        b_height = 0;
+        b_width = 0;
+        b_h_pad = 0;
+        b_w_pad = 0;
+        val = nullptr;
+        col = nullptr;
+        row_ptr = nullptr;
+    }
+
+    BCRSMatrix(ULL _n_rows, ULL _n_cols, ULL _n_blocks, ULL _b_height,
+               ULL _b_width, ULL _b_h_pad, ULL _b_w_pad) {
+        n_rows = _n_rows;
+        n_cols = _n_cols;
+        n_blocks = _n_blocks;
+        b_height = _b_height;
+        b_width = _b_width;
+        b_h_pad = _b_h_pad;
+        b_w_pad = _b_w_pad;
+        val = new VT[n_blocks * b_h_pad * b_w_pad];
+        col = new IT[n_blocks];
+        row_ptr = new IT[n_rows + 1];
+    }
+
+    ~BCRSMatrix() {
+        delete[] val;
+        delete[] col;
+        delete[] row_ptr;
+    }
+
+    void print(void) {
+        std::cout << "N_blocks: " << this->n_blocks << std::endl;
+        std::cout << "N_rows: " << this->n_rows << std::endl;
+        std::cout << "N_cols: " << this->n_cols << std::endl;
+        std::cout << "b_height: " << this->b_height << std::endl;
+        std::cout << "b_width: " << this->b_width << std::endl;
+        std::cout << "b_h_pad: " << this->b_h_pad << std::endl;
+        std::cout << "b_w_pad: " << this->b_w_pad << std::endl;
+
+        std::cout << "Values: ";
+        for (ULL i = 0; i < this->n_blocks; ++i) {
+            for (ULL j = 0; j < this->b_h_pad; ++j) {
+                for (ULL k = 0; k < this->b_w_pad; ++k) {
+                    std::cout << this->val[i] << " ";
+                }
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << "\nCol Indices: ";
+        for (ULL i = 0; i < this->n_blocks; ++i)
+            std::cout << this->col[i] << " ";
+
+        std::cout << "\nRow Ptr: ";
+        for (ULL i = 0; i < this->n_rows + 1; ++i)
+            std::cout << this->row_ptr[i] << " ";
+
+        std::cout << std::endl;
+        std::cout << std::endl;
+    }
+};
+
 template <typename IT, typename VT> struct SCSMatrix {
     ULL C;
     ULL sigma;
@@ -439,7 +522,7 @@ template <typename IT, typename VT> struct SCSMatrix {
 
     // TODO: Adapt to SCS
     // void write_to_mtx_file(std::string file_out_name) {
-    //     // Convert csr back to coo for mtx format printing
+    //     // Convert crs back to coo for mtx format printing
     //     std::vector<int> temp_rows(nnz);
     //     std::vector<int> temp_cols(nnz);
     //     std::vector<double> temp_values(nnz);

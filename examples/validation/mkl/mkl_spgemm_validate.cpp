@@ -1,6 +1,6 @@
-#include "../examples_common.hpp"
-#include "../spgemm_helpers.hpp"
-#include "validation_common.hpp"
+#include "../../examples_common.hpp"
+#include "../../spgemm_helpers.hpp"
+#include "../validation_common.hpp"
 
 int main(int argc, char *argv[]) {
 
@@ -12,10 +12,6 @@ int main(int argc, char *argv[]) {
     using VT = double;
 
     INIT_SPGEMM(IT, VT);
-    // Make permuted version of A with the same metadata
-    CRSMatrix<IT, VT> *crs_mat_A_perm = new CRSMatrix<IT, VT>(
-        crs_mat_A->n_rows, crs_mat_A->n_cols, crs_mat_A->nnz);
-
     CRSMatrix<IT, VT> *crs_mat_C_smax = new CRSMatrix<IT, VT>;
     CRSMatrix<IT, VT> *crs_mat_C_mkl = new CRSMatrix<IT, VT>;
 
@@ -119,6 +115,9 @@ int main(int argc, char *argv[]) {
     // printf("SMAX: \n");
     // crs_mat_C_smax->print();
     smax->utils->print_timers();
+
+    std::cout << "MKL nnz = " << crs_mat_C_mkl->nnz << std::endl;
+    std::cout << "SMAX nnz = " << crs_mat_C_smax->nnz << std::endl;
 
     // Compare
     compare_spgemm<IT, VT>(crs_mat_C_smax, crs_mat_C_mkl,

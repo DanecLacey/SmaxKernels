@@ -41,7 +41,9 @@ int main(int argc, char *argv[]) {
         inv_perm);
 
     // NOTE: We split after permuting A
-    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_D_plus_L, *crs_mat_U);
+    // NOTE: We make level-aware NUMA-friendly copies
+    extract_D_L_U<IT, VT>(*crs_mat_perm, *crs_mat_D_plus_L, *crs_mat_U, smax,
+                          true);
 
     // Register kenel data
     REGISTER_SPTRSV_DATA(bench_name, crs_mat_D_plus_L, x, b);

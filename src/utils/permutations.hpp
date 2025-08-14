@@ -12,7 +12,7 @@
 namespace SMAX {
 
 template <typename IT, typename ST>
-int build_symmetric_csr_old(IT *A_row_ptr, IT *A_col, int A_n_rows,
+int build_symmetric_crs_old(IT *A_row_ptr, IT *A_col, int A_n_rows,
                             IT *&A_sym_row_ptr, IT *&A_sym_col, ST &A_sym_nnz) {
     A_sym_row_ptr = new IT[A_n_rows + 1];
     A_sym_row_ptr[0] = (IT)0;
@@ -133,7 +133,7 @@ int build_symmetric_csr_old(IT *A_row_ptr, IT *A_col, int A_n_rows,
 }
 
 template <typename IT, typename ST>
-int build_symmetric_csr_parallel(IT *A_row_ptr, IT *A_col, int A_n_rows,
+int build_symmetric_crs_parallel(IT *A_row_ptr, IT *A_col, int A_n_rows,
                                  IT *&A_sym_row_ptr, IT *&A_sym_col,
                                  ST &A_sym_nnz) {
 
@@ -234,7 +234,7 @@ int build_symmetric_csr_parallel(IT *A_row_ptr, IT *A_col, int A_n_rows,
 }
 
 template <typename IT, typename ST>
-int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
+int build_symmetric_crs_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
                                          IT *&A_sym_row_ptr, IT *&A_sym_col,
                                          ST &A_sym_nnz) {
 
@@ -351,8 +351,8 @@ int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
                 A_sym_col[j] = A_col[old_j];
             }
             // add extra nnzs now
-            int thread_counter = 0;
-            int thread_local_ctr = 0;
+            ULL thread_counter = 0;
+            ULL thread_local_ctr = 0;
             for (; j < A_sym_row_ptr[r + 1]; ++j) {
                 while (thread_local_ctr >=
                        (*thread_storage[thread_counter])[r].size()) {
@@ -371,22 +371,22 @@ int build_symmetric_csr_parallel_adapted(IT *A_row_ptr, IT *A_col, int A_n_rows,
 }
 
 template <typename IT, typename ST>
-int Utils::build_symmetric_csr(IT *A_row_ptr, IT *A_col, ST A_n_rows,
+int Utils::build_symmetric_crs(IT *A_row_ptr, IT *A_col, ST A_n_rows,
                                IT *&A_sym_row_ptr, IT *&A_sym_col,
                                ST &A_sym_nnz) {
 
-    IF_SMAX_DEBUG(ErrorHandler::log("Entering build_symmetric_csr"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering build_symmetric_crs"));
 #if 0
-    build_symmetric_csr_old<IT, ST>(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr,
+    build_symmetric_crs_old<IT, ST>(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr,
                                     A_sym_col, A_sym_nnz);
 #elif 0
-    build_symmetric_csr_parallel<IT, ST>(A_row_ptr, A_col, A_n_rows,
+    build_symmetric_crs_parallel<IT, ST>(A_row_ptr, A_col, A_n_rows,
                                          A_sym_row_ptr, A_sym_col, A_sym_nnz);
 #elif 1
-    build_symmetric_csr_parallel_adapted<IT, ST>(
+    build_symmetric_crs_parallel_adapted<IT, ST>(
         A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col, A_sym_nnz);
 #endif
-    IF_SMAX_DEBUG(ErrorHandler::log("Exiting build_symmetric_csr"));
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting build_symmetric_crs"));
 
     return 0;
 };
@@ -498,7 +498,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     // Step 1: Build symmetric structure of A + A^T
     IT *A_sym_row_ptr, *A_sym_col;
     int A_sym_nnz = 0;
-    build_symmetric_csr(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
+    build_symmetric_crs(A_row_ptr, A_col, A_n_rows, A_sym_row_ptr, A_sym_col,
                         A_sym_nnz);
 
     // Step 2: Call kernel for desired traversal method
@@ -521,7 +521,7 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         n_levels = Utils::generate_color_perm_bal(A_n_rows, A_sym_row_ptr,
                                                   A_sym_col, lvl, n_levels);
     } else if (type == "NONE") {
-    // Generates dummy permutation
+        // Generates dummy permutation
 #pragma omp parallel for
         for (int i = 0; i < A_n_rows; ++i) {
             lvl[i] = i;
@@ -665,7 +665,6 @@ int Utils::generate_color_perm_par(int A_n_rows, IT *A_sym_row_ptr,
     for (int row = 0; row < A_n_rows; row++) {
         bool repeat = true;
         // Repeat until conflicts resolved
-        int rep = 0;
         while (repeat) {
             std::unordered_set<int> forbidden;
             std::unordered_set<int> critical;
@@ -873,5 +872,28 @@ void Utils::apply_vec_perm(int n_rows, VT *vec, VT *vec_perm, int *perm) {
 
     IF_SMAX_DEBUG(ErrorHandler::log("Exiting apply_vec_perm"));
 };
+
+template <typename IT, typename VT>
+void Utils::level_aware_copy(IT *src_row_ptr, IT *dest_row_ptr, IT *src_col,
+                             IT *dest_col, VT *src_val, VT *dest_val) {
+
+    IF_SMAX_DEBUG(ErrorHandler::log("Entering level_aware_copy"));
+
+    dest_row_ptr[0] = src_row_ptr[0];
+    for (int lvl_idx = 0; lvl_idx < uc->n_levels; lvl_idx++) {
+#pragma omp parallel for schedule(static)
+        for (int row = uc->lvl_ptr[lvl_idx]; row < uc->lvl_ptr[lvl_idx + 1];
+             row++) {
+            dest_row_ptr[row + 1] = src_row_ptr[row + 1];
+            for (int idx = src_row_ptr[row]; idx < src_row_ptr[row + 1];
+                 idx++) {
+                dest_val[idx] = src_val[idx];
+                dest_col[idx] = src_col[idx];
+            }
+        }
+    }
+
+    IF_SMAX_DEBUG(ErrorHandler::log("Exiting level_aware_copy"));
+}
 
 } // namespace SMAX

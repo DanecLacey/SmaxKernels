@@ -13,6 +13,8 @@ int main(int argc, char *argv[]) {
 
     // Setup data structures
     INIT_SPMV(IT, VT);
+    IT _C = cli_args->_C;
+    IT _sigma = cli_args->_sigma;
     SCSMatrix<IT, VT> *scs_mat = new SCSMatrix<IT, VT>(_C, _sigma);
 
     // Initialize interface object

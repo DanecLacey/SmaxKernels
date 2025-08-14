@@ -11,9 +11,7 @@
     COOMatrix *coo_mat = new COOMatrix;                                        \
     coo_mat->read_from_mtx(cli_args->matrix_file_name);                        \
     CRSMatrix<IT, VT> *crs_mat = new CRSMatrix<IT, VT>;                        \
-    crs_mat->convert_coo_to_crs(coo_mat);                                      \
-    IT _C = cli_args->_C;                                                      \
-    IT _sigma = cli_args->_sigma;
+    crs_mat->convert_coo_to_crs(coo_mat);
 
 #define FINALIZE_SPMV                                                          \
     delete parser;                                                             \
@@ -66,24 +64,54 @@ template <typename IT> class SpMVParser : public CliParser {
     struct SpMVArgs : public CliArgs {
         IT _C = 1;
         IT _sigma = 1;
+        IT _hpad = 2; // Default to 2, since cusparse<t>bsrmv only supports > 1
+        IT _wpad = 2;
+        bool _use_cm = false;
+        std::string _ck = "";
     };
 
     SpMVArgs *parse(int argc, char *argv[]) override {
-        if (argc < 2 || argc > 4) {
-            std::cerr << "Usage: " << argv[0]
-                      << " <matrix_file.mtx> <optional: C> <optional: sigma>\n";
+        if (argc < 2) {
+            std::cerr
+                << "Usage: " << argv[0] << " <matrix_file.mtx>"
+                << "<-c : [uint]> chunk size for SCS format\n"
+                << "<-s : [uint]> reordering scope for SCS format\n"
+                << "<-hpad : [uint]> padded height for BCRS format\n"
+                << "<-wpad : [uint]> padded width for BCRS format\n"
+                << "<-cm : [0/1]> use blocked column major BCRS format\n"
+                << "<-ck : [str: 'tpr', 'nws', 'nwg'] BCRS kernel type>\n";
             std::exit(EXIT_FAILURE);
         }
 
         delete args_;
         auto *spmv_args = new SpMVArgs();
         spmv_args->matrix_file_name = argv[1];
-        if (argc == 3) {
-            spmv_args->_C = atoi(argv[2]);
-        }
-        if (argc == 4) {
-            spmv_args->_C = atoi(argv[2]);
-            spmv_args->_sigma = atoi(argv[3]);
+        int args_start_index = 2;
+        for (int i = args_start_index; i < argc; ++i) {
+            std::string arg = argv[i];
+            if (arg == "-c") {
+                spmv_args->_C = atoi(argv[++i]);
+            } else if (arg == "-s") {
+                spmv_args->_sigma = atoi(argv[++i]);
+            } else if (arg == "-hpad") {
+                spmv_args->_hpad = atoi(argv[++i]);
+            } else if (arg == "-wpad") {
+                spmv_args->_wpad = atoi(argv[++i]);
+            } else if (arg == "-cm") {
+                spmv_args->_use_cm = static_cast<bool>(atoi(argv[++i]));
+            } else if (arg == "-ck") {
+                spmv_args->_ck = std::string(argv[++i]);
+                std::vector<std::string> kernels = {"tpr", "nws", "nwg"};
+                bool found = std::find(kernels.begin(), kernels.end(),
+                                       spmv_args->_ck) != kernels.end();
+                if (!found) {
+                    std::cout << "Unknown argument " << arg << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            } else {
+                std::cout << "Unknown argument " << arg << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
         args_ = spmv_args;
         return spmv_args;

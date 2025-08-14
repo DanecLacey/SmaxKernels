@@ -2,7 +2,7 @@
 file(GLOB CPP_FILES *.cpp)
 
 # Create a list to store target names
-set(validation_targets)
+set(mkl_validation_targets)   # this will be passed back up
 
 if(MKL_USE_ILP64)
     message(STATUS "Validation targets will link with MKL ILP64")
@@ -31,8 +31,8 @@ foreach(src ${CPP_FILES})
     endif()
 
     # Add to the list of targets
-    list(APPEND validation_targets ${exec_name})
+    list(APPEND mkl_validation_targets ${exec_name})
 endforeach()
 
 # Export the list to parent scope
-set(validation_targets ${validation_targets} PARENT_SCOPE)
+set(mkl_validation_targets ${mkl_validation_targets} PARENT_SCOPE)

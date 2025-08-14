@@ -9,7 +9,14 @@
 namespace SMAX {
 
 // Available kernels
-enum class KernelType { SPMV, SPMM, SPGEMV, SPGEMM, SPTRSV, SPTRSM };
+enum class KernelType { SPMV, SPMM, SPGEMM, SPTRSV, SPTRSM };
+
+// Specific implementations
+enum class SpMVType : int {
+    naive_thread_per_row = 0,
+    naive_warp_group = 1,
+    naive_warp_shuffle = 2
+};
 
 // Available platforms
 enum class PlatformType { CPU, CUDA };
@@ -80,9 +87,33 @@ struct SCSMatrix {
           col(_col), val(_val), perm(_perm), inv_perm(_inv_perm) {}
 };
 
+struct BCRSMatrix {
+    ULL n_rows = 0;
+    ULL n_cols = 0;
+    ULL nnz = 0;
+    ULL b_height = 0;
+    ULL b_width = 0;
+    ULL height_pad = 0;
+    ULL width_pad = 0;
+
+    void *col = nullptr;
+    void *row_ptr = nullptr;
+    void *val = nullptr;
+
+    BCRSMatrix() = default;
+
+    BCRSMatrix(ULL _n_rows, ULL _n_cols, ULL _nnz, ULL _b_height, ULL _b_width,
+               ULL _height_pad, ULL _width_pad, void *_col, void *_row_ptr,
+               void *_val)
+        : n_rows(_n_rows), n_cols(_n_cols), nnz(_nnz), b_height(_b_height),
+          b_width(_b_width), height_pad(_height_pad), width_pad(_width_pad),
+          col(_col), row_ptr(_row_ptr), val(_val) {}
+};
+
 struct SparseMatrix {
     // Format-specific representations
     std::unique_ptr<CRSMatrix> crs;
+    std::unique_ptr<BCRSMatrix> bcrs;
     std::unique_ptr<SCSMatrix> scs;
 
     SparseMatrix() = default;

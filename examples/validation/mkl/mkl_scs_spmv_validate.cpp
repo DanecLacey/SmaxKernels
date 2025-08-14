@@ -1,6 +1,6 @@
-#include "../examples_common.hpp"
-#include "../spmv_helpers.hpp"
-#include "validation_common.hpp"
+#include "../../examples_common.hpp"
+#include "../../spmv_helpers.hpp"
+#include "../validation_common.hpp"
 
 int main(int argc, char *argv[]) {
 
@@ -12,8 +12,9 @@ int main(int argc, char *argv[]) {
     using VT = double;
 
     INIT_SPMV(IT, VT);
+    IT _C = cli_args->_C;
+    IT _sigma = cli_args->_sigma;
 
-    // TODO: Make C and sigma runtime args
     // Declare Sell-c-sigma operand
     SCSMatrix<IT, VT> *scs_mat = new SCSMatrix<IT, VT>(_C, _sigma);
 

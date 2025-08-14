@@ -1,7 +1,5 @@
 #pragma once
 
-#define MKL_AGGRESSIVE_N_OPS 10000
-
 #include <cuda_runtime_api.h>
 #include <cusparse.h>
 #include <memory>

@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     int ldc = A_num_rows;
     int B_size = B_num_rows * B_num_cols;
     int C_size = C_num_rows * C_num_cols;
-    IT *hA_csrOffsets = crs_mat->row_ptr;
+    IT *hA_crsOffsets = crs_mat->row_ptr;
     IT *hA_columns = crs_mat->col;
     VT *hA_values = crs_mat->val;
     VT *hB = dX->val;
@@ -42,16 +42,16 @@ int main(int argc, char *argv[]) {
 
     //--------------------------------------------------------------------------
     // Device memory management
-    IT *dA_csrOffsets, *dA_columns;
+    IT *dA_crsOffsets, *dA_columns;
     VT *dA_values, *dB, *dC;
     CHECK_CUDA(
-        cudaMalloc((void **)&dA_csrOffsets, (A_num_rows + 1) * sizeof(IT)));
+        cudaMalloc((void **)&dA_crsOffsets, (A_num_rows + 1) * sizeof(IT)));
     CHECK_CUDA(cudaMalloc((void **)&dA_columns, A_nnz * sizeof(IT)));
     CHECK_CUDA(cudaMalloc((void **)&dA_values, A_nnz * sizeof(VT)));
     CHECK_CUDA(cudaMalloc((void **)&dB, B_size * sizeof(VT)));
     CHECK_CUDA(cudaMalloc((void **)&dC, C_size * sizeof(VT)));
 
-    CHECK_CUDA(cudaMemcpy(dA_csrOffsets, hA_csrOffsets,
+    CHECK_CUDA(cudaMemcpy(dA_crsOffsets, hA_crsOffsets,
                           (A_num_rows + 1) * sizeof(IT),
                           cudaMemcpyHostToDevice));
     CHECK_CUDA(cudaMemcpy(dA_columns, hA_columns, A_nnz * sizeof(IT),
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     CHECK_CUSPARSE(cusparseCreate(&handle));
     // Create sparse matrix A in CSR format
     CHECK_CUSPARSE(cusparseCreateCsr(
-        &matA, A_num_rows, A_num_cols, A_nnz, dA_csrOffsets, dA_columns,
+        &matA, A_num_rows, A_num_cols, A_nnz, dA_crsOffsets, dA_columns,
         dA_values, CUSPARSE_INDEX_TYPE, CUSPARSE_INDEX_TYPE,
         CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_FLOAT_TYPE));
     // Create dense matrix B
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
         CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, matB, &beta, matC,
         CUSPARSE_FLOAT_TYPE, CUSPARSE_SPMM_ALG_DEFAULT, dBuffer));
 
-    std::string bench_name = "cusparse_csr_cuda_spmm";
+    std::string bench_name = "cusparse_crs_cuda_spmm";
     SETUP_BENCH;
 
     CHECK_CUDA(cudaGetLastError());
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
     CHECK_CUSPARSE(cusparseDestroy(handle));
     // device memory deallocation
     CHECK_CUDA(cudaFree(dBuffer));
-    CHECK_CUDA(cudaFree(dA_csrOffsets));
+    CHECK_CUDA(cudaFree(dA_crsOffsets));
     CHECK_CUDA(cudaFree(dA_columns));
     CHECK_CUDA(cudaFree(dA_values));
     CHECK_CUDA(cudaFree(dB));

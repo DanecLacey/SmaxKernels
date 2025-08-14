@@ -29,7 +29,8 @@ inline void peel_diag_crs(ULL n_rows, IT *col, IT *row_ptr, VT *val, VT *D) {
         }
 
         // if it's not already at the end, swap it into the last slot
-        if (diag_j != row_end) {
+        // Hopefully the cast to IT does not cause problems in the unsigned case
+        if ((IT)diag_j != row_end) {
             std::swap(col[diag_j], col[row_end]);
             std::swap(val[diag_j], val[row_end]);
         }

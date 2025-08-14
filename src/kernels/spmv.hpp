@@ -49,6 +49,28 @@ class SpMVKernel : public Kernel {
             this->args->A->scs->val = std::get<void *>(args[11]);
             this->args->A->scs->perm = std::get<void *>(args[12]);
 
+        } else if (flags->is_mat_bcrs) {
+            if (args.size() != 10)
+                throw std::runtime_error(
+                    "SpMVKernel register_A expects 10 BCRS args");
+
+            this->args->A->bcrs = std::make_unique<BCRSMatrix>();
+#if SMAX_CUDA_MODE
+            // Make device version of matrix
+            this->args->d_A->bcrs = std::make_unique<BCRSMatrix>();
+#endif
+
+            this->args->A->bcrs->n_rows = get_ull(args[0]);
+            this->args->A->bcrs->n_cols = get_ull(args[1]);
+            this->args->A->bcrs->nnz = get_ull(args[2]);
+            this->args->A->bcrs->b_height = get_ull(args[3]);
+            this->args->A->bcrs->b_width = get_ull(args[4]);
+            this->args->A->bcrs->height_pad = get_ull(args[5]);
+            this->args->A->bcrs->width_pad = get_ull(args[6]);
+
+            this->args->A->bcrs->col = std::get<void *>(args[7]);
+            this->args->A->bcrs->row_ptr = std::get<void *>(args[8]);
+            this->args->A->bcrs->val = std::get<void *>(args[9]);
         } else {
             if (args.size() != 6)
                 throw std::runtime_error(
@@ -92,8 +114,23 @@ class SpMVKernel : public Kernel {
         return 0;
     }
 
+    int set_kernel_implementation(SpMVType impl) override {
+        this->flags->kernel_type = impl;
+        return 0;
+    }
+
     int set_mat_scs(bool flag) override {
         this->flags->is_mat_scs = flag;
+        return 0;
+    }
+
+    int set_mat_bcrs(bool flag) override {
+        this->flags->is_mat_bcrs = flag;
+        return 0;
+    }
+
+    int set_block_column_major(bool flag) override {
+        this->flags->is_block_column_major = flag;
         return 0;
     }
 

@@ -15,11 +15,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # If the lib is built with CUDA, the examples must also be
 if(SMAX_CUDA_MODE_EXPORT) # Detected from smax lib
-    find_package(CUDAToolkit REQUIRED)
+    enable_language(CUDA)
+    unset(CMAKE_CUDA_ARCHITECTURES CACHE)
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
     endif()
-    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
     add_compile_definitions(CUDA_MODE)
     include_directories(${CUDAToolkit_INCLUDE_DIRS}) # Why is this necessary?
 else()
@@ -68,6 +69,24 @@ if (SMAX_CUDA_MODE_EXPORT)
     message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
 endif()
 
+# Options for external library support
+option(USE_OPENMP "Enable OpenMP support" ON)
+option(USE_MPI "Enable MPI support" OFF)
+option(USE_LIKWID "Enable LIKWID support" OFF)
+option(USE_EIGEN "Enable Eigen support" OFF)
+option(USE_MKL "Enable MKL support" OFF)
+option(USE_AVX512 "Enable IntelLLVM-AVX512 support" OFF)
+option(USE_CUSPARSE "Enable CUSPARSE support" OFF)
+if(USE_MKL)
+    add_compile_definitions(USE_MKL)
+    # Option to select MKL integer interface:
+    #   OFF = LP64 (32-bit indices)
+    #   ON  = ILP64 (64-bit indices)
+    option(MKL_USE_ILP64 "Use MKL ILP64 interface (64-bit indices)" OFF)
+endif()
+option(USE_FAST_MMIO "Enable fast matrix market support" OFF)
+include(cmake/CPM.cmake)
+
 # Compiler-specific flags
 # GPU builds
 if(SMAX_CUDA_MODE_EXPORT)
@@ -82,6 +101,9 @@ if(SMAX_CUDA_MODE_EXPORT)
     else()
         message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.")
     endif()
+    message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
+    message(STATUS "CUDA Architecture set to ${CMAKE_CUDA_ARCHITECTURES}")
+    message(STATUS "CUDA compiler flags set to ${CMAKE_CUDA_FLAGS} ")
 endif()
 
 # CPU builds (default)
@@ -99,7 +121,11 @@ if(CPU_COMPILER_ID STREQUAL "GNU")
 elseif(CPU_COMPILER_ID STREQUAL "INTEL")
     set(CXX_RELEASE_EXTRA_FLAGS "-march=native -fno-alias")
 elseif(CPU_COMPILER_ID STREQUAL "INTELLLVM")
-    set(CXX_RELEASE_EXTRA_FLAGS "-xHost -qopt-zmm-usage=high")
+    if(USE_AVX512)
+        set(CXX_RELEASE_EXTRA_FLAGS "-xHost -qopt-zmm-usage=high")
+    else()
+        set(CXX_RELEASE_EXTRA_FLAGS "-xHost")
+    endif()
     set(CXX_DEBUG_EXTRA_FLAGS "-fp-model=precise")
 elseif(CPU_COMPILER_ID STREQUAL "CLANG")
     set(CXX_RELEASE_EXTRA_FLAGS "-fno-strict-aliasing")
@@ -114,22 +140,6 @@ elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 
 message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
-
-# Options for external library support
-option(USE_OPENMP "Enable OpenMP support" ON)
-option(USE_MPI "Enable MPI support" OFF)
-option(USE_LIKWID "Enable LIKWID support" OFF)
-option(USE_EIGEN "Enable Eigen support" OFF)
-option(USE_MKL "Enable MKL support" OFF)
-option(USE_CUSPARSE "Enable CUSPARSE support" OFF)
-if(USE_MKL)
-    # Option to select MKL integer interface:
-    #   OFF = LP64 (32-bit indices)
-    #   ON  = ILP64 (64-bit indices)
-    option(MKL_USE_ILP64 "Use MKL ILP64 interface (64-bit indices)" OFF)
-endif()
-option(USE_FAST_MMIO "Enable fast matrix market support" OFF)
-include(cmake/CPM.cmake)
 
 # === OpenMP Support ===
 if(USE_OPENMP)
@@ -171,17 +181,24 @@ else()
 endif()
 
 # === LIKWID Support ===
-if(USE_LIKWID)
-    # Find LIKWID package and enable if found
+if (USE_LIKWID OR SMAX_LIKWID_MODE_EXPORT)
+    if (NOT USE_LIKWID)
+        message(WARNING "USE_LIKWID=OFF but SMAX_LIKWID_MODE_EXPORT=ON; enabling LIKWID support anyway.")
+    else()
+        message(STATUS "LIKWID support explicitly enabled via USE_LIKWID=ON.")
+    endif()
+
     find_package(likwid REQUIRED)
-    if(likwid_FOUND)
+
+    if (likwid_FOUND)
         message(STATUS "LIKWID found, enabling LIKWID support.")
-        add_compile_definitions(USE_LIKWID LIKWID_PERFMON)
-        include_directories(${LIKWID_INCLUDES})
-        set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES} CACHE INTERNAL "Libraries for LIKWID")
     else()
         message(FATAL_ERROR "LIKWID requested but not found.")
     endif()
+
+    add_compile_definitions(USE_LIKWID LIKWID_PERFMON)
+    include_directories(${LIKWID_INCLUDES})
+    set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES} CACHE INTERNAL "Libraries for LIKWID")
 else()
     message(STATUS "LIKWID support is disabled.")
 endif()
@@ -226,27 +243,42 @@ else()
     message(STATUS "MKL support is disabled.")
 endif()
 
-if(USE_MKL)
-    # DL 05.04.25 TODO: Would be useful to have other intermediate levels
-    set(VERBOSITY 1 CACHE STRING "Set the validation verbosity level (0 or 1)")
-
-    # Validate debug level input
-    if(NOT VERBOSITY MATCHES "^[01]$")
-        message(FATAL_ERROR "VERBOSITY must be 0 or 1 (got: ${VERBOSITY})")
-    endif()
-
-    # Set the verbosity level as a compile definition
-    set_property(CACHE VERBOSITY PROPERTY STRINGS 0 1)
-    message(STATUS "Verbosity Level: ${VERBOSITY}")
-
-    add_subdirectory(validation)
-    add_custom_target(validation DEPENDS ${validation_targets})
-    if(NOT CPU_COMPILER_ID STREQUAL "INTELLLVM" AND NOT CPU_COMPILER_ID STREQUAL "INTELL")
-        message(WARNING "Validation checks not built with an Intel compiler. Expect ABI problems.")
-    endif()
-else()
-    message(WARNING "Validation checks not built. MKL is required.")
+set(VERBOSITY 1 CACHE STRING "Set the validation verbosity level (0 or 1)")
+if(NOT VERBOSITY MATCHES "^[01]$")
+    message(FATAL_ERROR "VERBOSITY must be 0 or 1 (got: ${VERBOSITY})")
 endif()
+set_property(CACHE VERBOSITY PROPERTY STRINGS 0 1)
+message(STATUS "Validation verbosity level: ${VERBOSITY}")
+
+if(NOT (USE_MKL OR USE_CUSPARSE))
+    message(WARNING "No validation back‐ends enabled (set USE_MKL or USE_CUSPARSE). Skipping validation.")
+endif()
+
+set(validation_targets)
+
+# MKL validation
+if(USE_MKL)
+    message(STATUS "Configuring MKL validation")
+    add_subdirectory(validation/mkl)
+    list(APPEND validation_targets ${mkl_validation_targets})
+
+    if(NOT CPU_COMPILER_ID STREQUAL "INTELLLVM" AND NOT CPU_COMPILER_ID STREQUAL "INTEL")
+        message(WARNING "MKL validation built without an Intel compiler. Expect possible ABI issues.")
+    endif()
+endif()
+
+# cuSPARSE validation
+if(USE_CUSPARSE)
+    message(STATUS "Configuring cuSPARSE validation")
+    add_subdirectory(validation/cusparse)
+    list(APPEND validation_targets ${cusparse_validation_targets})
+endif()
+
+# Finally build a combined validation target
+add_custom_target(validation
+    DEPENDS ${validation_targets}
+    COMMENT "Building all enabled validation checks"
+)
 
 # === fast mmio Support ===
 if(USE_FAST_MMIO)

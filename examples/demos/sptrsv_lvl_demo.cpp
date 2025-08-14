@@ -38,7 +38,6 @@ int main(void) {
 
     using IT = int;
     using VT = double;
-    using ULL = unsigned long long int;
 
     // Initialize operands
     CRSMatrix<IT, VT> *A = new CRSMatrix<IT, VT>;
