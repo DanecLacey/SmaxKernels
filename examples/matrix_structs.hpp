@@ -121,10 +121,6 @@ struct COOMatrix {
                                      matrix_file_name);
         }
 
-        if (nrows != ncols) {
-            throw std::runtime_error("Matrix must be square.");
-        }
-
         bool symm_flag = mm_is_symmetric(matcode);
 
         std::vector<int> row_data, col_data;
@@ -260,7 +256,8 @@ template <typename IT, typename VT> struct CRSMatrix {
 #pragma omp parallel for schedule(static)
                 for (ULL i = 0; i < n_rows; ++i) {
                     row_ptr[i + 1] = other.row_ptr[i + 1];
-                    for (ULL j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
+                    for (ULL j = other.row_ptr[i]; j < other.row_ptr[i + 1];
+                         ++j) {
                         col[j] = other.col[j];
                         val[j] = other.val[j];
                     }
