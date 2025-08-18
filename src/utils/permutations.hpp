@@ -587,47 +587,64 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
             type, "BFS, BFS_BW, RS, SC, PC, PC_BAL, NONE");
     }
 
-    // Step 3: Compute permuation - if necessary
-    if (type != "BFS") {
+    if (type != "RACE") {
+        // Step 3: Compute permuation - if necessary
+        if (type != "BFS") {
 #pragma omp parallel for schedule(static, 10)
-        for (int i = 0; i < A_n_rows; i++) {
-            perm[i] = i;
+            for (int i = 0; i < A_n_rows; i++) {
+                perm[i] = i;
+            }
+            std::stable_sort(
+                perm, perm + A_n_rows,
+                [&](const int &a, const int &b) { return (lvl[a] < lvl[b]); });
         }
-        std::stable_sort(
-            perm, perm + A_n_rows,
-            [&](const int &a, const int &b) { return (lvl[a] < lvl[b]); });
-    }
 
-    // Compute inverse permutation
+        // Compute inverse permutation
 #pragma omp parallel for schedule(static, 10)
-    for (int i = 0; i < A_n_rows; ++i) {
-        inv_perm[perm[i]] = i;
-    }
+        for (int i = 0; i < A_n_rows; ++i) {
+            inv_perm[perm[i]] = i;
+        }
 
-    IF_SMAX_DEBUG(
-        ErrorHandler::log("%d levels detected in generate_perm", n_levels));
-    uc->lvl_ptr = new int[n_levels + 1];
+        IF_SMAX_DEBUG(
+            ErrorHandler::log("%d levels detected in generate_perm", n_levels));
+        uc->lvl_ptr = new int[n_levels + 1];
 
-    // Count nodes per level
-    int *count = new int[n_levels];
-    for (int i = 0; i < n_levels; ++i) {
-        count[i] = 0;
-    }
-    for (int i = 0; i < A_n_rows; ++i) {
-        ++count[lvl[i]];
-    }
+        // Count nodes per level
+        int *count = new int[n_levels];
+        for (int i = 0; i < n_levels; ++i) {
+            count[i] = 0;
+        }
+        for (int i = 0; i < A_n_rows; ++i) {
+            ++count[lvl[i]];
+        }
 
-    // Build the prefix‐sum pointer array (size = n_levels+1)
-    uc->lvl_ptr[0] = 0;
-    for (int L = 0; L < n_levels; ++L) {
-        uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
-    }
+        // Build the prefix‐sum pointer array (size = n_levels+1)
+        uc->lvl_ptr[0] = 0;
+        for (int L = 0; L < n_levels; ++L) {
+            uc->lvl_ptr[L + 1] = uc->lvl_ptr[L] + count[L];
+        }
 
-    IF_SMAX_DEBUG(ErrorHandler::log(
-        "The generated permutation is %s",
-        (sanity_check_perm(A_n_rows, A_sym_row_ptr, A_sym_col, lvl)
-             ? "valid"
-             : "not valid")));
+        if (type == "BFS_BW") {
+            IF_SMAX_DEBUG(
+                ErrorHandler::log("The generated permutation is %s",
+                                  (sanity_check_perm_bw(A_n_rows, A_sym_row_ptr,
+                                                        A_sym_col, perm)
+                                       ? "valid"
+                                       : "not valid"));
+
+                ErrorHandler::log("The generated permutation is %s",
+                                  (sanity_check_perm_bw(A_n_rows, A_sym_row_ptr,
+                                                        A_sym_col, inv_perm)
+                                       ? "valid"
+                                       : "not valid")););
+        } else {
+            IF_SMAX_DEBUG(ErrorHandler::log(
+                "The generated permutation is %s",
+                (sanity_check_perm(A_n_rows, A_sym_row_ptr, A_sym_col, lvl)
+                     ? "valid"
+                     : "not valid")));
+        }
+    }
 
     uc->n_levels = n_levels;
     delete[] A_sym_row_ptr;
@@ -699,6 +716,38 @@ int Utils::generate_color_perm(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
     }
 
     return ++max_color;
+}
+
+template <typename IT>
+int Utils::generate_color_RACE(int A_n_rows, IT *A_row_ptr, IT *A_col,
+                               int *perm, int *inv_perm) {
+#ifdef SMAX_USE_RACE
+    SMAX_GET_THREAD_COUNT(int, n_threads);
+    // clang-format off
+    RACE::Interface* race_interface = new RACE::Interface(
+        A_n_rows,
+        n_threads,
+        RACE::POWER,
+        reinterpret_cast<int *>(A_row_ptr),
+        reinterpret_cast<int *>(A_col),
+        false,
+        1, // threads per core
+        RACE::FILL,
+        NULL,
+        NULL
+    );
+    // clang-format on
+
+    int cache_size = 1;    // TODO
+    int n_repetitions = 1; // TODO
+
+    race_interface->RACEColor(n_repetitions, 1, cache_size * 1024 * 1024);
+    race_interface->getPerm(&perm, NULL);
+    race_interface->getInvPerm(&inv_perm, NULL);
+#else
+    printf("SMAX_USE_RACE=OFF\n");
+    exit(EXIT_FAILURE);
+#endif
 }
 
 // Based on ``High performance and balanced parallel graph coloring on
@@ -868,6 +917,43 @@ bool Utils::sanity_check_perm(const int A_n_rows, const IT *A_row_ptr,
     }
 
     return valid;
+}
+
+template <typename IT>
+bool Utils::sanity_check_perm_bw(const int A_n_rows, const IT *A_row_ptr,
+                                 const IT *A_col, const int *perm) {
+
+    /* seen[v] == 1 means value v already appeared in perm[] */
+    bool *seen = new bool[A_n_rows];
+    for (ULL i = 0; i < A_n_rows; ++i) {
+        seen[i] = false;
+    }
+
+    for (int i = 0; i < A_n_rows; ++i) {
+        int p = perm[i];
+        if (p < 0 || p >= A_n_rows) {
+            std::ostringstream oss;
+            oss << "perm element: '" << p << "' at index '" << i
+                << "' does not exist.";
+            ErrorHandler::log(oss.str());
+            delete[] seen;
+            return false;
+        }
+        if (seen[p]) {
+            std::ostringstream oss;
+            oss << "perm element: '" << p << "' at index '" << i
+                << "' duplicated.";
+            ErrorHandler::log(oss.str());
+            delete[] seen;
+            return false;
+        }
+        seen[p] = true;
+    }
+
+    /* If we reached here, every entry was in-range and seen exactly once */
+    delete[] seen;
+
+    return true;
 }
 
 template <typename IT, typename VT>

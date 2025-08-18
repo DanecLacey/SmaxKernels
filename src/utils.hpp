@@ -70,8 +70,16 @@ class Utils {
                                 int *lvl, int num_colors);
 
     template <typename IT>
+    int generate_color_RACE(int A_n_rows, IT *A_row_ptr, IT *A_col,
+                               int *perm, int *inv_perm);
+
+    template <typename IT>
     void generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                        int *inv_perm, std::string type = std::string("BFS"));
+
+    template <typename IT>
+    bool sanity_check_perm_bw(const int A_n_rows, const IT *A_row_ptr,
+                              const IT *A_col, const int *perm);
 
     template <typename IT>
     bool sanity_check_perm(const int A_n_rows, const IT *A_row_ptr,

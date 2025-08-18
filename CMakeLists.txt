@@ -171,6 +171,7 @@ endif()
 option(USE_TIMERS "Enable Timers support" ON)
 option(USE_OPENMP "Enable OpenMP support" ON)
 option(USE_LIKWID "Enable LIKWID support" OFF)
+option(USE_RACE "Enable RACE support" OFF)
 
 # Create the shared library target
 add_library(${LIBRARY_NAME} SHARED ${SOURCES})
@@ -213,6 +214,40 @@ if(USE_LIKWID)
 else()
     message(STATUS "LIKWID support is disabled.")
     set(SMAX_LIKWID_MODE 0)
+endif()
+
+# Enable and configure RACE support
+if(USE_RACE)
+    find_package(RACE REQUIRED)
+    message(STATUS "RACE found, enabling RACE support.")
+
+    # Try to find hwloc, with optional HWLOC_ROOT hint
+    if(HWLOC_ROOT)
+        list(APPEND CMAKE_PREFIX_PATH "${HWLOC_ROOT}")
+    endif()
+
+    find_package(hwloc QUIET CONFIG)
+    if(NOT hwloc_FOUND)
+        find_package(hwloc QUIET MODULE)
+    endif()
+
+    if(hwloc_FOUND)
+        message(STATUS "hwloc found, enabling hwloc support.")
+        target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_HWLOC)
+        target_include_directories(${LIBRARY_NAME} PUBLIC ${hwloc_INCLUDE_DIRS})
+        target_link_libraries(${LIBRARY_NAME} PUBLIC ${hwloc_LIBRARIES})
+    else()
+        message(WARNING "hwloc requested but not found. Disabling hwloc support.")
+    endif()
+
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC SMAX_USE_RACE)
+    target_include_directories(${LIBRARY_NAME} PUBLIC ${RACE_INCLUDE_DIRS})
+    target_link_libraries(${LIBRARY_NAME} PUBLIC ${RACE_LIBRARIES})
+
+    message(STATUS "RACE_INCLUDE_DIRS = ${RACE_INCLUDE_DIRS}")
+    message(STATUS "RACE_LIBRARIES    = ${RACE_LIBRARIES}")
+else()
+    message(STATUS "RACE support is disabled.")
 endif()
 
 set(CXX_DEBUG_BASE_FLAGS "-g -O0 -Wall -Wextra -fno-omit-frame-pointer")

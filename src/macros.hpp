@@ -8,6 +8,9 @@
 #ifdef SMAX_USE_LIKWID
 #include <likwid-marker.h>
 #endif
+#ifdef SMAX_USE_RACE
+#include <RACE/interface.h>
+#endif
 
 namespace SMAX {
 
