@@ -13,7 +13,11 @@ int main(int argc, char *argv[]) {
 
     // Setup data structures
     INIT_SPMV(IT, VT);
+    std::string out = cli_args->_out;
 
+    ULL n_rows = crs_mat->n_rows;
+    int *perm = new int[n_rows];
+    int *inv_perm = new int[n_rows];
     DenseMatrix<VT> *x = new DenseMatrix<VT>(crs_mat->n_cols, 1, 1.0);
     DenseMatrix<VT> *y = new DenseMatrix<VT>(crs_mat->n_rows, 1, 0.0);
 
@@ -24,6 +28,23 @@ int main(int argc, char *argv[]) {
     std::string bench_name = "smax_crs_spmv";
     register_kernel<IT, VT>(smax, bench_name, SMAX::KernelType::SPMV,
                             SMAX::PlatformType::CPU);
+
+    // Generate and apply permutation
+    bool permute = true;
+    if (permute) {
+        CRSMatrix<IT, VT> *crs_mat_perm = new CRSMatrix<IT, VT>(
+            crs_mat->n_rows, crs_mat->n_cols, crs_mat->nnz);
+
+        smax->utils->generate_perm<IT>(crs_mat->n_rows, crs_mat->row_ptr,
+                                       crs_mat->col, perm, inv_perm,
+                                       std::string("BFS_BW"));
+        smax->utils->apply_mat_perm<IT, VT>(
+            n_rows, crs_mat->row_ptr, crs_mat->col, crs_mat->val,
+            crs_mat_perm->row_ptr, crs_mat_perm->col, crs_mat_perm->val, perm,
+            inv_perm);
+
+        crs_mat = crs_mat_perm;
+    }
 
     // Register kenel data
     REGISTER_SPMV_DATA(bench_name, crs_mat, x, y);
@@ -46,5 +67,7 @@ int main(int argc, char *argv[]) {
     FINALIZE_SPMV;
     delete x;
     delete y;
+    delete perm;
+    delete inv_perm;
     FINALIZE_LIKWID_MARKERS;
 }

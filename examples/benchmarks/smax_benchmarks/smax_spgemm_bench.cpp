@@ -8,7 +8,12 @@
 #define MIN_NUM_ITERS 10
 
 // Set datatypes
+#ifdef USE_MKL_ILP64
 using IT = long long int;
+#else
+using IT = int;
+#endif
+
 using VT = double;
 
 int main(int argc, char *argv[]) {

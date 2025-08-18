@@ -483,6 +483,55 @@ int Utils::generate_perm_BFS(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
 };
 
 template <typename IT>
+int Utils::generate_perm_BFS_BW(int A_n_rows, IT *A_sym_row_ptr, IT *A_sym_col,
+                                int *perm, int *lvl) {
+
+    std::vector<bool> visited(A_n_rows, false);
+    std::queue<int> q;
+
+    int perm_index = 0;
+    int global_max_level = -1;
+
+    for (int start = 0; start < A_n_rows; ++start) {
+        if (visited[start])
+            continue;
+
+        // start new component
+        visited[start] = true;
+        lvl[start] = 0;
+        q.push(start);
+        global_max_level = std::max(global_max_level, 0);
+
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            int ulevel = lvl[u];
+
+            // record permutation (caller must ensure perm has size >= A_n_rows)
+            perm[perm_index++] = u;
+
+            // explore neighbors using the CSR arrays passed in
+            for (IT jj = A_sym_row_ptr[u]; jj < A_sym_row_ptr[u + 1]; ++jj) {
+                // cast/validate column index
+                int v = static_cast<int>(A_sym_col[jj]);
+                if (v < 0 || v >= A_n_rows)
+                    continue; // guard against corrupt input
+
+                if (!visited[v]) {
+                    visited[v] = true;
+                    lvl[v] = ulevel + 1;
+                    global_max_level = std::max(global_max_level, lvl[v]);
+                    q.push(v);
+                }
+            }
+        }
+    }
+
+    // global_max_level == -1 only if A_n_rows==0, which we handled earlier
+    return global_max_level + 1;
+};
+
+template <typename IT>
 void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
                           int *inv_perm, std::string type) {
 
@@ -509,6 +558,9 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
     } else if (type == "BFS") {
         n_levels = Utils::generate_perm_BFS(A_n_rows, A_sym_row_ptr, A_sym_col,
                                             perm, lvl);
+    } else if (type == "BFS_BW") {
+        n_levels = Utils::generate_perm_BFS_BW(A_n_rows, A_sym_row_ptr,
+                                               A_sym_col, perm, lvl);
     } else if (type == "SC") {
         n_levels =
             Utils::generate_color_perm(A_n_rows, A_sym_row_ptr, A_sym_col, lvl);
@@ -531,7 +583,8 @@ void Utils::generate_perm(int A_n_rows, IT *A_row_ptr, IT *A_col, int *perm,
         // Throwing errors in lib is not nice.
         // TODO: think of a way to tell user that the wrong type is
         // used.
-        UtilsErrorHandler::perm_type_dne(type, "BFS, RS, SC, PC, PC_BAL, NONE");
+        UtilsErrorHandler::perm_type_dne(
+            type, "BFS, BFS_BW, RS, SC, PC, PC_BAL, NONE");
     }
 
     // Step 3: Compute permuation - if necessary

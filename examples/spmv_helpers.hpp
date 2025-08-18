@@ -68,18 +68,19 @@ template <typename IT> class SpMVParser : public CliParser {
         IT _wpad = 2;
         bool _use_cm = false;
         std::string _ck = "";
+        std::string _out = "";
     };
 
     SpMVArgs *parse(int argc, char *argv[]) override {
         if (argc < 2) {
-            std::cerr
-                << "Usage: " << argv[0] << " <matrix_file.mtx>"
-                << "<-c : [uint]> chunk size for SCS format\n"
-                << "<-s : [uint]> reordering scope for SCS format\n"
-                << "<-hpad : [uint]> padded height for BCRS format\n"
-                << "<-wpad : [uint]> padded width for BCRS format\n"
-                << "<-cm : [0/1]> use blocked column major BCRS format\n"
-                << "<-ck : [str: 'tpr', 'nws', 'nwg'] BCRS kernel type>\n";
+            std::cerr << "Usage: " << argv[0] << " <matrix_file.mtx>"
+                      << "<-c : [uint]> chunk size for SCS format\n"
+                      << "<-s : [uint]> reordering scope for SCS format\n"
+                      << "<-hpad : [uint]> padded height for BCRS format\n"
+                      << "<-wpad : [uint]> padded width for BCRS format\n"
+                      << "<-cm : [0/1]> use blocked column major BCRS format\n"
+                      << "<-ck : [str: 'tpr', 'nws', 'nwg'] BCRS kernel type>\n"
+                      << "<-o : [str] output file name>\n";
             std::exit(EXIT_FAILURE);
         }
 
@@ -108,6 +109,8 @@ template <typename IT> class SpMVParser : public CliParser {
                     std::cout << "Unknown argument " << arg << std::endl;
                     exit(EXIT_FAILURE);
                 }
+            } else if (arg == "-o") {
+                spmv_args->_out = std::string(argv[++i]);
             } else {
                 std::cout << "Unknown argument " << arg << std::endl;
                 exit(EXIT_FAILURE);
