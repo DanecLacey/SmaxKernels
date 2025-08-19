@@ -31,6 +31,28 @@ else()
     endif()
 endif()
 
+# If the lib is built with HIP, the examples must also be
+if(SMAX_HIP_MODE_EXPORT) # Detected from smax lib
+    set(ROCM_ROOT "/opt/rocm" CACHE PATH "Root directory of the ROCm installation")
+    list(APPEND CMAKE_PREFIX_PATH "${ROCM_ROOT}")
+    
+    find_package(hip REQUIRED)
+    if(hip_FOUND)
+        enable_language(HIP)
+        add_compile_definitions(HIP_MODE)
+        message(STATUS "HIP found, enabling HIP support in examples.")
+    else()
+        message(FATAL_ERROR "HIP requested but not found, even though SMAX_HIP_MODE_EXPORT=${SMAX_HIP_MODE_EXPORT}.")
+    endif()
+else()
+    # The examples cannot be built with HIP if the lib was not
+    find_package(hip QUIET)
+    if (hip_FOUND)
+        message(WARNING "HIP found, but SMAX_HIP_MODE_EXPORT=${SMAX_HIP_MODE_EXPORT}.
+        Building only CPU examples.")
+    endif()
+endif()
+
 # Set default build type if not defined
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
@@ -67,6 +89,10 @@ if (SMAX_CUDA_MODE_EXPORT)
     message(STATUS "CUDA Compiler ID: ${CMAKE_CUDA_COMPILER_ID}")
     message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
 endif()
+if (SMAX_HIP_MODE_EXPORT)
+    message(STATUS "HIP Compiler ID: ${CMAKE_HIP_COMPILER_ID}")
+    message(STATUS "HIP Compiler Version: ${CMAKE_HIP_COMPILER_VERSION}")
+endif()
 
 # Compiler-specific flags
 # GPU builds
@@ -82,6 +108,18 @@ if(SMAX_CUDA_MODE_EXPORT)
     else()
         message(FATAL_ERROR "No supported GPU compiler found, even though SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.")
     endif()
+endif()
+
+if(SMAX_HIP_MODE_EXPORT)
+    add_compile_definitions(__HIP_PLATFORM_NVIDIA__)
+    string(TOUPPER "${CMAKE_HIP_COMPILER_ID}" HIP_COMPILER_ID) # Normalize compiler ID for consistent matching
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -O3")
+    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g")
+    endif()
+    message(STATUS "HIP compiler flags set to ${CMAKE_HIP_FLAGS}")
 endif()
 
 # CPU builds (default)
