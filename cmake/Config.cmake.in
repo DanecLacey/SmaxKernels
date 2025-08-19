@@ -5,9 +5,14 @@ include("${CMAKE_CURRENT_LIST_DIR}/SmaxKernelsTargets.cmake")
 # Expose variables to consumers
 set(SMAX_CUDA_MODE_EXPORT @SMAX_CUDA_MODE@)
 set(SMAX_LIKWID_MODE_EXPORT @SMAX_LIKWID_MODE@)
+set(SMAX_RACE_MODE_EXPORT @SMAX_RACE_MODE@)
 
-# Optionally, you can add some messages or usage notes here
-message(STATUS "SmaxKernels found with SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT} and SMAX_LIKWID_MODE_EXPORT=${SMAX_LIKWID_MODE_EXPORT}")
+message(STATUS
+    "SmaxKernels found with configuration:\n"
+    "  SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}\n"
+    "  SMAX_LIKWID_MODE_EXPORT=${SMAX_LIKWID_MODE_EXPORT}\n"
+    "  SMAX_RACE_MODE_EXPORT=${SMAX_RACE_MODE_EXPORT}"
+)
 
 # Locate the target library in the install prefix
 include("${CMAKE_CURRENT_LIST_DIR}/SmaxKernelsTargets.cmake")

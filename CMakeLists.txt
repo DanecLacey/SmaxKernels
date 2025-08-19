@@ -246,8 +246,10 @@ if(USE_RACE)
 
     message(STATUS "RACE_INCLUDE_DIRS = ${RACE_INCLUDE_DIRS}")
     message(STATUS "RACE_LIBRARIES    = ${RACE_LIBRARIES}")
+    set(SMAX_RACE_MODE 1)
 else()
     message(STATUS "RACE support is disabled.")
+    set(SMAX_RACE_MODE 0)
 endif()
 
 set(CXX_DEBUG_BASE_FLAGS "-g -O0 -Wall -Wextra -fno-omit-frame-pointer")
@@ -284,6 +286,7 @@ target_compile_definitions(${LIBRARY_NAME} PUBLIC
     SMAX_LIKWID_MODE=${SMAX_LIKWID_MODE}
     SMAX_CUDA_MODE=${SMAX_CUDA_MODE}
     SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
+    SMAX_RACE_MODE=${SMAX_RACE_MODE}
 )
 
 # Configure and generate a configuration header
