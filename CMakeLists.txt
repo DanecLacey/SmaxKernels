@@ -261,6 +261,10 @@ target_compile_definitions(${LIBRARY_NAME} PUBLIC
     SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
 )
 
+if(USE_HIP)
+    target_include_directories(${LIBRARY_NAME} PUBLIC ${ROCM_ROOT})
+endif()
+
 # Configure and generate a configuration header
 set(SMAX_CONFIG_IN ${CMAKE_CURRENT_SOURCE_DIR}/cmake/smax_config.hpp.in)
 set(SMAX_CONFIG_OUT ${CMAKE_CURRENT_BINARY_DIR}/include/smax_config.hpp)
