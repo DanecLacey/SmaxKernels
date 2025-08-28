@@ -1,6 +1,8 @@
 #pragma once
 
-#include <cuda_runtime_api.h>
+#ifdef SMAX_GPU_MODE
+#include <SmaxKernels/platforms/gpu/gpu_manager.hpp>
+#endif
 #include <cusparse.h>
 #include <memory>
 

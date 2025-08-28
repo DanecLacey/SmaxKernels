@@ -14,8 +14,8 @@
 #include <omp.h>
 #endif
 
-#ifdef CUDA_MODE
-#include <cuda_runtime.h>
+#ifdef SMAX_GPU_MODE
+#include <SmaxKernels/platforms/gpu/gpu_manager.hpp>
 #endif
 
 #define MIN_BENCH_TIME 3.0
@@ -129,7 +129,7 @@ class BenchHarnessCPU : public BenchHarness {
 };
 
 class BenchHarnessCUDA : public BenchHarness {
-#ifdef CUDA_MODE
+#ifdef SMAX_GPU_MODE
     cudaEvent_t start_ev, stop_ev;
 
   public:
@@ -191,7 +191,7 @@ void init_pin() {
     }
 }
 
-#ifdef CUDA_MODE
+#ifdef SMAX_GPU_MODE
 using harness_type = BenchHarnessCUDA;
 #else
 using harness_type = BenchHarnessCPU;

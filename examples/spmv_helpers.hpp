@@ -25,7 +25,7 @@
     smax->kernel(kernel_name)->register_B(mat->n_cols, X->val);                \
     smax->kernel(kernel_name)->register_C(mat->n_rows, Y->val);
 
-#ifdef CUDA_MODE
+#ifdef SMAX_GPU_MODE
 #define PRINT_SPMV_BENCH                                                       \
     std::cout << "----------------" << std::endl;                              \
     std::cout << "--" << bench_name << " Bench--" << std::endl;                \

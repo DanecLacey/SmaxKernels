@@ -21,13 +21,13 @@
  * - __HIPCC__: AMD HIP backend
  * - __CUDACC__: NVIDIA CUDA backend
  */
-#if SMAX_HIP_MODE
+#if SMAX_GPU_HIP_MODE
 /** @brief Backend identifier for HIP */
 #define BACKEND hip
 /** @brief Human-readable backend string for HIP */
 #define BACKENDSTR "HIP"
 #include <hip/hip_runtime.h>
-#elif SMAX_CUDA_MODE
+#elif SMAX_GPU_CUDA_MODE
 /** @brief Backend identifier for CUDA */
 #define BACKEND cuda
 /** @brief Human-readable backend string for CUDA */
@@ -35,7 +35,7 @@
 #include <cuda_runtime.h>
 
 #else
-#error "Please define either SMAX_CUDA_MODE or SMAX_HIP_MODE"
+#error "Please define either SMAX_GPU_CUDA_MODE or SMAX_GPU_HIP_MODE"
 #endif
 
 /**

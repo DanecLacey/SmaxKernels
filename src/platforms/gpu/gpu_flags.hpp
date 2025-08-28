@@ -29,7 +29,7 @@ enum class event_record_flags : unsigned int {
 };
 
 enum class event_wait_flags : unsigned int {
-#if SMAX_CUDA_MODE
+#if SMAX_GPU_CUDA_MODE
     default_flag = GPU_BACKEND(EventWaitDefault),
     external_flag = GPU_BACKEND(EventWaitExternal)
 #else

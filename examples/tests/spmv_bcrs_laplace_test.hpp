@@ -110,7 +110,7 @@ void test_blocked_conversion(CRSMatrix<int, double> *A_crs, bool column_major,
     compare_arrays(y, y_expected, A_bcrs->n_rows * A_bcrs->b_h_pad, "spmv_y");
 
     // register cuda kernel and compare, if available
-#if SMAX_CUDA_MODE
+#if SMAX_GPU_MODE
     smax->register_kernel("my_spmv_cuda", SMAX::KernelType::SPMV,
                           SMAX::PlatformType::CUDA);
     smax->kernel("my_spmv_cuda")->set_mat_bcrs(true);

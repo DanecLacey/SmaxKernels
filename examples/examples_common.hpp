@@ -18,8 +18,8 @@
 #include <omp.h>
 #endif
 
-#ifdef __CUDACC__
-#include <cuda_runtime.h>
+#ifdef SMAX_GPU_MODE
+#include "SmaxKernels/platforms/gpu/gpu_manager.hpp"
 #endif
 
 #define PRINT_WIDTH 18
