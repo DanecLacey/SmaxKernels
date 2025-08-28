@@ -313,7 +313,7 @@ if(USE_HIP)
     # Find and link HIP runtime
     find_package(hip REQUIRED)
     if(hip_FOUND)
-        target_link_libraries(${LIBRARY_NAME} PUBLIC hip::host)
+        #target_link_libraries(${LIBRARY_NAME} PUBLIC hip::host)
         target_include_directories(${LIBRARY_NAME} PUBLIC ${ROCM_ROOT})
         target_include_directories(${LIBRARY_NAME} PUBLIC ${ROCM_ROOT}/include)
         message(STATUS "Linking HIP runtime to ${LIBRARY_NAME}")

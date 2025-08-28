@@ -48,6 +48,12 @@ foreach(src ${CPP_FILES})
 
     # Link against common libraries (HIP runtime will be propagated through SMAX::smaxkernels)
     target_link_libraries(${exec_name} PRIVATE SMAX::smaxkernels)
+    
+    # If using HIP with NVIDIA backend, link against CUDA runtime
+    if(SMAX_HIP_MODE_EXPORT AND DEFINED HIP_PLATFORM AND HIP_PLATFORM STREQUAL "nvidia")
+        find_package(CUDAToolkit REQUIRED)
+        target_link_libraries(${exec_name} PRIVATE CUDA::cudart)
+    endif()
 
     # Add to the list of targets
     list(APPEND demo_targets ${exec_name})

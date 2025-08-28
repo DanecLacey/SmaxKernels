@@ -4,6 +4,11 @@
 #include "error_handler.hpp"
 #include "macros.hpp"
 #include "stopwatch.hpp"
+
+#if defined(SMAX_CUDA_MODE) || defined(SMAX_HIP_MODE)
+#include "./platforms/gpu/gpu_manager.hpp"
+#endif
+
 // clang-format on
 
 namespace SMAX {
