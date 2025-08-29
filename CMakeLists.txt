@@ -13,18 +13,43 @@ set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Optional: restrict required version
-option(USE_CUDA "Enable CUDA support" OFF)
-if(USE_CUDA)
-    enable_language(CUDA)
-    unset(CMAKE_CUDA_ARCHITECTURES CACHE)
-    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now
-    endif()
-    find_package(CUDAToolkit REQUIRED)
-    if(NOT CUDAToolkit_FOUND)
-        message(FATAL_ERROR "CUDAToolkit not found, even though USE_CUDA=ON.")
-    endif()
+set(USE_GPU "OFF" CACHE STRING "Choose GPU backend: OFF, CUDA, HIP")
+set_property(CACHE USE_GPU PROPERTY STRINGS "OFF" "CUDA" "HIP")
+
+# Enable GPU language if specified
+if(NOT ("${USE_GPU}" STREQUAL "OFF"))
+    enable_language(${USE_GPU})
 endif()
+
+macro(setup_gpu_backend backend arches package)
+    # optional hint(s) are in ARGN
+    unset(CMAKE_${backend}_ARCHITECTURES CACHE)
+    if(NOT DEFINED CMAKE_${backend}_ARCHITECTURES)
+        set(CMAKE_${backend}_ARCHITECTURES ${arches})
+    endif()
+    find_package(${package} REQUIRED ${ARGN})
+    if(NOT ${package}_FOUND)
+        message(FATAL_ERROR "${package} not found for USE_GPU=${backend}.")
+    endif()
+endmacro()
+
+# CUDA / HIP(nvidia)
+if("${USE_GPU}" STREQUAL "CUDA" OR ("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia"))
+    setup_gpu_backend(${USE_GPU} "80;86" CUDAToolkit)
+endif()
+
+# HIP(amd) with a hint path
+if("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "amd")
+    if(NOT DEFINED ENV{HIP_PATH})
+        message(STATUS "HIP_PATH env var not defined, using /opt/rocm")
+        set(HIP_INSTALL_PATH /opt/rocm)
+    else()
+        message(STATUS "HIP_PATH env var defined, using $ENV{HIP_PATH}")
+        set(HIP_INSTALL_PATH $ENV{HIP_PATH})
+    endif()
+    setup_gpu_backend(${USE_GPU} "gfx942" HIP HINTS ${HIP_INSTALL_PATH})
+endif()
+
 
 # List of source files for building the library
 set(SOURCES
@@ -75,7 +100,7 @@ set(CPU_HEADER_DIRS
 
 set(CUDA_HEADER_DIRS
     src/kernels/spmv/spmv_cuda/
-    src/platforms/cuda
+    src/platforms/gpu/
 )
 
 set(COMMON_HEADER_DIRS
@@ -117,9 +142,9 @@ endif()
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
-if(CUDAToolkit_FOUND)
-    message(STATUS "CUDA Compiler ID: ${CMAKE_CUDA_COMPILER_ID}")
-    message(STATUS "CUDA Compiler Version: ${CMAKE_CUDA_COMPILER_VERSION}")
+if(USE_GPU)
+    message(STATUS "${USE_GPU} Compiler ID: ${CMAKE_${USE_GPU}_COMPILER_ID}")
+    message(STATUS "${USE_GPU} Compiler Version: ${CMAKE_${USE_GPU}_COMPILER_VERSION}")
 endif()
 
 # Normalize compiler ID string to uppercase
@@ -130,42 +155,51 @@ string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID)
 set(HEADERS ${COMMON_HEADERS} ${KERNEL_HEADERS})
 set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 
+
+set(SMAX_GPU_MODE 0)
+set(SMAX_GPU_CUDA_MODE 0)
+set(SMAX_GPU_HIP_MODE 0)
+
 # GPU builds
-if(USE_CUDA)
-    if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
-        set(SMAX_CUDA_MODE 1) # All checks pass, and we can use CUDA kernels!
-        set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
-        # Set CUDA flags based on build type
-        if(CMAKE_BUILD_TYPE STREQUAL "Release")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 ")
-        elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G -g")
-        endif()
-
-        # Include CUDA headers
-        list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
-
-        # Set CUDA threads-per-block if not already defined
-        if(NOT DEFINED CUDA_TPB)
-        set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
-        endif()
-        add_compile_definitions(CUDA_TPB=${CUDA_TPB})
-        message(STATUS "CUDA Threads per Block: ${CUDA_TPB}")
-        message(STATUS "CUDA Architecture set to ${CMAKE_CUDA_ARCHITECTURES}")
-        message(STATUS "CUDA compiler flags set to ${CMAKE_CUDA_FLAGS} ")
-
-        # Add CUDA source file
-        list(APPEND SOURCES
-            src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
-            src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cu
-            src/kernels/spmv/spmv_cuda/spmv_cuda_bcrs_impl.cu
-        )
-    else()
-        message(FATAL_ERROR "No supported GPU compiler found, even though USE_CUDA=ON.")
+if(NOT "${USE_GPU}" STREQUAL "OFF")
+    set(SMAX_GPU_MODE 1)
+    # Set GPU flags based on build type
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(CMAKE_${USE_GPU}_FLAGS "${CMAKE_${USE_GPU}_FLAGS} -O3 ")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(CMAKE_${USE_GPU}_FLAGS "${CMAKE_${USE_GPU}_FLAGS} -G -g")
     endif()
-else()
-    set(SMAX_CUDA_MODE 0)
+    # Include GPU headers
+    list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
+
+    # Set CUDA threads-per-block if not already defined
+    if(NOT DEFINED CUDA_TPB)
+        set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
+    endif()
+    add_compile_definitions(CUDA_TPB=${CUDA_TPB})
+    message(STATUS "GPU Threads per Block: ${CUDA_TPB}")
+    message(STATUS "GPU Architecture set to ${CMAKE_${USE_GPU}_ARCHITECTURES}")
+    message(STATUS "GPU compiler flags set to ${CMAKE_${USE_GPU}_FLAGS} ")
+    # Add CUDA source file
+    set(GPU_SOURCES
+        src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
+        src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cu
+        src/kernels/spmv/spmv_cuda/spmv_cuda_bcrs_impl.cu
+    )
+    set_source_files_properties(${GPU_SOURCES} PROPERTIES LANGUAGE ${USE_GPU})
+    list(APPEND SOURCES ${GPU_SOURCES} )
+
+    # CUDA / HIP(nvidia)
+    if("${USE_GPU}" STREQUAL "CUDA" OR ("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia"))
+        set(SMAX_GPU_CUDA_MODE 1) # All checks pass, and we can use CUDA!
+    elseif("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "AMD")
+        set(SMAX_GPU_HIP_MODE 1) # All checks pass, and we can use HIP!
+    else()
+        message(FATAL_ERROR "No supported GPU compiler found, even though USE_GPU=CUDA/HIP.")
+    endif()
 endif()
+
 
 # Build configuration options
 option(USE_TIMERS "Enable Timers support" ON)
@@ -284,7 +318,9 @@ message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
 # For public use
 target_compile_definitions(${LIBRARY_NAME} PUBLIC
     SMAX_LIKWID_MODE=${SMAX_LIKWID_MODE}
-    SMAX_CUDA_MODE=${SMAX_CUDA_MODE}
+    SMAX_GPU_MODE=${SMAX_GPU_MODE}
+    SMAX_GPU_CUDA_MODE=${SMAX_GPU_CUDA_MODE}
+    SMAX_GPU_HIP_MODE=${SMAX_GPU_HIP_MODE}
     SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
     SMAX_RACE_MODE=${SMAX_RACE_MODE}
 )
@@ -316,21 +352,27 @@ target_include_directories(${LIBRARY_NAME}
     $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 
+if(NOT "${USE_GPU}" STREQUAL "OFF")
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC CUDA_TPB=${CUDA_TPB})
+endif()
 
-if(CUDAToolkit_FOUND)
-    # This tells the host compiler where to find CUDA headers
+
+if("${USE_GPU}" STREQUAL "CUDA" OR ("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia"))    # This tells the host compiler where to find CUDA headers
     target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 
     # Propagate to users
-    target_compile_definitions(${LIBRARY_NAME} PUBLIC CUDA_TPB=${CUDA_TPB})
     target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDA_INCLUDE_DIRS})
     target_link_libraries(${LIBRARY_NAME} PUBLIC CUDA::cudart)
 
+    ##### being handled in line 185
     # Mark .cu files as CUDA language explicitly (optional but safe)
-    set_source_files_properties(
-        src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
-        PROPERTIES LANGUAGE CUDA
-    )
+    # set_source_files_properties(
+    #     src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
+    #     PROPERTIES LANGUAGE CUDA
+    # )
+elseif("${USE_GPU}" STREQUAL "HIP" )
+    target_include_directories(${LIBRARY_NAME} PUBLIC ${HIP_INCLUDE_DIRS})
+    target_link_libraries(${LIBRARY_NAME} PUBLIC hip::host)
 endif()
 
 # Set default install paths (lib, include, etc.)

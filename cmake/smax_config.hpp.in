@@ -7,5 +7,7 @@
 /* This is replaced by configure_file() */
 #define SMAX_LIKWID_MODE @SMAX_LIKWID_MODE@
 #define SMAX_DEBUG_MODE @SMAX_DEBUG_MODE@
-#define SMAX_CUDA_MODE @SMAX_CUDA_MODE@
+#define SMAX_GPU_MODE @SMAX_GPU_MODE@
+#define SMAX_GPU_CUDA_MODE @SMAX_GPU_CUDA_MODE@
+#define SMAX_GPU_HIP_MODE @SMAX_GPU_HIP_MODE@
 // clang-format on

@@ -2,7 +2,7 @@
 
 #include "../../common.hpp"
 #if SMAX_GPU_MODE
-#include "SmaxKernels/platforms/gpu/gpu_manager.hpp"
+#include "../../platforms/gpu/gpu_manager.hpp"
 #endif
 
 namespace SMAX::KERNELS::SPMV {
