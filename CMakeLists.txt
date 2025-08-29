@@ -57,6 +57,7 @@ macro(setup_hip_package)
         set(HIP_INSTALL_PATH $ENV{HIP_PATH})
     endif()
     setup_gpu_package(HIP HINTS ${HIP_INSTALL_PATH})
+    message(STATUS "HIP platform is ${CMAKE_HIP_PLATFORM}")
 endmacro()
 
 
@@ -65,17 +66,15 @@ if(USE_GPU STREQUAL "CUDA")
     setup_gpu_arch(CUDA "80;86")
     setup_gpu_package(CUDAToolkit)
 elseif(USE_GPU STREQUAL "HIP")
-    # CPU only
-    set(SMAX_GPU_MODE 0)
-    if(USE_GPU STREQUAL "HIP" AND CMAKE_HIP_PLATFORM STREQUAL "nvidia")
+    if(CMAKE_HIP_PLATFORM STREQUAL "nvidia")
         # HIP targeting NVIDIA
         setup_gpu_arch(HIP "80;86")
         setup_gpu_package(CUDAToolkit)
-    elseif(USE_GPU STREQUAL "HIP" AND CMAKE_HIP_PLATFORM STREQUAL "amd")
+    elseif(CMAKE_HIP_PLATFORM STREQUAL "amd")
         # HIP targeting AMD
         setup_gpu_arch(HIP "gfx942")
     endif()
-    setup_hip_package()
+setup_hip_package()
 endif()
 
 
@@ -209,9 +208,9 @@ if(NOT "${USE_GPU}" STREQUAL "OFF")
     message(STATUS "GPU compiler flags set to ${CMAKE_${USE_GPU}_FLAGS} ")
     # Add CUDA source file
     set(GPU_SOURCES
-        src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
-        src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cu
-        src/kernels/spmv/spmv_cuda/spmv_cuda_bcrs_impl.cu
+        src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cpp
+        src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cpp
+        src/kernels/spmv/spmv_cuda/spmv_cuda_bcrs_impl.cpp
     )
     set_source_files_properties(${GPU_SOURCES} PROPERTIES LANGUAGE ${USE_GPU})
     list(APPEND SOURCES ${GPU_SOURCES} )
@@ -332,15 +331,6 @@ endif()
 
 message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
 
-message(
-        SMAX_LIKWID_MODE=${SMAX_LIKWID_MODE}
-    SMAX_GPU_MODE=${SMAX_GPU_MODE}
-    SMAX_GPU_CUDA_MODE=${SMAX_GPU_CUDA_MODE}
-    SMAX_GPU_HIP_MODE=${SMAX_GPU_HIP_MODE}
-    SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
-    SMAX_RACE_MODE=${SMAX_RACE_MODE}
-)
-
 # For public use
 target_compile_definitions(${LIBRARY_NAME} PUBLIC
     SMAX_LIKWID_MODE=${SMAX_LIKWID_MODE}
@@ -382,24 +372,27 @@ if(NOT "${USE_GPU}" STREQUAL "OFF")
     target_compile_definitions(${LIBRARY_NAME} PUBLIC CUDA_TPB=${CUDA_TPB})
 endif()
 
+if(USE_GPU STREQUAL "HIP")
+    target_include_directories(${LIBRARY_NAME} PUBLIC ${HIP_INCLUDE_DIRS})
 
-if("${USE_GPU}" STREQUAL "CUDA" OR ("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia"))    # This tells the host compiler where to find CUDA headers
+    # BAD WORK AROUND BUT WORKS FOR NOW
+    if(CMAKE_HIP_PLATFORM STREQUAL "nvidia")
+        target_compile_definitions(${LIBRARY_NAME} PUBLIC __HIP_PLATFORM_NVIDIA__)
+    elseif(CMAKE_HIP_PLATFORM STREQUAL "amd")
+        target_compile_definitions(${LIBRARY_NAME} PUBLIC __HIP_PLATFORM_AMD__)
+    endif()
+endif()
+
+
+if("${USE_GPU}" STREQUAL "CUDA" OR "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia")    # This tells the host compiler where to find CUDA headers
     target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 
     # Propagate to users
     target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDA_INCLUDE_DIRS})
     target_link_libraries(${LIBRARY_NAME} PUBLIC CUDA::cudart)
-
-    ##### being handled in line 185
-    # Mark .cu files as CUDA language explicitly (optional but safe)
-    # set_source_files_properties(
-    #     src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cu
-    #     PROPERTIES LANGUAGE CUDA
-    # )
-elseif("${USE_GPU}" STREQUAL "HIP" )
-    target_include_directories(${LIBRARY_NAME} PUBLIC ${HIP_INCLUDE_DIRS})
-    target_link_libraries(${LIBRARY_NAME} PUBLIC hip::host)
 endif()
+
+
 
 # Set default install paths (lib, include, etc.)
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
