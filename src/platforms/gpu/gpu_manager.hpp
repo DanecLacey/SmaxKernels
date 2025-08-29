@@ -2,8 +2,8 @@
 #define GPU_MANAGER_HPP
 #pragma once
 
-// #include "../../macros.hpp"
-// #include "../../memory_utils.hpp"
+#include "../../macros.hpp"
+#include "../../memory_utils.hpp"
 
 #include "gpu_backend.hpp"
 #include "gpu_error_handler.hpp"

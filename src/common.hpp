@@ -4,6 +4,11 @@
 #include "error_handler.hpp"
 #include "macros.hpp"
 #include "stopwatch.hpp"
+
+#if _OPENMP 
+#include <omp.h>
+#endif
+
 // clang-format on
 
 namespace SMAX {

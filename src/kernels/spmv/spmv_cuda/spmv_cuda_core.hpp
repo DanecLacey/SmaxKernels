@@ -1,10 +1,10 @@
 #pragma once
 
 #include "../../../common.hpp"
-#include "../../../platforms/cuda/cuda.cuh"
-#include "spmv_cuda_bcrs_impl.cuh"
-#include "spmv_cuda_crs_impl.cuh"
-#include "spmv_cuda_scs_impl.cuh"
+#include "../../../platforms/gpu/gpu_manager.hpp"
+#include "spmv_cuda_bcrs_impl.hpp"
+#include "spmv_cuda_crs_impl.hpp"
+#include "spmv_cuda_scs_impl.hpp"
 
 namespace SMAX::KERNELS::SPMV::CUDA {
 

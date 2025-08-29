@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <variant>
 #include <vector>
+#include <stdexcept>
 
 namespace SMAX {
 

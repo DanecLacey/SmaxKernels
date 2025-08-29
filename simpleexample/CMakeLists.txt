@@ -12,6 +12,13 @@ find_package(SmaxKernels REQUIRED)
 # Set C++ standard version
 set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+enable_language(CUDA)
+
+find_package(OpenMP)
+find_package(CUDAToolkit)
+
+set_source_files_properties(main.cpp PROPERTIES LANGUAGE CUDA)
+set(CMAKE_CUDA_ARCHITECTURES 80)
 
 add_executable(main main.cpp)
-target_link_libraries(main )
+target_link_libraries(main PUBLIC SMAX::smaxkernels)

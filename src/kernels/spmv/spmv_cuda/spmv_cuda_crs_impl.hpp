@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../platforms/gpu/gpu_manager.hpp"
+#include "../../../platforms/gpu/gpu_manager.hpp"
 
 #include <stdint.h>
 #include <stdio.h>

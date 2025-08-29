@@ -1,4 +1,4 @@
-#include "spmv_cuda_bcrs_impl.cuh"
+#include "spmv_cuda_bcrs_impl.hpp"
 
 namespace SMAX::KERNELS::SPMV::CUDA {
 
