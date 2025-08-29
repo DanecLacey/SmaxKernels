@@ -16,30 +16,39 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(USE_GPU "OFF" CACHE STRING "Choose GPU backend: OFF, CUDA, HIP")
 set_property(CACHE USE_GPU PROPERTY STRINGS "OFF" "CUDA" "HIP")
 
+set(SMAX_GPU_MODE 0)
+set(SMAX_GPU_CUDA_MODE 0)
+set(SMAX_GPU_HIP_MODE 0)
+
 # Enable GPU language if specified
 if(NOT ("${USE_GPU}" STREQUAL "OFF"))
-    enable_language(${USE_GPU})
+    include(CheckLanguage)
+    check_language(${USE_GPU})
+     if(CMAKE_${USE_GPU}_COMPILER)
+        enable_language(${USE_GPU})
+    else()
+        message(FATAL_ERROR "No ${USE_GPU} compiler found, but USE_GPU=${USE_GPU}")
+    endif()
+    set(SMAX_GPU_MODE 1)
 endif()
 
-macro(setup_gpu_backend backend arches package)
-    # optional hint(s) are in ARGN
+macro(setup_gpu_arch backend arches)
+    set(SMAX_GPU_${backend}_MODE 1)
     unset(CMAKE_${backend}_ARCHITECTURES CACHE)
     if(NOT DEFINED CMAKE_${backend}_ARCHITECTURES)
         set(CMAKE_${backend}_ARCHITECTURES ${arches})
     endif()
+endmacro()
+
+macro(setup_gpu_package package)
+    # optional hint(s) are in ARGN
     find_package(${package} REQUIRED ${ARGN})
     if(NOT ${package}_FOUND)
         message(FATAL_ERROR "${package} not found for USE_GPU=${backend}.")
     endif()
 endmacro()
 
-# CUDA / HIP(nvidia)
-if("${USE_GPU}" STREQUAL "CUDA" OR ("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia"))
-    setup_gpu_backend(${USE_GPU} "80;86" CUDAToolkit)
-endif()
-
-# HIP(amd) with a hint path
-if("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "amd")
+macro(setup_hip_package)
     if(NOT DEFINED ENV{HIP_PATH})
         message(STATUS "HIP_PATH env var not defined, using /opt/rocm")
         set(HIP_INSTALL_PATH /opt/rocm)
@@ -47,7 +56,26 @@ if("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "amd")
         message(STATUS "HIP_PATH env var defined, using $ENV{HIP_PATH}")
         set(HIP_INSTALL_PATH $ENV{HIP_PATH})
     endif()
-    setup_gpu_backend(${USE_GPU} "gfx942" HIP HINTS ${HIP_INSTALL_PATH})
+    setup_gpu_package(HIP HINTS ${HIP_INSTALL_PATH})
+endmacro()
+
+
+if(USE_GPU STREQUAL "CUDA")
+    # CUDA backend
+    setup_gpu_arch(CUDA "80;86")
+    setup_gpu_package(CUDAToolkit)
+elseif(USE_GPU STREQUAL "HIP")
+    # CPU only
+    set(SMAX_GPU_MODE 0)
+    if(USE_GPU STREQUAL "HIP" AND CMAKE_HIP_PLATFORM STREQUAL "nvidia")
+        # HIP targeting NVIDIA
+        setup_gpu_arch(HIP "80;86")
+        setup_gpu_package(CUDAToolkit)
+    elseif(USE_GPU STREQUAL "HIP" AND CMAKE_HIP_PLATFORM STREQUAL "amd")
+        # HIP targeting AMD
+        setup_gpu_arch(HIP "gfx942")
+    endif()
+    setup_hip_package()
 endif()
 
 
@@ -156,9 +184,7 @@ set(HEADERS ${COMMON_HEADERS} ${KERNEL_HEADERS})
 set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 
 
-set(SMAX_GPU_MODE 0)
-set(SMAX_GPU_CUDA_MODE 0)
-set(SMAX_GPU_HIP_MODE 0)
+
 
 # GPU builds
 if(NOT "${USE_GPU}" STREQUAL "OFF")
@@ -189,15 +215,6 @@ if(NOT "${USE_GPU}" STREQUAL "OFF")
     )
     set_source_files_properties(${GPU_SOURCES} PROPERTIES LANGUAGE ${USE_GPU})
     list(APPEND SOURCES ${GPU_SOURCES} )
-
-    # CUDA / HIP(nvidia)
-    if("${USE_GPU}" STREQUAL "CUDA" OR ("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia"))
-        set(SMAX_GPU_CUDA_MODE 1) # All checks pass, and we can use CUDA!
-    elseif("${USE_GPU}" STREQUAL "HIP" AND "${CMAKE_HIP_PLATFORM}" STREQUAL "AMD")
-        set(SMAX_GPU_HIP_MODE 1) # All checks pass, and we can use HIP!
-    else()
-        message(FATAL_ERROR "No supported GPU compiler found, even though USE_GPU=CUDA/HIP.")
-    endif()
 endif()
 
 
@@ -223,7 +240,7 @@ if(USE_OPENMP)
     find_package(OpenMP REQUIRED)
     if(OpenMP_CXX_FOUND)
         message(STATUS "OpenMP found, enabling OpenMP support.")
-        set(OpenMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
+        #set(OpenMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
         # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
         target_link_libraries(${LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
     else()
@@ -314,6 +331,15 @@ elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 
 message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
+
+message(
+        SMAX_LIKWID_MODE=${SMAX_LIKWID_MODE}
+    SMAX_GPU_MODE=${SMAX_GPU_MODE}
+    SMAX_GPU_CUDA_MODE=${SMAX_GPU_CUDA_MODE}
+    SMAX_GPU_HIP_MODE=${SMAX_GPU_HIP_MODE}
+    SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
+    SMAX_RACE_MODE=${SMAX_RACE_MODE}
+)
 
 # For public use
 target_compile_definitions(${LIBRARY_NAME} PUBLIC
