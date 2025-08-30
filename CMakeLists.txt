@@ -13,21 +13,22 @@ set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Optional: restrict required version
-set(USE_GPU "OFF" CACHE STRING "Choose GPU backend: OFF, CUDA, HIP")
-set_property(CACHE USE_GPU PROPERTY STRINGS "OFF" "CUDA" "HIP")
+set(USE_GPU_LANG "OFF" CACHE STRING "Choose GPU backend: OFF, CUDA, HIP")
+set_property(CACHE USE_GPU_LANG PROPERTY STRINGS "OFF" "CUDA" "HIP")
 
+set(SMAX_GPU_LANG ${USE_GPU_LANG})
 set(SMAX_GPU_MODE 0)
 set(SMAX_GPU_CUDA_MODE 0)
 set(SMAX_GPU_HIP_MODE 0)
 
 # Enable GPU language if specified
-if(NOT ("${USE_GPU}" STREQUAL "OFF"))
+if(NOT ("${SMAX_GPU_LANG}" STREQUAL "OFF"))
     include(CheckLanguage)
-    check_language(${USE_GPU})
-     if(CMAKE_${USE_GPU}_COMPILER)
-        enable_language(${USE_GPU})
+    check_language(${SMAX_GPU_LANG})
+     if(CMAKE_${SMAX_GPU_LANG}_COMPILER)
+        enable_language(${SMAX_GPU_LANG})
     else()
-        message(FATAL_ERROR "No ${USE_GPU} compiler found, but USE_GPU=${USE_GPU}")
+        message(FATAL_ERROR "No ${SMAX_GPU_LANG} compiler found, but USE_GPU_LANG=${SMAX_GPU_LANG}")
     endif()
     set(SMAX_GPU_MODE 1)
 endif()
@@ -44,7 +45,7 @@ macro(setup_gpu_package package)
     # optional hint(s) are in ARGN
     find_package(${package} REQUIRED ${ARGN})
     if(NOT ${package}_FOUND)
-        message(FATAL_ERROR "${package} not found for USE_GPU=${backend}.")
+        message(FATAL_ERROR "${package} not found for USE_GPU_LANG=${backend}.")
     endif()
 endmacro()
 
@@ -61,11 +62,11 @@ macro(setup_hip_package)
 endmacro()
 
 
-if(USE_GPU STREQUAL "CUDA")
+if(SMAX_GPU_LANG STREQUAL "CUDA")
     # CUDA backend
     setup_gpu_arch(CUDA "80;86")
     setup_gpu_package(CUDAToolkit)
-elseif(USE_GPU STREQUAL "HIP")
+elseif(SMAX_GPU_LANG STREQUAL "HIP")
     if(CMAKE_HIP_PLATFORM STREQUAL "nvidia")
         # HIP targeting NVIDIA
         setup_gpu_arch(HIP "80;86")
@@ -169,9 +170,9 @@ endif()
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
-if(USE_GPU)
-    message(STATUS "${USE_GPU} Compiler ID: ${CMAKE_${USE_GPU}_COMPILER_ID}")
-    message(STATUS "${USE_GPU} Compiler Version: ${CMAKE_${USE_GPU}_COMPILER_VERSION}")
+if(SMAX_GPU_LANG)
+    message(STATUS "${SMAX_GPU_LANG} Compiler ID: ${CMAKE_${SMAX_GPU_LANG}_COMPILER_ID}")
+    message(STATUS "${SMAX_GPU_LANG} Compiler Version: ${CMAKE_${SMAX_GPU_LANG}_COMPILER_VERSION}")
 endif()
 
 # Normalize compiler ID string to uppercase
@@ -186,13 +187,13 @@ set(HEADER_DIRS ${COMMON_HEADER_DIRS})
 
 
 # GPU builds
-if(NOT "${USE_GPU}" STREQUAL "OFF")
+if(NOT "${SMAX_GPU_LANG}" STREQUAL "OFF")
     set(SMAX_GPU_MODE 1)
     # Set GPU flags based on build type
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_${USE_GPU}_FLAGS "${CMAKE_${USE_GPU}_FLAGS} -O3 ")
+        set(CMAKE_${SMAX_GPU_LANG}_FLAGS "${CMAKE_${SMAX_GPU_LANG}_FLAGS} -O3 ")
     elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(CMAKE_${USE_GPU}_FLAGS "${CMAKE_${USE_GPU}_FLAGS} -G -g")
+        set(CMAKE_${SMAX_GPU_LANG}_FLAGS "${CMAKE_${SMAX_GPU_LANG}_FLAGS} -G -g")
     endif()
     # Include GPU headers
     list(APPEND HEADER_DIRS ${CUDA_HEADER_DIRS})
@@ -204,15 +205,15 @@ if(NOT "${USE_GPU}" STREQUAL "OFF")
     endif()
     add_compile_definitions(CUDA_TPB=${CUDA_TPB})
     message(STATUS "GPU Threads per Block: ${CUDA_TPB}")
-    message(STATUS "GPU Architecture set to ${CMAKE_${USE_GPU}_ARCHITECTURES}")
-    message(STATUS "GPU compiler flags set to ${CMAKE_${USE_GPU}_FLAGS} ")
+    message(STATUS "GPU Architecture set to ${CMAKE_${SMAX_GPU_LANG}_ARCHITECTURES}")
+    message(STATUS "GPU compiler flags set to ${CMAKE_${SMAX_GPU_LANG}_FLAGS} ")
     # Add CUDA source file
     set(GPU_SOURCES
         src/kernels/spmv/spmv_cuda/spmv_cuda_crs_impl.cpp
         src/kernels/spmv/spmv_cuda/spmv_cuda_scs_impl.cpp
         src/kernels/spmv/spmv_cuda/spmv_cuda_bcrs_impl.cpp
     )
-    set_source_files_properties(${GPU_SOURCES} PROPERTIES LANGUAGE ${USE_GPU})
+    set_source_files_properties(${GPU_SOURCES} PROPERTIES LANGUAGE ${SMAX_GPU_LANG})
     list(APPEND SOURCES ${GPU_SOURCES} )
 endif()
 
@@ -235,10 +236,12 @@ else()
 endif()
 
 # Enable and configure OpenMP support
+set(SMAX_OPENMP_MODE 0)
 if(USE_OPENMP)
     find_package(OpenMP REQUIRED)
     if(OpenMP_CXX_FOUND)
         message(STATUS "OpenMP found, enabling OpenMP support.")
+        set(SMAX_OPENMP_MODE 1)
         # set(OpenMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
         # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
         target_link_libraries(${LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
@@ -340,6 +343,7 @@ target_compile_definitions(${LIBRARY_NAME} PUBLIC
     SMAX_GPU_HIP_MODE=${SMAX_GPU_HIP_MODE}
     SMAX_DEBUG_MODE=${SMAX_DEBUG_MODE}
     SMAX_RACE_MODE=${SMAX_RACE_MODE}
+    SMAX_OPENMP_MODE=${SMAX_OPENMP_MODE}
 )
 
 # Configure and generate a configuration header
@@ -369,11 +373,11 @@ target_include_directories(${LIBRARY_NAME}
     $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 
-if(NOT "${USE_GPU}" STREQUAL "OFF")
+if(NOT "${SMAX_GPU_LANG}" STREQUAL "OFF")
     target_compile_definitions(${LIBRARY_NAME} PUBLIC CUDA_TPB=${CUDA_TPB})
 endif()
 
-if(USE_GPU STREQUAL "HIP")
+if(SMAX_GPU_LANG STREQUAL "HIP")
     target_include_directories(${LIBRARY_NAME} PUBLIC ${HIP_INCLUDE_DIRS})
 
     # BAD WORK AROUND BUT WORKS FOR NOW
@@ -385,7 +389,7 @@ if(USE_GPU STREQUAL "HIP")
 endif()
 
 
-if("${USE_GPU}" STREQUAL "CUDA" OR "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia")    # This tells the host compiler where to find CUDA headers
+if("${SMAX_GPU_LANG}" STREQUAL "CUDA" OR "${CMAKE_HIP_PLATFORM}" STREQUAL "nvidia")    # This tells the host compiler where to find CUDA headers
     target_include_directories(${LIBRARY_NAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 
     # Propagate to users
