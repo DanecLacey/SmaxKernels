@@ -14,21 +14,19 @@ set(CPP_VERSION c++17 CACHE STRING "C++ version")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # If the lib is built with CUDA, the examples must also be
-if(SMAX_CUDA_MODE_EXPORT) # Detected from smax lib
-    enable_language(CUDA)
+if(NOT "${SMAX_GPU_LANG}" STREQUAL "OFF")
+    enable_language(${SMAX_GPU_LANG})
+    set_source_files_properties(main.cpp PROPERTIES LANGUAGE ${SMAX_GPU_LANG})
+endif()
+if(SMAX_GPU_CUDA_MODE_EXPORT) # Detected from smax lib
     unset(CMAKE_CUDA_ARCHITECTURES CACHE)
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 80 86) # Only NVIDIA Ampere supported for now 
     endif()
-    find_package(CUDAToolkit REQUIRED)
-    add_compile_definitions(CUDA_MODE)
-    include_directories(${CUDAToolkit_INCLUDE_DIRS}) # Why is this necessary?
-else()
-    # The examples cannot be built with CUDA if the lib was not
-    find_package(CUDAToolkit QUIET)
-    if (CUDAToolkit_FOUND)
-        message(WARNING "CUDA compiler found, but SMAX_CUDA_MODE_EXPORT=${SMAX_CUDA_MODE_EXPORT}.
-        Building only CPU examples.")
+else(SMAX_GPU_HIP_MODE_EXPORT)
+    unset(CMAKE_HIP_ARCHITECTURES CACHE)
+    if(NOT DEFINED CMAKE_HIP_ARCHITECTURES)
+        set(CMAKE_HIP_ARCHITECTURES gfx942 ) 
     endif()
 endif()
 
@@ -89,7 +87,7 @@ include(cmake/CPM.cmake)
 
 # Compiler-specific flags
 # GPU builds
-if(SMAX_CUDA_MODE_EXPORT)
+if(SMAX_GPU_CUDA_MODE_EXPORT)
     string(TOUPPER "${CMAKE_CUDA_COMPILER_ID}" GPU_COMPILER_ID) # Normalize compiler ID for consistent matching
     if(GPU_COMPILER_ID STREQUAL "NVIDIA" OR GPU_COMPILER_ID STREQUAL "NVHPC")
         set(CMAKE_POSITION_INDEPENDENT_CODE ON) # better way to handle -Xcompiler=-fPIC
@@ -142,16 +140,13 @@ endif()
 message(STATUS "CXX FLAGS USED : ${CMAKE_CXX_FLAGS}")
 
 # === OpenMP Support ===
-if(USE_OPENMP)
-    # Find OpenMP package and enable if found
-    find_package(OpenMP REQUIRED)
-    if(OpenMP_CXX_FOUND)
-        message(STATUS "OpenMP found, enabling OpenMP support.")
-        set(OpenMP_COMPILE_FLAGS "${OpenMP_CXX_FLAGS}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    else()
-        message(FATAL_ERROR "OpenMP requested but not found.")
-    endif()
+# OpenMP is automatically handled by the SmaxKernels target export
+if(USE_OPENMP AND NOT SMAX_OPENMP_MODE_EXPORT)
+    message( WARNING "USE_OPENMP=ON but SmaxKernels was built without OpenMP support (SMAX_OPENMP_MODE_EXPORT=${SMAX_OPENMP_MODE_EXPORT})")
+elseif( NOT USE_OPENMP AND SMAX_OPENMP_MODE_EXPORT)
+    message(STATUS "OpenMP support automatically enabled via SmaxKernels target export")
+elseif(USE_OPENMP AND SMAX_OPENMP_MODE_EXPORT)
+    message(STATUS "OpenMP support automatically enabled via SmaxKernels target export")
 else()
     message(STATUS "OpenMP support is disabled.")
 endif()
@@ -181,24 +176,16 @@ else()
 endif()
 
 # === LIKWID Support ===
-if (USE_LIKWID OR SMAX_LIKWID_MODE_EXPORT)
-    if (NOT USE_LIKWID)
-        message(WARNING "USE_LIKWID=OFF but SMAX_LIKWID_MODE_EXPORT=ON; enabling LIKWID support anyway.")
-    else()
-        message(STATUS "LIKWID support explicitly enabled via USE_LIKWID=ON.")
+# LIKWID is automatically handled by the SmaxKernels target export
+if(USE_LIKWID AND NOT SMAX_LIKWID_MODE_EXPORT)
+    message(WARNING "USE_LIKWID=ON but SmaxKernels was built without LIKWID support (SMAX_LIKWID_MODE_EXPORT=${SMAX_LIKWID_MODE_EXPORT})")
+elseif(SMAX_LIKWID_MODE_EXPORT)
+    message(STATUS "LIKWID support automatically enabled via SmaxKernels target export")
+    # For additional benchmarks that need direct LIKWID linking, find it here
+    find_package(likwid QUIET)
+    if(likwid_FOUND)
+        set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES} CACHE INTERNAL "Libraries for LIKWID")
     endif()
-
-    find_package(likwid REQUIRED)
-
-    if (likwid_FOUND)
-        message(STATUS "LIKWID found, enabling LIKWID support.")
-    else()
-        message(FATAL_ERROR "LIKWID requested but not found.")
-    endif()
-
-    add_compile_definitions(USE_LIKWID LIKWID_PERFMON)
-    include_directories(${LIKWID_INCLUDES})
-    set(LIKWID_LIBRARIES_TO_LINK ${LIKWID_LIBRARIES} CACHE INTERNAL "Libraries for LIKWID")
 else()
     message(STATUS "LIKWID support is disabled.")
 endif()
