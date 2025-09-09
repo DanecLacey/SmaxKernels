@@ -20,7 +20,6 @@ if(NOT "${SMAX_GPU_LANG}" STREQUAL "OFF")
     endif()
 endif()
 
-# Setup dependencies based on build configuration
 if(SMAX_OPENMP_MODE_EXPORT)
     find_package(OpenMP REQUIRED)
 endif()
@@ -35,10 +34,6 @@ elseif(SMAX_GPU_LANG STREQUAL "HIP")
         set(HIP_INSTALL_PATH $ENV{HIP_PATH})
     endif()
     find_package(HIP REQUIRED HINTS ${HIP_INSTALL_PATH})
-    
-    if(CMAKE_HIP_PLATFORM STREQUAL "nvidia")
-        find_package(CUDAToolkit REQUIRED)
-    endif()
 endif()
 
 if(SMAX_LIKWID_MODE_EXPORT)
