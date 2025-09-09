@@ -4,7 +4,7 @@ file(GLOB CPP_FILES *.cpp)
 # Create a list to store target names
 set(cusparse_benchmarks_targets)
 
-if(SMAX_CUDA_MODE_EXPORT AND CUDAToolkit_FOUND AND USE_CUSPARSE)
+if(SMAX_GPU_CUDA_MODE_EXPORT AND USE_CUSPARSE)
     foreach(src ${CPP_FILES})
         # Get the filename without the directory and extension
         get_filename_component(exec_name ${src} NAME_WE)
