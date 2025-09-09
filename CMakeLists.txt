@@ -201,7 +201,11 @@ if(NOT "${SMAX_GPU_LANG}" STREQUAL "OFF")
 
     # Set CUDA threads-per-block if not already defined
     if(NOT DEFINED CUDA_TPB)
+    if(DEFINED SMAX_GPU_HIP_MODE)
+        set(CUDA_TPB 64 CACHE STRING "CUDA Threads Per Block")
+    elseif(DEFINED SMAX_GPU_CUDA_MODE)
         set(CUDA_TPB 32 CACHE STRING "CUDA Threads Per Block")
+    endif()
     endif()
     add_compile_definitions(CUDA_TPB=${CUDA_TPB})
     message(STATUS "GPU Threads per Block: ${CUDA_TPB}")
