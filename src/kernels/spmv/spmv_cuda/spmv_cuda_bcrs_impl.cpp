@@ -161,7 +161,11 @@ __global__ void naive_bcrs_spmv_cuda_warp_per_row_by_shffl(
         for (ULL cur_cutoff = power_hint; cur_cutoff >= ULL(1);
              cur_cutoff /= ULL(2)) {
             loc_sum +=
+            #if SMAX_GPU_CUDA_MODE
                 __shfl_down_sync(0xffffffff, loc_sum, int(cur_cutoff * b_height));
+            #elif SMAX_GPU_HIP_MODE
+                __shfl_down(loc_sum, int(cur_cutoff * b_height));
+            #endif
         }
         // now correct values are inside the first b_height threads
         if (thread_idx < b_height)
