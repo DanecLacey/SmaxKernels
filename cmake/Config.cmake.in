@@ -1,8 +1,6 @@
 @PACKAGE_INIT@
 
-include("${CMAKE_CURRENT_LIST_DIR}/SmaxKernelsTargets.cmake")
-
-# Expose variables to consumers
+# Find and setup required dependencies based on configuration
 set(SMAX_GPU_LANG @SMAX_GPU_LANG@)
 set(SMAX_GPU_MODE_EXPORT @SMAX_GPU_MODE@)
 set(SMAX_GPU_CUDA_MODE_EXPORT @SMAX_GPU_CUDA_MODE@)
@@ -10,6 +8,58 @@ set(SMAX_GPU_HIP_MODE_EXPORT @SMAX_GPU_HIP_MODE@)
 set(SMAX_LIKWID_MODE_EXPORT @SMAX_LIKWID_MODE@)
 set(SMAX_RACE_MODE_EXPORT @SMAX_RACE_MODE@)
 set(SMAX_OPENMP_MODE_EXPORT @SMAX_OPENMP_MODE@)
+
+# Setup dependencies based on build configuration
+if(SMAX_OPENMP_MODE_EXPORT)
+    find_package(OpenMP REQUIRED)
+endif()
+
+if(NOT "${SMAX_GPU_LANG}" STREQUAL "OFF")
+    include(CheckLanguage)
+    check_language(${SMAX_GPU_LANG})
+    if(CMAKE_${SMAX_GPU_LANG}_COMPILER)
+        enable_language(${SMAX_GPU_LANG})
+    else()
+        message(FATAL_ERROR "No ${SMAX_GPU_LANG} compiler found for SmaxKernels")
+    endif()
+endif()
+
+if(SMAX_GPU_LANG STREQUAL "CUDA")
+    find_package(CUDAToolkit REQUIRED)
+elseif(SMAX_GPU_LANG STREQUAL "HIP")
+    if(NOT DEFINED ENV{HIP_PATH})
+        set(HIP_INSTALL_PATH /opt/rocm)
+    else()
+        set(HIP_INSTALL_PATH $ENV{HIP_PATH})
+    endif()
+    find_package(HIP REQUIRED HINTS ${HIP_INSTALL_PATH})
+    
+    if(CMAKE_HIP_PLATFORM STREQUAL "nvidia")
+        find_package(CUDAToolkit REQUIRED)
+    endif()
+endif()
+
+if(SMAX_LIKWID_MODE_EXPORT)
+    find_package(likwid REQUIRED)
+endif()
+
+if(SMAX_RACE_MODE_EXPORT)
+    find_package(RACE REQUIRED)
+    
+    # Try to find hwloc, with optional HWLOC_ROOT hint
+    if(HWLOC_ROOT)
+        list(APPEND CMAKE_PREFIX_PATH "${HWLOC_ROOT}")
+    endif()
+
+    find_package(hwloc QUIET CONFIG)
+    if(NOT hwloc_FOUND)
+        find_package(hwloc QUIET MODULE)
+    endif()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/SmaxKernelsTargets.cmake")
+
+# Expose variables to consumers
 
 message(STATUS
     "SmaxKernels found with configuration:\n"
