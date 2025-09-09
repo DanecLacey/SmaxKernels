@@ -60,7 +60,7 @@ int Interface::register_kernel(const std::string &name, KernelType kernel_type,
                                PlatformType platform, IntType int_type,
                                FloatType float_type) {
 
-#if !GPU_MODE
+#if !SMAX_GPU_MODE
     if (platform == PlatformType::CUDA)
         ErrorHandler::fatal(
             "Cannot register CUDA kernel. SMAX not built with CUDA enabled.");
