@@ -39,15 +39,15 @@
         exit(EXIT_FAILURE);                                                    \
     }
 
-#define CUDA_CHECK(cmd)                                                        \
-    do {                                                                       \
-        cudaError_t e = cmd;                                                   \
-        if (e != cudaSuccess) {                                                \
-            fprintf(stderr, "CUDA error %s:%d: %s\n", __FILE__, __LINE__,      \
-                    cudaGetErrorString(e));                                    \
-            exit(EXIT_FAILURE);                                                \
-        }                                                                      \
-    } while (0)
+// #define CUDA_CHECK(cmd)                                                        \
+//     do {                                                                       \
+//         cudaError_t e = cmd;                                                   \
+//         if (e != cudaSuccess) {                                                \
+//             fprintf(stderr, "CUDA error %s:%d: %s\n", __FILE__, __LINE__,      \
+//                     cudaGetErrorString(e));                                    \
+//             exit(EXIT_FAILURE);                                                \
+//         }                                                                      \
+//     } while (0)
 
 #ifdef DEBUG_MODE
 #define DIFF_STATUS_MACRO(relative_diff, working_file)                         \
