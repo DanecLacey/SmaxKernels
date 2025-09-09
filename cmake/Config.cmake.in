@@ -9,10 +9,6 @@ set(SMAX_LIKWID_MODE_EXPORT @SMAX_LIKWID_MODE@)
 set(SMAX_RACE_MODE_EXPORT @SMAX_RACE_MODE@)
 set(SMAX_OPENMP_MODE_EXPORT @SMAX_OPENMP_MODE@)
 
-# Setup dependencies based on build configuration
-if(SMAX_OPENMP_MODE_EXPORT)
-    find_package(OpenMP REQUIRED)
-endif()
 
 if(NOT "${SMAX_GPU_LANG}" STREQUAL "OFF")
     include(CheckLanguage)
@@ -23,6 +19,12 @@ if(NOT "${SMAX_GPU_LANG}" STREQUAL "OFF")
         message(FATAL_ERROR "No ${SMAX_GPU_LANG} compiler found for SmaxKernels")
     endif()
 endif()
+
+# Setup dependencies based on build configuration
+if(SMAX_OPENMP_MODE_EXPORT)
+    find_package(OpenMP REQUIRED)
+endif()
+
 
 if(SMAX_GPU_LANG STREQUAL "CUDA")
     find_package(CUDAToolkit REQUIRED)
