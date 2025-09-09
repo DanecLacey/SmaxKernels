@@ -9,9 +9,7 @@ namespace SMAX {
     namespace device{
         inline void synchronize(){
             GPU_SAFE_BACKEND_CALL(DeviceSynchronize, ());
-        }
-
-        
+        }        
     }
 }
 
