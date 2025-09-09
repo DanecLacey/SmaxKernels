@@ -1,4 +1,4 @@
-build/
+build*/
 tests/test1
 tests/test2
 tests/error.txt
@@ -12,3 +12,6 @@ CMakeCache.txt
 CMakeFiles/
 settings.json
 .smax_log
+.vscode/
+
+
