@@ -379,6 +379,9 @@ endif()
 
 if(SMAX_GPU_LANG STREQUAL "HIP")
     target_include_directories(${LIBRARY_NAME} PUBLIC ${HIP_INCLUDE_DIRS})
+    
+    # Link HIP as a proper target so it gets exported to consumers
+    target_link_libraries(${LIBRARY_NAME} PUBLIC hip::host)
 
     # BAD WORK AROUND BUT WORKS FOR NOW
     if(CMAKE_HIP_PLATFORM STREQUAL "nvidia")
