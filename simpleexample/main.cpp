@@ -9,6 +9,6 @@ int main(int argc, char const *argv[])
 {
     SMAX::gpu_stream str;
     my_kernel<<<2,4,0,str.get()>>>();
-    cudaDeviceSynchronize();
+    SMAX::device::synchronize();
     return 0;
 }
