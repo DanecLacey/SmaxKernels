@@ -12,6 +12,7 @@
 #include "gpu_device_manager.hpp"
 
 #include "gpu_stream_event_manager.hpp"
-#include "gpu_memory_manger.hpp"
+#include "gpu_memory_manager.hpp"
+
 
 #endif
