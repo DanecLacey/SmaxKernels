@@ -9,6 +9,8 @@
 #include "gpu_error_handler.hpp"
 #include "gpu_flags.hpp"
 
+#include "gpu_device_manager.hpp"
+
 #include "gpu_stream_event_manager.hpp"
 #include "gpu_memory_manger.hpp"
 

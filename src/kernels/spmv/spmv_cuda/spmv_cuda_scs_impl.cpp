@@ -44,13 +44,15 @@ void naive_scs_spmv_cuda_launcher(const ULL C, const ULL n_chunks,
     // clang-format on
 
     // Synchronize device to ensure kernel execution completes
-    cudaError_t err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "CUDA error in naive_scs_spmv_cuda_launcher: %s\n",
-                cudaGetErrorString(err));
-        std::exit(EXIT_FAILURE); // or throw an exception depending on your
-                                 // error model
-    }
+    SMAX::device::synchronize();
+    // Alternatively, you can use the following code to check for errors
+    // cudaError_t err = cudaDeviceSynchronize();
+    // if (err != cudaSuccess) {
+    //     fprintf(stderr, "CUDA error in naive_scs_spmv_cuda_launcher: %s\n",
+    //             cudaGetErrorString(err));
+    //     std::exit(EXIT_FAILURE); // or throw an exception depending on your
+    //                              // error model
+    // }
 }
 
 // Macro for cuda kernel instantiation

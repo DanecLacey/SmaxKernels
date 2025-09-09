@@ -242,15 +242,16 @@ void naive_bcrs_spmv_cuda_launcher(
         throw std::runtime_error("Kernel not implemented");
     }
 
-    // Synchronize device to ensure kernel execution completes
     // TODO: optionally shut off device synch ?
-    cudaError_t err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "CUDA error in naive_crs_spmv_cuda_launcher: %s\n",
-                cudaGetErrorString(err));
-        std::exit(EXIT_FAILURE); // or throw an exception depending on your
-                                 // error model
-    }
+    SMAX::device::synchronize();
+    // Synchronize device to ensure kernel execution completes
+    // cudaError_t err = cudaDeviceSynchronize();
+    // if (err != cudaSuccess) {
+    //     fprintf(stderr, "CUDA error in naive_crs_spmv_cuda_launcher: %s\n",
+    //             cudaGetErrorString(err));
+    //     std::exit(EXIT_FAILURE); // or throw an exception depending on your
+    //                              // error model
+    // }
 }
 
 // Macro for cuda kernel instantiation

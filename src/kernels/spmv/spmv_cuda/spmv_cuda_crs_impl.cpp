@@ -35,14 +35,15 @@ void naive_crs_spmv_cuda_launcher(const ULL n_rows, const IT *SMAX_RESTRICT col,
     naive_crs_spmv_cuda<IT, VT><<<blocks, CUDA_TPB>>>(n_rows, col, row_ptr, val, x, y);
     // clang-format on
 
+    SMAX::device::synchronize();
     // Synchronize device to ensure kernel execution completes
-    cudaError_t err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "CUDA error in naive_crs_spmv_cuda_launcher: %s\n",
-                cudaGetErrorString(err));
-        std::exit(EXIT_FAILURE); // or throw an exception depending on your
-                                 // error model
-    }
+    // cudaError_t err = cudaDeviceSynchronize();
+    // if (err != cudaSuccess) {
+    //     fprintf(stderr, "CUDA error in naive_crs_spmv_cuda_launcher: %s\n",
+    //             cudaGetErrorString(err));
+    //     std::exit(EXIT_FAILURE); // or throw an exception depending on your
+    //                              // error model
+    // }
 }
 
 // Macro for cuda kernel instantiation
