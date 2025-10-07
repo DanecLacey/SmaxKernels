@@ -38,6 +38,10 @@ int main(int argc, char *argv[]) {
         A_bcrs->b_w_pad, A_bcrs->col, A_bcrs->row_ptr, A_bcrs->val, hpad, wpad,
         hpad, wpad, use_cm);
 
+    double fill_in_rate = double(crs_mat->nnz) / double(A_bcrs->n_blocks*A_bcrs->b_height * A_bcrs->b_width);
+
+    std::printf("BCRS fill in rate: %f\n", fill_in_rate);
+
     smax->kernel(bench_name)->set_mat_bcrs(true);
     smax->kernel(bench_name)->set_block_column_major(use_cm);
 
@@ -49,6 +53,8 @@ int main(int argc, char *argv[]) {
         custom_kernel_type = SMAX::SpMVType::naive_warp_shuffle;
     } else if (custom_kernel == "nwg") {
         custom_kernel_type = SMAX::SpMVType::naive_warp_group;
+    } else if (custom_kernel == "tprsb") {
+        custom_kernel_type = SMAX::SpMVType::naive_thread_per_row_small_blocks;
     }
 
     smax->kernel(bench_name)->set_kernel_implementation(custom_kernel_type);

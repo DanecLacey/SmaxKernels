@@ -15,7 +15,8 @@ enum class KernelType { SPMV, SPMM, SPGEMM, SPTRSV, SPTRSM };
 enum class SpMVType : int {
     naive_thread_per_row = 0,
     naive_warp_group = 1,
-    naive_warp_shuffle = 2
+    naive_warp_shuffle = 2,
+    naive_thread_per_row_small_blocks = 3
 };
 
 // Available platforms

@@ -7,6 +7,13 @@
 
 namespace SMAX::KERNELS::SPMV::CUDA {
 template <typename IT, typename VT, bool block_column_major>
+__global__ void naive_bcrs_spmv_cuda_thread_per_row_small_blocks(
+    const ULL n_rows, const ULL b_height, const ULL b_width,
+    const ULL height_pad, const ULL width_pad, const IT *SMAX_RESTRICT col,
+    const IT *SMAX_RESTRICT row_ptr, const VT *SMAX_RESTRICT val,
+    const VT *SMAX_RESTRICT x, VT *SMAX_RESTRICT y);
+
+template <typename IT, typename VT, bool block_column_major>
 __global__ void naive_bcrs_spmv_cuda_thread_per_row(
     const ULL n_rows, const ULL b_height, const ULL b_width,
     const ULL height_pad, const ULL width_pad, const IT *SMAX_RESTRICT col,

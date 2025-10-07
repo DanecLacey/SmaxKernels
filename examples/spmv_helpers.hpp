@@ -79,7 +79,7 @@ template <typename IT> class SpMVParser : public CliParser {
                       << "<-hpad : [uint]> padded height for BCRS format\n"
                       << "<-wpad : [uint]> padded width for BCRS format\n"
                       << "<-cm : [0/1]> use blocked column major BCRS format\n"
-                      << "<-ck : [str: 'tpr', 'nws', 'nwg'] BCRS kernel type>\n"
+                      << "<-ck : [str: 'tpr', 'nws', 'nwg', 'tprsb'] BCRS kernel type>\n"
                       << "<-o : [str] output file name>\n";
             std::exit(EXIT_FAILURE);
         }
@@ -102,7 +102,7 @@ template <typename IT> class SpMVParser : public CliParser {
                 spmv_args->_use_cm = static_cast<bool>(atoi(argv[++i]));
             } else if (arg == "-ck") {
                 spmv_args->_ck = std::string(argv[++i]);
-                std::vector<std::string> kernels = {"tpr", "nws", "nwg"};
+                std::vector<std::string> kernels = {"tpr", "nws", "nwg", "tprsb"};
                 bool found = std::find(kernels.begin(), kernels.end(),
                                        spmv_args->_ck) != kernels.end();
                 if (!found) {

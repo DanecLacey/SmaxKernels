@@ -16,6 +16,46 @@ __host__ inline unsigned int next_pow_2(unsigned int x) {
 extern __shared__ char buffer[];
 
 template <typename IT, typename VT, bool block_column_major>
+__global__ void naive_bcrs_spmv_cuda_thread_per_row_small_blocks(
+    const ULL n_rows, const ULL b_height, const ULL b_width,
+    const ULL height_pad, const ULL width_pad, const IT *SMAX_RESTRICT col,
+    const IT *SMAX_RESTRICT row_ptr, const VT *SMAX_RESTRICT val,
+    const VT *SMAX_RESTRICT x, VT *SMAX_RESTRICT y) {
+    const ULL start_row = blockIdx.x * blockDim.x + threadIdx.x;
+    // local array
+    VT bsum[10];
+    // grid strided for loop
+    for (ULL row = start_row; row < n_rows; row += blockDim.x * gridDim.x) {
+        for (int k = 0; k < b_height; ++k) {
+            bsum[k] = VT(0);
+        }
+        for (IT j = row_ptr[row]; j < row_ptr[row + 1]; ++j) {
+            if constexpr (block_column_major) {
+                for (int w(0); w < b_width; ++w) {
+                    for (int h(0); h < b_height; ++h) {
+                        bsum[h] += val[j * height_pad * width_pad +
+                                        w * height_pad + h] *
+                                    x[col[j] * width_pad + w];
+                    }
+                }
+
+            } else {
+                for (int h(0); h < b_height; ++h) {
+                    for (int w(0); w < b_width; ++w) {
+                        bsum[h] += val[j * height_pad * width_pad +
+                                        h * width_pad + w] *
+                                    x[col[j] * width_pad + w];
+                    }
+                }
+            }
+        }
+        for (int k = 0; k < b_height; ++k) {
+            y[row * height_pad + k] = bsum[k];
+        }
+    }
+}
+
+template <typename IT, typename VT, bool block_column_major>
 __global__ void naive_bcrs_spmv_cuda_thread_per_row(
     const ULL n_rows, const ULL b_height, const ULL b_width,
     const ULL height_pad, const ULL width_pad, const IT *SMAX_RESTRICT col,
@@ -173,7 +213,8 @@ __global__ void naive_bcrs_spmv_cuda_warp_per_row_by_shffl(
 enum InternalBCRSKernelType : int {
     naive_thread_per_row = 0,
     naive_warp_group = 1,
-    naive_warp_shuffle = 2
+    naive_warp_shuffle = 2,
+    naive_thread_per_row_small_blocks = 3
 };
 
 template <typename IT, typename VT>
@@ -194,7 +235,24 @@ void naive_bcrs_spmv_cuda_launcher(
             naive_bcrs_spmv_cuda_thread_per_row<IT, VT, true><<<blocks, CUDA_TPB, shared_mem>>>(n_rows, b_height, b_width, height_pad, width_pad,
                                 col, row_ptr, val, x, y);
         else
+            // naive_bcrs_spmv_cuda_thread_per_row_small_blocks<IT, VT, false><<<blocks, CUDA_TPB>>>(n_rows, b_height, b_width, height_pad, width_pad,
             naive_bcrs_spmv_cuda_thread_per_row<IT, VT, false><<<blocks, CUDA_TPB, shared_mem>>>(n_rows, b_height, b_width, height_pad, width_pad,
+                                col, row_ptr, val, x, y);
+        // clang-format on
+
+    } else if (krn_type == naive_thread_per_row_small_blocks) {
+        if(b_height > 10) {
+            throw std::runtime_error(
+                "Small Blocksize kernel can only be executed with block height smaller 11");
+        }
+        ULL blocks = (n_rows + CUDA_TPB - 1) / CUDA_TPB;
+
+        // clang-format off
+        if(block_column_major)
+            naive_bcrs_spmv_cuda_thread_per_row_small_blocks<IT, VT, true><<<blocks, CUDA_TPB>>>(n_rows, b_height, b_width, height_pad, width_pad,
+                                col, row_ptr, val, x, y);
+        else
+            naive_bcrs_spmv_cuda_thread_per_row_small_blocks<IT, VT, false><<<blocks, CUDA_TPB>>>(n_rows, b_height, b_width, height_pad, width_pad,
                                 col, row_ptr, val, x, y);
         // clang-format on
 
