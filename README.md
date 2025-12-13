@@ -1,15 +1,15 @@
 # SmaxKernels
 
-**S**parse **MA**trix mpi+**X** **Kernels** is a lightweight, portable C++ library providing high-performance implementations of popular sparse matrix kernels of the form `C = A op B`.
+**S**parse **MA**tri**X** **Kernels** is a lightweight, portable C++ library providing high-performance implementations of popular sparse matrix kernels of the form `C = A op B`.
 
 ## Supported Kernels and Platforms ## 
-| Sparse Kernel                                     | OpenMP    | CUDA     | MPI       | Matrix Formats |
-|--------------                                     |---------- |----------|---------- | ----------|
-| Matrix-Vector Multiplication -- **SpMV**          | ✅       | ✅       | ❌       | CRS, BCRS, Sell-C-sigma |
-| Matrix-Multiple Vector Multiplication -- **SpMM** | ✅       | ❌       | ❌       | CRS |
-| Matrix-Sparse Matrix Multiplication -- **SpGEMM** | ✅       | ❌       | ❌       | CRS |
-| Triangular Solve -- **SpTRSV**                    | ✅       | ❌       | ❌       | CRS |
-| Batched Triangular Solve -- **SpTRSM**            | ✅       | ❌       | ❌       | CRS |
+| Sparse Kernel                                     | OpenMP    | CUDA     | Matrix Formats |
+|--------------                                     |---------- |----------| ----------|
+| Matrix-Vector Multiplication -- **SpMV**          | ✅       | ✅       | CRS, BCRS, Sell-C-sigma |
+| Matrix-Multiple Vector Multiplication -- **SpMM** | ✅       | ❌       | CRS |
+| Matrix-Sparse Matrix Multiplication -- **SpGEMM** | ✅       | ❌       | CRS |
+| Triangular Solve -- **SpTRSV**                    | ✅       | ❌       | CRS |
+| Batched Triangular Solve -- **SpTRSM**            | ✅       | ❌       | CRS |
 
 ## Features ## 
 * Clean, minimalist library interface
