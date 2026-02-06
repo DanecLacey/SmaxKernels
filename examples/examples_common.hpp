@@ -168,69 +168,56 @@ Only type supported by this helper function at this time:
 - int, long int, long long int, unsigned long long int
 - float, double
 */
-template <typename T>
-constexpr bool always_false_v = false;
+template <typename T> constexpr bool always_false_v = false;
 
-template <typename T>
-struct smax_int_type{
+template <typename T> struct smax_int_type {
     static_assert(always_false_v<T>, "Unsupported integer type");
 };
 
-template <>
-struct smax_int_type<int> {
+template <> struct smax_int_type<int> {
     static constexpr SMAX::IntType value = SMAX::IntType::INT32;
 };
 
-template <>
-struct smax_int_type<unsigned int> {
+template <> struct smax_int_type<unsigned int> {
     static constexpr SMAX::IntType value = SMAX::IntType::UINT32;
 };
 
-template <>
-struct smax_int_type<long> {
+template <> struct smax_int_type<long> {
     static constexpr SMAX::IntType value = SMAX::IntType::INT64;
 };
 
-template <>
-struct smax_int_type<long long> {
+template <> struct smax_int_type<long long> {
     static constexpr SMAX::IntType value = SMAX::IntType::INT64;
 };
 
-template <>
-struct smax_int_type<unsigned long long> {
+template <> struct smax_int_type<unsigned long long> {
     static constexpr SMAX::IntType value = SMAX::IntType::UINT64;
 };
 
-template <typename T>
-struct smax_float_type{
+template <typename T> struct smax_float_type {
     static_assert(always_false_v<T>, "Unsupported integer type");
 };
 
-template <>
-struct smax_float_type<float> {
+template <> struct smax_float_type<float> {
     static constexpr SMAX::FloatType value = SMAX::FloatType::FLOAT32;
 };
 
-template <>
-struct smax_float_type<double> {
+template <> struct smax_float_type<double> {
     static constexpr SMAX::FloatType value = SMAX::FloatType::FLOAT64;
 };
-
 
 template <typename IT, typename VT>
 void register_kernel(SMAX::Interface *smax, std::string kernel_name,
                      SMAX::KernelType KernelType,
                      SMAX::PlatformType PlatformType) {
-        static_assert(std::is_integral_v<IT>, "IT must be an integral type");
-    static_assert(std::is_floating_point_v<VT>, "VT must be a floating point type");
+    static_assert(std::is_integral_v<IT>, "IT must be an integral type");
+    static_assert(std::is_floating_point_v<VT>,
+                  "VT must be a floating point type");
 
-    constexpr SMAX::IntType itype  = smax_int_type<IT>::value;
+    constexpr SMAX::IntType itype = smax_int_type<IT>::value;
     constexpr SMAX::FloatType ftype = smax_float_type<VT>::value;
 
-    smax->register_kernel(kernel_name.c_str(),
-                          KernelType,
-                          PlatformType,
-                          itype,
+    smax->register_kernel(kernel_name.c_str(), KernelType, PlatformType, itype,
                           ftype);
 };
 
